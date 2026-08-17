@@ -524,7 +524,7 @@ function renderLegal() {
           et droit applicable sont déjà rédigés et adaptés à ce site (aucun traceur, aucune
           ressource externe, hébergement Cloudflare). Ils n'ont pas à être modifiés.
         </p>
-        <a class="a-btn" href="/mentions-legales.html" target="_blank" rel="noopener">Voir la page publique ↗</a>
+        <a class="a-btn" href="/mentions-legales" target="_blank" rel="noopener">Voir la page publique ↗</a>
       </div>
     </section>`;
 }
