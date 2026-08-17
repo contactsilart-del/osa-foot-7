@@ -42,6 +42,10 @@ body.admin {
   min-height: 100svh;
 }
 
+/* Prime sur les `display` déclarés plus bas (.boot, .gate, .app, .picker),
+   sans quoi les écrans masqués resteraient empilés les uns sur les autres. */
+[hidden] { display: none !important; }
+
 img, svg { display: block; max-width: 100%; }
 button, input, select, textarea { font: inherit; color: inherit; }
 button { cursor: pointer; background: none; border: 0; }

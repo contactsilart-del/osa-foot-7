@@ -85,6 +85,12 @@ body {
 
 body.is-locked, body.nav-open { overflow: hidden; }
 
+/* L'attribut `hidden` doit primer sur toute règle `display` de cette feuille.
+   Sans `!important`, une règle auteur comme `.modal { display: grid }` l'emporte
+   sur le `[hidden] { display: none }` de la feuille du navigateur — la modale
+   resterait alors étalée en `inset: 0` et intercepterait tous les clics. */
+[hidden] { display: none !important; }
+
 img, svg, video { display: block; max-width: 100%; }
 img { height: auto; }
 
