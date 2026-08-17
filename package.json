@@ -1,0 +1,23 @@
+{
+  "name": "osa-foot-7",
+  "version": "1.0.0",
+  "private": true,
+  "description": "Site officiel de l'OSA FOOT 7 — Olympique Saint-Affrique. HTML/CSS/JS natif + Cloudflare Pages Functions.",
+  "type": "module",
+  "license": "UNLICENSED",
+  "scripts": {
+    "dev": "wrangler pages dev",
+    "deploy": "wrangler pages deploy",
+    "db:init": "wrangler d1 execute osa-foot-7 --remote --file=./schema.sql",
+    "db:init:local": "wrangler d1 execute osa-foot-7 --local --file=./schema.sql",
+    "secret:password": "wrangler pages secret put ADMIN_PASSWORD",
+    "secret:session": "wrangler pages secret put SESSION_SECRET",
+    "check": "node --check public/assets/js/app.js && node --check public/assets/js/admin.js && node --check public/assets/js/content.js && node --check lib/auth.js && node --check lib/store.js && node --check lib/validate.js && node --check lib/http.js"
+  },
+  "devDependencies": {
+    "wrangler": "^3.90.0"
+  },
+  "engines": {
+    "node": ">=18"
+  }
+}

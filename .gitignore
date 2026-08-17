@@ -1,0 +1,17 @@
+node_modules/
+.wrangler/
+.dev.vars
+.env
+.env.*
+!.dev.vars.example
+
+# Éditeurs / OS
+.vscode/
+.idea/
+.DS_Store
+Thumbs.db
+desktop.ini
+
+# Logs
+*.log
+npm-debug.log*

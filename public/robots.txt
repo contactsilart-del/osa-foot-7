@@ -1,0 +1,6 @@
+User-agent: *
+Allow: /
+Disallow: /admin/
+Disallow: /api/
+
+Sitemap: https://osa-foot-7.pages.dev/sitemap.xml

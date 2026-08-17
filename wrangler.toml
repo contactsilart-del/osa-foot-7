@@ -1,0 +1,48 @@
+# ============================================================
+#  OSA FOOT 7 — configuration Cloudflare Pages
+#
+#  EN L'ÉTAT, CE FICHIER PERMET DE DÉPLOYER IMMÉDIATEMENT :
+#  le site public fonctionne à 100 % sans base de données.
+#
+#  Pour activer le panel /admin/ (édition en ligne), décommentez les
+#  blocs ci-dessous après avoir créé les ressources — voir README, §3.
+#
+#  ⚠ Les SECRETS (mot de passe admin) ne se mettent JAMAIS ici.
+#    Utilisez : npx wrangler pages secret put ADMIN_PASSWORD
+# ============================================================
+
+name = "osa-foot-7"
+compatibility_date = "2025-01-01"
+pages_build_output_dir = "public"
+
+# ── Base D1 : contenu du site + messages du formulaire ─────────
+# Créer :  npx wrangler d1 create osa-foot-7
+# Puis coller le database_id renvoyé, et décommenter les 4 lignes.
+#
+# [[d1_databases]]
+# binding       = "DB"
+# database_name = "osa-foot-7"
+# database_id   = "COLLER_ICI_LE_DATABASE_ID"
+
+# ── Espace KV : images téléversées depuis l'admin ──────────────
+# Créer :  npx wrangler kv namespace create MEDIA
+# Puis coller l'id renvoyé, et décommenter les 3 lignes.
+#
+# [[kv_namespaces]]
+# binding = "MEDIA"
+# id      = "COLLER_ICI_LE_KV_ID"
+
+# ── Environnement de prévisualisation (branches ≠ production) ──
+# Décommentez en même temps que les blocs ci-dessus. Les mêmes
+# ressources sont réutilisées : suffisant pour un site de club.
+#
+# [env.preview]
+#
+# [[env.preview.d1_databases]]
+# binding       = "DB"
+# database_name = "osa-foot-7"
+# database_id   = "COLLER_ICI_LE_DATABASE_ID"
+#
+# [[env.preview.kv_namespaces]]
+# binding = "MEDIA"
+# id      = "COLLER_ICI_LE_KV_ID"

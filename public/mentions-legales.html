@@ -1,0 +1,206 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Mentions légales — OSA FOOT 7</title>
+  <meta name="description" content="Mentions légales, hébergement et politique de confidentialité du site de l'OSA FOOT 7.">
+  <meta name="robots" content="index, follow">
+  <meta name="theme-color" content="#071227">
+  <link rel="icon" href="/favicon.svg" type="image/svg+xml">
+  <link rel="stylesheet" href="/assets/css/style.css">
+  <style>
+    .legal { padding-block: calc(var(--header-h) + 3.5rem) 5rem; }
+    .legal .shell { max-width: 780px; }
+    .legal h1 { font-size: clamp(2rem, 5vw, 3rem); margin-bottom: .5rem; }
+    .legal .updated { color: var(--muted); font-size: .9rem; margin-bottom: 3rem; }
+    .legal h2 {
+      font-size: 1.25rem; margin-top: 2.6rem; margin-bottom: .8rem;
+      padding-top: 1.6rem; border-top: 1px solid var(--line);
+      color: var(--brand-700);
+    }
+    .legal h3 { font-size: 1rem; margin-top: 1.4rem; margin-bottom: .4rem; }
+    .legal p, .legal li { color: var(--ink-2); }
+    .legal p + p { margin-top: .8rem; }
+    .legal ul { display: grid; gap: .5rem; margin-top: .8rem; padding-left: 1.2rem; list-style: disc; }
+    .legal a { color: var(--brand-600); text-decoration: underline; font-weight: 600; }
+    .legal dl { display: grid; gap: .55rem; margin-top: .8rem; }
+    .legal dt { font-weight: 800; font-size: .78rem; letter-spacing: .1em; text-transform: uppercase; color: var(--muted); }
+    .legal dd { margin: 0; color: var(--ink-2); }
+    .back {
+      display: inline-flex; align-items: center; gap: .5rem;
+      margin-bottom: 2rem; font-weight: 800; color: var(--brand-600);
+    }
+    .back svg { width: 1.1em; height: 1.1em; fill: currentColor; transform: rotate(180deg); }
+    .back:hover { color: var(--brand-800); }
+    .callout {
+      margin-top: 1rem; padding: 1rem 1.2rem;
+      border-left: 4px solid var(--gold-500);
+      background: rgba(255, 197, 49, .12);
+      border-radius: 0 var(--radius-sm) var(--radius-sm) 0;
+      font-size: .93rem;
+    }
+    .callout a { color: var(--brand-700); }
+  </style>
+</head>
+<body data-page="legal">
+
+<header class="site-header is-scrolled">
+  <div class="shell site-header__inner">
+    <a class="brand" href="/">
+      <img class="brand__logo" src="/img/osa.png" alt="" width="44" height="44" data-bind="club.logo">
+      <span class="brand__text">
+        <strong data-bind="club.name">OSA FOOT 7</strong>
+        <small data-bind="club.tagline">Olympique Saint-Affrique</small>
+      </span>
+    </a>
+    <nav class="nav" aria-label="Navigation">
+      <ul class="nav__list"><li><a class="nav__link" href="/">Retour au site</a></li></ul>
+    </nav>
+  </div>
+</header>
+
+<main class="legal">
+  <div class="shell">
+    <a class="back" href="/">
+      <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M13 5l7 7-7 7v-4H4v-6h9V5z"/></svg>
+      Retour à l'accueil
+    </a>
+
+    <h1>Mentions légales</h1>
+    <p class="updated">Dernière mise à jour : <span data-bind="legal.updated">Janvier 2026</span></p>
+
+    <div class="callout" data-legal-warning>
+      <strong>Informations à compléter.</strong> Les champs marqués
+      « À compléter » ci-dessous se renseignent depuis
+      <a href="/admin/">l'espace d'administration</a>, onglet
+      « Mentions légales ». Cet encadré disparaîtra une fois l'adresse, le
+      responsable de publication et le numéro d'identification saisis.
+    </div>
+
+    <h2>1. Éditeur du site</h2>
+    <dl>
+      <dt>Dénomination</dt><dd data-bind="legal.entity">OSA FOOT 7 — Olympique Saint-Affrique</dd>
+      <dt>Statut</dt><dd data-bind="legal.status">Association loi 1901</dd>
+      <dt>Siège social</dt><dd data-bind="legal.address">À compléter</dd>
+      <dt>N° RNA</dt><dd data-bind="legal.rna">À compléter</dd>
+      <dt>N° SIREN</dt><dd data-bind="legal.siren">À compléter</dd>
+      <dt>Directeur de la publication</dt><dd data-bind="legal.director">À compléter</dd>
+      <dt>Contact</dt><dd><a data-bind-mail="legal.email" href="mailto:contact@osafoot7.fr">contact@osafoot7.fr</a></dd>
+    </dl>
+
+    <h2>2. Hébergement</h2>
+    <p>Ce site est hébergé par&nbsp;:</p>
+    <dl>
+      <dt>Hébergeur</dt><dd>Cloudflare, Inc. (Cloudflare Pages)</dd>
+      <dt>Adresse</dt><dd>101 Townsend St, San Francisco, CA 94107, États-Unis</dd>
+      <dt>Site web</dt><dd><a href="https://www.cloudflare.com" target="_blank" rel="noopener noreferrer">www.cloudflare.com</a></dd>
+    </dl>
+    <p>
+      Les données sont traitées au sein du réseau Cloudflare. Cloudflare adhère au
+      <em>Data Privacy Framework</em> et propose des clauses contractuelles types pour
+      les transferts hors Union européenne.
+    </p>
+
+    <h2>3. Propriété intellectuelle</h2>
+    <p>
+      L'ensemble des contenus du site (textes, photographies, logo, éléments graphiques et
+      code source) est la propriété de l'association <span data-bind="club.name">OSA FOOT 7</span>,
+      sauf mention contraire. Toute reproduction, représentation, adaptation ou exploitation,
+      totale ou partielle, sur quelque support que ce soit, est interdite sans autorisation
+      écrite préalable.
+    </p>
+    <p>
+      Les logos des clubs adverses et de l'UFOLEP restent la propriété de leurs détenteurs
+      respectifs et sont reproduits à titre purement informatif, dans le cadre du compte
+      rendu sportif des rencontres.
+    </p>
+
+    <h2>4. Données personnelles (RGPD)</h2>
+
+    <h3>Données collectées</h3>
+    <p>
+      Le seul traitement de données personnelles opéré par ce site est le formulaire de
+      contact. Les données collectées sont&nbsp;: nom, adresse e-mail, sujet et contenu du
+      message. L'adresse IP de l'expéditeur et la date d'envoi sont également enregistrées
+      à des fins de lutte contre le spam.
+    </p>
+
+    <h3>Finalité et base légale</h3>
+    <p>
+      Ces données sont utilisées exclusivement pour répondre à votre demande. La base légale
+      du traitement est votre consentement, matérialisé par la case à cocher du formulaire
+      (article 6.1.a du RGPD).
+    </p>
+
+    <h3>Destinataires et durée de conservation</h3>
+    <p>
+      Les messages sont accessibles uniquement aux membres du bureau de l'association
+      disposant d'un accès à l'espace d'administration. Ils sont conservés au maximum
+      <strong>24 mois</strong> puis supprimés. Aucune donnée n'est vendue, louée ou
+      transmise à des tiers à des fins commerciales.
+    </p>
+
+    <h3>Vos droits</h3>
+    <p>
+      Conformément au Règlement (UE) 2016/679 et à la loi « Informatique et Libertés »,
+      vous disposez d'un droit d'accès, de rectification, d'effacement, de limitation,
+      d'opposition et de portabilité de vos données. Pour l'exercer, écrivez à
+      <a data-bind-mail="legal.email" href="mailto:contact@osafoot7.fr">contact@osafoot7.fr</a>.
+    </p>
+    <p>
+      Vous pouvez également introduire une réclamation auprès de la CNIL —
+      <a href="https://www.cnil.fr" target="_blank" rel="noopener noreferrer">www.cnil.fr</a>.
+    </p>
+
+    <h2>5. Cookies et traceurs</h2>
+    <p>
+      <strong>Ce site ne dépose aucun cookie publicitaire ni aucun traceur de mesure
+      d'audience.</strong> Aucune police de caractères ou bibliothèque externe n'est chargée
+      depuis un serveur tiers.
+    </p>
+    <p>
+      Un unique cookie technique, nommé <code>osa_session</code>, est déposé lors de la
+      connexion à l'espace d'administration réservé au bureau de l'association. Il est
+      strictement nécessaire au fonctionnement du service, expire après 8 heures, et ne
+      concerne donc pas les visiteurs du site public. À ce titre, il est dispensé de
+      consentement préalable au sens de l'article 82 de la loi Informatique et Libertés.
+    </p>
+
+    <h2>6. Droit à l'image</h2>
+    <p>
+      Les photographies publiées représentent des joueurs et membres de l'association dans
+      le cadre de leur activité sportive. Toute personne apparaissant sur une photographie
+      et souhaitant son retrait peut en faire la demande à
+      <a data-bind-mail="legal.email" href="mailto:contact@osafoot7.fr">contact@osafoot7.fr</a>&nbsp;;
+      le retrait sera effectué dans les meilleurs délais.
+    </p>
+
+    <h2>7. Responsabilité</h2>
+    <p>
+      Les informations publiées (calendrier, résultats, statistiques) sont fournies à titre
+      indicatif et mises à jour au mieux des moyens de l'association. Elles ne sauraient
+      engager sa responsabilité en cas d'erreur, d'omission ou d'indisponibilité temporaire
+      du service. Les liens vers des sites tiers (Facebook, Instagram) n'engagent que leurs
+      éditeurs respectifs.
+    </p>
+
+    <h2>8. Droit applicable</h2>
+    <p>
+      Les présentes mentions légales sont régies par le droit français. En cas de litige et
+      à défaut de résolution amiable, les tribunaux français seront seuls compétents.
+    </p>
+  </div>
+</main>
+
+<footer class="site-footer">
+  <div class="shell site-footer__bottom">
+    <p>&copy; <span data-bind="club.copyrightYear">2026</span>
+       <span data-bind="club.name">OSA FOOT 7</span> — Tous droits réservés.</p>
+    <p><a href="/">Retour à l'accueil</a></p>
+  </div>
+</footer>
+
+<script type="module" src="/assets/js/app.js"></script>
+</body>
+</html>

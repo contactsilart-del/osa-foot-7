@@ -1,0 +1,15 @@
+# Secrets pour le développement local uniquement (`npm run dev`).
+#
+# 1. Copiez ce fichier en `.dev.vars` (ignoré par git).
+# 2. En production, ces valeurs se définissent avec :
+#       npx wrangler pages secret put ADMIN_PASSWORD
+#       npx wrangler pages secret put SESSION_SECRET
+#    …ou depuis le dashboard Cloudflare :
+#       Workers & Pages → osa-foot-7 → Settings → Variables and Secrets
+
+# Mot de passe d'accès au panel /admin/. Choisissez-en un long.
+ADMIN_PASSWORD="changez-moi-vraiment"
+
+# Clé de signature des cookies de session. Générez-la avec :
+#   node -e "console.log(require('crypto').randomBytes(32).toString('hex'))"
+SESSION_SECRET="remplacez-par-une-chaine-aleatoire-de-64-caracteres"
