@@ -6,8 +6,11 @@
   Cross-Origin-Opener-Policy: same-origin
   Content-Security-Policy: default-src 'self'; img-src 'self' data:; style-src 'self' 'unsafe-inline'; script-src 'self'; connect-src 'self'; form-action 'self'; frame-ancestors 'self'; base-uri 'self'; object-src 'none'
 
+# Le CSS et le JS ne portent pas d'empreinte dans leur nom : une durée de vie
+# longue retarderait d'autant l'arrivée d'un correctif chez les visiteurs déjà
+# venus. 10 minutes de fraîcheur, puis revalidation en arrière-plan.
 /assets/*
-  Cache-Control: public, max-age=86400, stale-while-revalidate=604800
+  Cache-Control: public, max-age=600, stale-while-revalidate=86400
 
 /img/*
   Cache-Control: public, max-age=2592000, stale-while-revalidate=604800
