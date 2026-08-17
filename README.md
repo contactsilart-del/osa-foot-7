@@ -130,23 +130,34 @@ npx wrangler pages secret put SESSION_SECRET
 
 ### 3.2 — La base de données (contenu + messages)
 
+**En ligne de commande :**
+
 ```bash
 npx wrangler d1 create osa-foot-7
 ```
 
-Décommentez le bloc `[[d1_databases]]` dans `wrangler.toml` et collez-y le
-`database_id` renvoyé.
+**Ou depuis le dashboard :** *Storage & Databases → D1 SQL Database → Create*,
+nom `osa-foot-7`. L'identifiant s'affiche sur la page de la base.
+
+Dans les deux cas, décommentez le bloc `[[d1_databases]]` de `wrangler.toml`,
+collez-y le `database_id`, puis committez et poussez.
 
 > Les tables sont créées automatiquement à la première écriture.
 > Pour les provisionner tout de suite : `npm run db:init`.
 
 ### 3.3 — Le stockage des images
 
+**En ligne de commande :**
+
 ```bash
 npx wrangler kv namespace create MEDIA
 ```
 
-Décommentez le bloc `[[kv_namespaces]]` dans `wrangler.toml` et collez-y l'`id`.
+**Ou depuis le dashboard :** *Storage & Databases → KV → Create a namespace*,
+nom `osa-foot-7-media`.
+
+Dans les deux cas, décommentez le bloc `[[kv_namespaces]]` de `wrangler.toml`
+et collez-y l'`id`.
 
 ### 3.4 — Redéployez
 
@@ -156,9 +167,17 @@ npm run deploy     # ou : git push
 
 L'administration est disponible sur **`https://votre-site.pages.dev/admin/`**.
 
-> **Alternative sans ligne de commande** : les bindings peuvent aussi être ajoutés
-> depuis **Settings → Bindings** (D1 database → variable `DB`, KV namespace →
-> variable `MEDIA`). Dans ce cas, laissez `wrangler.toml` tel quel.
+> ⚠️ **`wrangler.toml` fait autorité.** Tant que ce fichier est présent à la
+> racine, Cloudflare **ignore** les bindings ajoutés depuis *Settings → Bindings*
+> du dashboard. Les bindings `DB` et `MEDIA` doivent donc être décommentés dans
+> `wrangler.toml`, pas saisis dans l'interface.
+>
+> Les **secrets** (`ADMIN_PASSWORD`, `SESSION_SECRET`) ne sont pas concernés :
+> ils se définissent toujours depuis le dashboard ou via `wrangler pages secret put`.
+>
+> Si vous préférez malgré tout tout piloter depuis le dashboard, supprimez
+> `wrangler.toml` — les réglages de build (`public`, aucune commande) restent
+> alors à saisir dans l'interface.
 
 ### Récapitulatif des variables
 
