@@ -327,12 +327,29 @@ ul, ol { list-style: none; padding: 0; }
   position: fixed;
   inset: 0 0 auto;
   z-index: 100;
-  transition: background var(--t), box-shadow var(--t), backdrop-filter var(--t);
+  transition: box-shadow var(--t);
 }
-.site-header.is-scrolled {
+
+/* Le fond flouté est porté par un pseudo-élément, jamais par l'en-tête
+   lui-même : `backdrop-filter` fait de l'élément qui le déclare un bloc
+   conteneur pour ses descendants en `position: fixed`. Le menu mobile étant
+   à l'intérieur du <header>, il se retrouverait ancré sur une barre de 64 px
+   au lieu du viewport — réduit à un rectangle tronqué dès le premier scroll. */
+.site-header::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  z-index: -1;
+  pointer-events: none;
+  background: transparent;
+  transition: background var(--t), backdrop-filter var(--t);
+}
+.site-header.is-scrolled::before {
   background: rgba(7, 18, 39, .82);
   backdrop-filter: blur(14px) saturate(140%);
   -webkit-backdrop-filter: blur(14px) saturate(140%);
+}
+.site-header.is-scrolled {
   box-shadow: 0 1px 0 rgba(255, 255, 255, .08), 0 12px 30px -20px rgba(0, 0, 0, .9);
 }
 
