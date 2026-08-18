@@ -181,18 +181,25 @@ function initNavigation() {
   const scrim = $('#nav-scrim');
   const progress = $('#scroll-progress');
 
+  const closeButton = $('#nav-close');
+
   const closeNav = () => {
+    const wasOpen = document.body.classList.contains('nav-open');
     document.body.classList.remove('nav-open');
     burger?.setAttribute('aria-expanded', 'false');
     if (scrim) scrim.hidden = true;
+    // Le focus ne doit jamais rester sur un élément devenu invisible.
+    if (wasOpen && nav?.contains(document.activeElement)) burger?.focus();
   };
 
   burger?.addEventListener('click', () => {
     const open = document.body.classList.toggle('nav-open');
     burger.setAttribute('aria-expanded', String(open));
     if (scrim) scrim.hidden = !open;
+    if (open) closeButton?.focus();
   });
 
+  closeButton?.addEventListener('click', closeNav);
   scrim?.addEventListener('click', closeNav);
   nav?.addEventListener('click', (event) => {
     if (event.target.closest('a')) closeNav();

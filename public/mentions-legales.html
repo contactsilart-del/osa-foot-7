@@ -56,7 +56,7 @@
         <small data-bind="club.tagline">Olympique Saint-Affrique</small>
       </span>
     </a>
-    <nav class="nav" aria-label="Navigation">
+    <nav class="nav nav--simple" aria-label="Navigation">
       <ul class="nav__list"><li><a class="nav__link" href="/">Retour au site</a></li></ul>
     </nav>
   </div>
@@ -182,14 +182,17 @@
     <dl>
       <dt>Conception et développement</dt>
       <dd>
-        Agence <a data-bind-href="credits.agencyUrl" href="https://agencetriceratops.fr" target="_blank" rel="noopener noreferrer"><span data-bind="credits.agency">Triceratops</span></a>
-        &mdash; <span data-bind="credits.agencyDomain">agencetriceratops.fr</span>
+        Agence
+        <a data-bind-href="credits.agencyUrl" href="https://agencetriceratops.fr" target="_blank" rel="noopener noreferrer">
+          <span data-bind="credits.agency">Triceratops</span> &mdash; <span data-bind="credits.agencyDomain">agencetriceratops.fr</span>
+        </a>
       </dd>
       <dt>Gestion et maintenance</dt>
       <dd>
         <span data-bind="credits.manager">Silas Clamens Albert</span>, au nom de
-        <a data-bind-href="credits.brandUrl" href="https://bysilart.fr" target="_blank" rel="noopener noreferrer"><span data-bind="credits.brand">SILART</span></a>
-        &mdash; <span data-bind="credits.brandDomain">bysilart.fr</span>
+        <a data-bind-href="credits.brandUrl" href="https://bysilart.fr" target="_blank" rel="noopener noreferrer">
+          <span data-bind="credits.brand">SILART</span> &mdash; <span data-bind="credits.brandDomain">bysilart.fr</span>
+        </a>
       </dd>
     </dl>
     <p>
@@ -220,9 +223,13 @@
     <p>&copy; <span data-bind="club.copyrightYear">2026</span>
        <span data-bind="club.name">OSA FOOT 7</span> — Tous droits réservés.</p>
     <p class="site-footer__credits" data-credits>
-      Site conçu par <a data-bind-href="credits.agencyUrl" href="#" target="_blank" rel="noopener noreferrer"><span data-bind="credits.agency">Triceratops</span></a>,
-      géré par <span data-bind="credits.manager">Silas Clamens Albert</span> au nom de
-      <a data-bind-href="credits.brandUrl" href="#" target="_blank" rel="noopener noreferrer"><span data-bind="credits.brand">SILART</span></a>.
+      Site conçu par
+      <a class="credit-link" data-bind-href="credits.agencyUrl" href="https://agencetriceratops.fr" target="_blank" rel="noopener noreferrer">
+        <span data-bind="credits.agency">Triceratops</span><span class="credit-link__domain" data-bind="credits.agencyDomain">agencetriceratops.fr</span>
+      </a>, géré par <span data-bind="credits.manager">Silas Clamens Albert</span> au nom de
+      <a class="credit-link" data-bind-href="credits.brandUrl" href="https://bysilart.fr" target="_blank" rel="noopener noreferrer">
+        <span data-bind="credits.brand">SILART</span><span class="credit-link__domain" data-bind="credits.brandDomain">bysilart.fr</span>
+      </a>.
     </p>
     <p><a href="/">Retour à l'accueil</a></p>
   </div>

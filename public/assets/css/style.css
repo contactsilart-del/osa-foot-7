@@ -441,6 +441,10 @@ ul, ol { list-style: none; padding: 0; }
 .nav-open .burger__lines i:nth-child(2) { opacity: 0; }
 .nav-open .burger__lines i:nth-child(3) { transform: translateY(-6px) rotate(-45deg); }
 
+/* Croix de fermeture du panneau mobile. Le bouton burger, lui, se retrouve
+   recouvert par le panneau ouvert : il ne peut donc pas servir à refermer. */
+.nav__close { display: none; }
+
 .scroll-progress {
   height: 3px;
   background: linear-gradient(90deg, var(--gold-500), var(--brand-400));
@@ -1280,8 +1284,19 @@ ul, ol { list-style: none; padding: 0; }
   color: rgba(159, 178, 212, .75);
   text-align: center;
 }
-.site-footer__credits a { color: var(--brand-300); font-weight: 700; text-decoration: none; }
-.site-footer__credits a:hover { color: #fff; text-decoration: underline; }
+.credit-link {
+  color: var(--brand-300);
+  font-weight: 700;
+  text-decoration: underline;
+  text-decoration-color: rgba(157, 192, 250, .45);
+  text-underline-offset: .2em;
+  white-space: nowrap;
+  transition: color var(--t-fast), text-decoration-color var(--t-fast);
+}
+.credit-link:hover { color: #fff; text-decoration-color: currentColor; }
+.credit-link__domain { color: rgba(157, 192, 250, .6); font-weight: 500; }
+.credit-link__domain::before { content: " · "; }
+.credit-link:hover .credit-link__domain { color: rgba(255, 255, 255, .8); }
 
 .site-footer__bottom a { text-decoration: underline; }
 .site-footer__bottom a:hover { color: #fff; }
@@ -1469,6 +1484,43 @@ ul, ol { list-style: none; padding: 0; }
     overflow-y: auto;
   }
   .nav-open .nav { transform: none; }
+
+  .nav__close {
+    position: absolute;
+    top: 1rem;
+    right: 1.15rem;
+    display: grid;
+    place-items: center;
+    width: 42px;
+    height: 42px;
+    border-radius: 50%;
+    background: rgba(255, 255, 255, .1);
+    border: 1px solid rgba(255, 255, 255, .18);
+    color: #fff;
+    transition: background var(--t-fast), transform var(--t-fast), border-color var(--t-fast);
+  }
+  .nav__close svg { width: 18px; height: 18px; fill: currentColor; }
+  .nav__close:hover {
+    background: var(--loss);
+    border-color: transparent;
+    transform: rotate(90deg);
+  }
+
+  /* Une barre réduite à quelques liens (page des mentions légales) n'a pas de
+     bouton burger : elle doit rester en ligne, sinon elle disparaîtrait. */
+  .nav--simple {
+    position: static;
+    width: auto;
+    flex-direction: row;
+    padding: 0;
+    background: none;
+    border: 0;
+    box-shadow: none;
+    transform: none;
+    overflow: visible;
+  }
+  .nav--simple .nav__list { flex-direction: row; }
+  .nav--simple .nav__link { font-size: .9rem; padding: .5rem .8rem; border-bottom: 0; }
 
   .nav__list { flex-direction: column; align-items: stretch; gap: .25rem; }
   .nav__link {
