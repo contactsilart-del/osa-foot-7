@@ -7,7 +7,7 @@
  * aucune dépendance.
  */
 
-import { DEFAULT_CONTENT, cloneContent } from './content.js';
+import { DEFAULT_CONTENT, cloneContent, deepMerge } from './content.js';
 
 /* ═════════════════════════════════════════ Utilitaires ══ */
 
@@ -482,18 +482,7 @@ function renderClub() {
     </section>`;
 }
 
-/** Champs obligatoires pour qu'un site associatif français soit en règle. */
-const LEGAL_REQUIRED = ['address', 'director'];
-
-function legalIsComplete(legal = {}) {
-  return LEGAL_REQUIRED.every((key) => String(legal[key] || '').trim())
-    && Boolean(String(legal.rna || '').trim() || String(legal.siren || '').trim());
-}
-
 function renderLegal() {
-  const legal = state.draft.legal || {};
-  const complet = legalIsComplete(legal);
-
   return `
     <section class="a-card">
       <header class="a-card__head">
@@ -503,12 +492,10 @@ function renderLegal() {
         </div>
       </header>
       <div class="a-card__body">
-        ${complet ? '' : `
-          <div class="banner" style="margin:0">
-            <strong>Il manque des informations.</strong> Renseignez au minimum le siège social,
-            le directeur de la publication et un numéro d'identification (RNA ou SIREN).
-            L'avertissement affiché en haut de la page publique disparaîtra alors automatiquement.
-          </div>`}
+        <p class="a-hint">
+          Chaque champ laissé vide disparaît simplement de la page publique&nbsp;: le site
+          n'affiche jamais de mention « à compléter ».
+        </p>
 
         <div class="a-grid a-grid--2">
           ${field('Dénomination', 'legal.entity', { placeholder: 'OSA FOOT 7 — Olympique Saint-Affrique' })}
@@ -534,27 +521,6 @@ function renderLegal() {
           placeholder: 'contact@osafoot7.fr',
           hint: 'Laissez vide pour réutiliser l\'e-mail public défini dans « Club & réseaux ».'
         })}
-      </div>
-    </section>
-
-    <section class="a-card">
-      <header class="a-card__head">
-        <div>
-          <h2>Conception et réalisation</h2>
-          <p>Affiché en pied de page et dans les mentions légales.</p>
-        </div>
-      </header>
-      <div class="a-card__body">
-        <div class="a-grid a-grid--2">
-          ${field('Agence', 'credits.agency', { placeholder: 'Triceratops' })}
-          ${field('Site de l\'agence', 'credits.agencyUrl', { placeholder: 'https://agencetriceratops.fr' })}
-        </div>
-        <div class="a-grid a-grid--2">
-          ${field('Responsable', 'credits.manager', { placeholder: 'Silas Clamens Albert' })}
-          ${field('Structure', 'credits.brand', { placeholder: 'SILART' })}
-        </div>
-        ${field('Site de la structure', 'credits.brandUrl', { placeholder: 'https://bysilart.fr' })}
-        <p class="a-hint">Videz le champ « Agence » pour masquer entièrement la mention.</p>
       </div>
     </section>
 
@@ -701,13 +667,6 @@ function refreshCounts() {
   const badge = $('[data-count="messages"]');
   if (badge) badge.dataset.unread = String(unread > 0);
 
-  // Pastille « ! » sur l'onglet Mentions légales tant qu'il manque des informations.
-  const legalBadge = $('[data-count="legal"]');
-  if (legalBadge) {
-    const incomplet = state.draft ? !legalIsComplete(state.draft.legal) : true;
-    legalBadge.hidden = !incomplet;
-    legalBadge.dataset.unread = String(incomplet);
-  }
 }
 
 /* ═════════════════════════════════ Saisie & mutations ══ */
@@ -1044,7 +1003,12 @@ function showStorageBanner() {
 async function loadContent() {
   try {
     const payload = await api('/api/content');
-    state.draft = payload.content ? payload.content : cloneContent(DEFAULT_CONTENT);
+    // Le contenu stocké est fusionné SUR les valeurs par défaut. Sans cela, un
+    // champ ajouté au modèle après le dernier enregistrement arriverait vide
+    // dans le formulaire — et le prochain « Enregistrer » le figerait vide.
+    state.draft = payload.content
+      ? deepMerge(cloneContent(DEFAULT_CONTENT), payload.content)
+      : cloneContent(DEFAULT_CONTENT);
   } catch {
     state.draft = cloneContent(DEFAULT_CONTENT);
   }

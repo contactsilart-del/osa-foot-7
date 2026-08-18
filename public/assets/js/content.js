@@ -24,14 +24,6 @@ export const DEFAULT_CONTENT = {
     copyrightYear: '2026'
   },
 
-  /** Conception et réalisation du site, affichés en pied de page et en mentions légales. */
-  credits: {
-    agency: 'Triceratops',
-    agencyUrl: 'https://agencetriceratops.fr',
-    manager: 'Silas Clamens Albert',
-    brand: 'SILART',
-    brandUrl: 'https://bysilart.fr'
-  },
 
   /**
    * Mentions légales. Les valeurs vides laissent apparaître la mention
@@ -197,4 +189,22 @@ export const DEFAULT_CONTENT = {
 /** Copie profonde sûre (structuredClone n'est pas garanti sur tous les navigateurs cibles). */
 export function cloneContent(value) {
   return JSON.parse(JSON.stringify(value));
+}
+
+/**
+ * Fusion profonde : les valeurs de `patch` écrasent celles de `base`, les clés
+ * absentes de `patch` conservent celles de `base`.
+ *
+ * Indispensable des deux côtés : un champ ajouté au modèle après le dernier
+ * enregistrement doit apparaître rempli, et non pas vide — sinon le prochain
+ * « Enregistrer » le persisterait vide.
+ */
+export function deepMerge(base, patch) {
+  if (Array.isArray(patch)) return cloneContent(patch);
+  if (patch === null || typeof patch !== 'object') return patch === undefined ? base : patch;
+  const out = (base && typeof base === 'object' && !Array.isArray(base)) ? { ...base } : {};
+  for (const [key, value] of Object.entries(patch)) {
+    out[key] = deepMerge(out[key], value);
+  }
+  return out;
 }

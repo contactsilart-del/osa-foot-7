@@ -6,7 +6,7 @@
  * parfaitement fonctionnel même déployé en 100 % statique.
  */
 
-import { DEFAULT_CONTENT, cloneContent } from './content.js';
+import { DEFAULT_CONTENT, cloneContent, deepMerge } from './content.js';
 
 /* ═══════════════════════════════════════════ Utilitaires ══ */
 
@@ -43,17 +43,6 @@ function get(obj, path) {
   return path.split('.').reduce((acc, key) => (acc == null ? undefined : acc[key]), obj);
 }
 
-/** Fusion profonde : les valeurs de `patch` écrasent celles de `base`. */
-function deepMerge(base, patch) {
-  if (Array.isArray(patch)) return cloneContent(patch);
-  if (patch === null || typeof patch !== 'object') return patch === undefined ? base : patch;
-  const out = (base && typeof base === 'object' && !Array.isArray(base)) ? { ...base } : {};
-  for (const [key, value] of Object.entries(patch)) {
-    out[key] = deepMerge(out[key], value);
-  }
-  return out;
-}
-
 const DATE_FULL = new Intl.DateTimeFormat('fr-FR', {
   weekday: 'long', day: 'numeric', month: 'long', year: 'numeric',
   hour: '2-digit', minute: '2-digit'
@@ -66,15 +55,6 @@ function parseDate(value) {
   if (!value) return null;
   const date = new Date(value);
   return Number.isNaN(date.getTime()) ? null : date;
-}
-
-/** « https://www.agencetriceratops.fr/ » → « agencetriceratops.fr ». */
-function domainOf(url) {
-  try {
-    return new URL(url).hostname.replace(/^www\./, '');
-  } catch {
-    return '';
-  }
 }
 
 function capitalize(text) {
@@ -347,9 +327,7 @@ function applyBindings(content) {
     'nextMatch.dateFull': kickoff ? capitalize(DATE_FULL.format(kickoff)) : 'Date à venir',
     'nextMatch.dateLabel': kickoff ? capitalize(DATE_SHORT.format(kickoff)) : 'À venir',
     // L'adresse de contact des mentions légales retombe sur celle du club.
-    'legal.email': content.legal?.email || content.club?.email || '',
-    'credits.agencyDomain': domainOf(content.credits?.agencyUrl),
-    'credits.brandDomain': domainOf(content.credits?.brandUrl)
+    'legal.email': content.legal?.email || content.club?.email || ''
   };
 
   $$('[data-bind]').forEach((el) => {
@@ -358,6 +336,10 @@ function applyBindings(content) {
     if (value === undefined || value === null || value === '') return;
     if (el.tagName === 'IMG') el.src = value;
     else el.textContent = value;
+  });
+
+  $$('[data-bind-row]').forEach((el) => {
+    el.hidden = !String(get(content, el.dataset.bindRow) ?? '').trim();
   });
 
   $$('[data-bind-href]').forEach((el) => {
@@ -386,17 +368,6 @@ function applyBindings(content) {
       .trim().replace(/—\s*$/, '');
   }
 
-  // La mention de conception ne s'affiche que si elle est renseignée.
-  $$('[data-credits]').forEach((el) => {
-    el.hidden = !(content.credits?.agency || content.credits?.manager);
-  });
-
-  // L'avertissement « à compléter » disparaît dès que l'essentiel est renseigné.
-  const warning = $('[data-legal-warning]');
-  if (warning) {
-    const legal = content.legal || {};
-    warning.hidden = Boolean(legal.address && legal.director && (legal.rna || legal.siren));
-  }
 }
 
 /** Résultat d'un match : 'win' | 'draw' | 'loss' | null */

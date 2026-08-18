@@ -72,26 +72,31 @@
     <h1>Mentions légales</h1>
     <p class="updated">Dernière mise à jour : <span data-bind="legal.updated">Janvier 2026</span></p>
 
-    <div class="callout" data-legal-warning>
-      <strong>Informations à compléter.</strong> Les champs marqués
-      « À compléter » ci-dessous se renseignent depuis
-      <a href="/admin/">l'espace d'administration</a>, onglet
-      « Mentions légales ». Cet encadré disparaîtra une fois l'adresse, le
-      responsable de publication et le numéro d'identification saisis.
-    </div>
+    <h2>1. Nature du site</h2>
+    <p>
+      Ce site est un <strong>projet bénévole et sans finalité commerciale</strong>, réalisé
+      par un joueur du club pour partager les résultats, le calendrier et les statistiques
+      de l'équipe. Il ne propose aucun bien ni service à la vente, n'héberge aucune publicité
+      et ne perçoit aucune recette.
+    </p>
+    <p>
+      Conformément à l'article 6-III-2 de la loi n°&nbsp;2004-575 pour la confiance dans
+      l'économie numérique, l'éditeur non professionnel peut se limiter à indiquer
+      publiquement son identité et les coordonnées de son hébergeur.
+    </p>
 
-    <h2>1. Éditeur du site</h2>
+    <h2>2. Éditeur</h2>
     <dl>
-      <dt>Dénomination</dt><dd data-bind="legal.entity">OSA FOOT 7 — Olympique Saint-Affrique</dd>
-      <dt>Statut</dt><dd data-bind="legal.status">Association loi 1901</dd>
-      <dt>Siège social</dt><dd data-bind="legal.address">À compléter</dd>
-      <dt>N° RNA</dt><dd data-bind="legal.rna">À compléter</dd>
-      <dt>N° SIREN</dt><dd data-bind="legal.siren">À compléter</dd>
-      <dt>Directeur de la publication</dt><dd data-bind="legal.director">À compléter</dd>
-      <dt>Contact</dt><dd><a data-bind-mail="legal.email" href="mailto:contact@osafoot7.fr">contact@osafoot7.fr</a></dd>
+      <div data-bind-row="legal.entity"><dt>Dénomination</dt><dd data-bind="legal.entity">OSA FOOT 7 — Olympique Saint-Affrique</dd></div>
+      <div data-bind-row="legal.status"><dt>Statut</dt><dd data-bind="legal.status">Association loi 1901</dd></div>
+      <div data-bind-row="legal.address"><dt>Siège social</dt><dd data-bind="legal.address"></dd></div>
+      <div data-bind-row="legal.rna"><dt>N° RNA</dt><dd data-bind="legal.rna"></dd></div>
+      <div data-bind-row="legal.siren"><dt>N° SIREN</dt><dd data-bind="legal.siren"></dd></div>
+      <div data-bind-row="legal.director"><dt>Responsable de la publication</dt><dd data-bind="legal.director"></dd></div>
+      <div><dt>Contact</dt><dd><a data-bind-mail="legal.email" href="mailto:contact@osafoot7.fr">contact@osafoot7.fr</a></dd></div>
     </dl>
 
-    <h2>2. Hébergement</h2>
+    <h2>3. Hébergement</h2>
     <p>Ce site est hébergé par&nbsp;:</p>
     <dl>
       <dt>Hébergeur</dt><dd>Cloudflare, Inc. (Cloudflare Pages)</dd>
@@ -104,7 +109,7 @@
       les transferts hors Union européenne.
     </p>
 
-    <h2>3. Propriété intellectuelle</h2>
+    <h2>4. Propriété intellectuelle</h2>
     <p>
       L'ensemble des contenus du site (textes, photographies, logo, éléments graphiques et
       code source) est la propriété de l'association <span data-bind="club.name">OSA FOOT 7</span>,
@@ -118,7 +123,7 @@
       rendu sportif des rencontres.
     </p>
 
-    <h2>4. Données personnelles (RGPD)</h2>
+    <h2>5. Données personnelles (RGPD)</h2>
 
     <h3>Données collectées</h3>
     <p>
@@ -155,7 +160,7 @@
       <a href="https://www.cnil.fr" target="_blank" rel="noopener noreferrer">www.cnil.fr</a>.
     </p>
 
-    <h2>5. Cookies et traceurs</h2>
+    <h2>6. Cookies et traceurs</h2>
     <p>
       <strong>Ce site ne dépose aucun cookie publicitaire ni aucun traceur de mesure
       d'audience.</strong> Aucune police de caractères ou bibliothèque externe n'est chargée
@@ -169,7 +174,7 @@
       consentement préalable au sens de l'article 82 de la loi Informatique et Libertés.
     </p>
 
-    <h2>6. Droit à l'image</h2>
+    <h2>7. Droit à l'image</h2>
     <p>
       Les photographies publiées représentent des joueurs et membres de l'association dans
       le cadre de leur activité sportive. Toute personne apparaissant sur une photographie
@@ -178,22 +183,22 @@
       le retrait sera effectué dans les meilleurs délais.
     </p>
 
-    <h2>7. Conception et réalisation</h2>
+    <h2>8. Conception et réalisation</h2>
     <dl>
-      <dt>Conception et développement</dt>
-      <dd>
-        Agence
-        <a data-bind-href="credits.agencyUrl" href="https://agencetriceratops.fr" target="_blank" rel="noopener noreferrer">
-          <span data-bind="credits.agency">Triceratops</span> &mdash; <span data-bind="credits.agencyDomain">agencetriceratops.fr</span>
-        </a>
-      </dd>
-      <dt>Gestion et maintenance</dt>
-      <dd>
-        <span data-bind="credits.manager">Silas Clamens Albert</span>, au nom de
-        <a data-bind-href="credits.brandUrl" href="https://bysilart.fr" target="_blank" rel="noopener noreferrer">
-          <span data-bind="credits.brand">SILART</span> &mdash; <span data-bind="credits.brandDomain">bysilart.fr</span>
-        </a>
-      </dd>
+      <div>
+        <dt>Conception et développement</dt>
+        <dd>
+          Agence
+          <a href="https://agencetriceratops.fr" target="_blank" rel="noopener noreferrer">Triceratops &mdash; agencetriceratops.fr</a>
+        </dd>
+      </div>
+      <div>
+        <dt>Gestion et maintenance</dt>
+        <dd>
+          Silas Clamens Albert, au nom de
+          <a href="https://bysilart.fr" target="_blank" rel="noopener noreferrer">SILART &mdash; bysilart.fr</a>
+        </dd>
+      </div>
     </dl>
     <p>
       Le code source, les feuilles de style et les composants d&rsquo;interface de ce site
@@ -201,7 +206,7 @@
       d&rsquo;utilisation pour ce seul site, &agrave; l&rsquo;exclusion de toute cession de droits.
     </p>
 
-    <h2>8. Responsabilité</h2>
+    <h2>9. Responsabilité</h2>
     <p>
       Les informations publiées (calendrier, résultats, statistiques) sont fournies à titre
       indicatif et mises à jour au mieux des moyens de l'association. Elles ne sauraient
@@ -210,7 +215,7 @@
       éditeurs respectifs.
     </p>
 
-    <h2>9. Droit applicable</h2>
+    <h2>10. Droit applicable</h2>
     <p>
       Les présentes mentions légales sont régies par le droit français. En cas de litige et
       à défaut de résolution amiable, les tribunaux français seront seuls compétents.
@@ -222,13 +227,13 @@
   <div class="shell site-footer__bottom">
     <p>&copy; <span data-bind="club.copyrightYear">2026</span>
        <span data-bind="club.name">OSA FOOT 7</span> — Tous droits réservés.</p>
-    <p class="site-footer__credits" data-credits>
-      Site conçu par
-      <a class="credit-link" data-bind-href="credits.agencyUrl" href="https://agencetriceratops.fr" target="_blank" rel="noopener noreferrer">
-        <span data-bind="credits.agency">Triceratops</span><span class="credit-link__domain" data-bind="credits.agencyDomain">agencetriceratops.fr</span>
-      </a>, géré par <span data-bind="credits.manager">Silas Clamens Albert</span> au nom de
-      <a class="credit-link" data-bind-href="credits.brandUrl" href="https://bysilart.fr" target="_blank" rel="noopener noreferrer">
-        <span data-bind="credits.brand">SILART</span><span class="credit-link__domain" data-bind="credits.brandDomain">bysilart.fr</span>
+    <p class="site-footer__credits">
+      Conçu et développé par
+      <a class="credit-link" href="https://agencetriceratops.fr" target="_blank" rel="noopener noreferrer">
+        Triceratops<span class="credit-link__domain">agencetriceratops.fr</span>
+      </a>, géré par Silas Clamens Albert au nom de
+      <a class="credit-link" href="https://bysilart.fr" target="_blank" rel="noopener noreferrer">
+        SILART<span class="credit-link__domain">bysilart.fr</span>
       </a>.
     </p>
     <p><a href="/">Retour à l'accueil</a></p>
