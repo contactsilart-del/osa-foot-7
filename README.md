@@ -34,7 +34,7 @@ OSA/
 ├─ public/                     ← tout ce qui est publié (build output)
 │  ├─ index.html               ← la page unique
 │  ├─ mentions-legales.html
-│  ├─ favicon.svg · robots.txt · sitemap.xml
+│  ├─ robots.txt · sitemap.xml
 │  ├─ _headers                 ← en-têtes HTTP + CSP + cache
 │  ├─ _routes.json             ← limite les Functions à /api/*
 │  ├─ admin/index.html         ← panel d'administration
