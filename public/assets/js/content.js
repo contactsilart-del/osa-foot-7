@@ -19,9 +19,18 @@ export const DEFAULT_CONTENT = {
     logo: '/img/osa.png',
     email: 'contact@osafoot7.fr',
     address: 'Saint-Affrique (12400)',
-    facebook: 'https://www.facebook.com/',
-    instagram: 'https://www.instagram.com/',
+    facebook: 'https://www.facebook.com/osafoot7',
+    instagram: 'https://www.instagram.com/olympique.saint.affrique/',
     copyrightYear: '2026'
+  },
+
+  /** Conception et réalisation du site, affichés en pied de page et en mentions légales. */
+  credits: {
+    agency: 'Triceratops',
+    agencyUrl: 'https://agencetriceratops.fr',
+    manager: 'Silas Clamens Albert',
+    brand: 'SILART',
+    brandUrl: 'https://bysilart.fr'
   },
 
   /**
@@ -132,11 +141,16 @@ export const DEFAULT_CONTENT = {
 
   calendar: {
     title: 'Calendrier & Résultats',
-    subtitle: "Toutes les journées de la saison en un coup d'œil. Cliquez sur une image pour l'agrandir.",
-    images: [
-      { src: '/img/calendrier1.png', alt: 'Calendrier de la saison — phase aller', caption: 'Phase aller' },
-      { src: '/img/calendrier2.png', alt: 'Calendrier de la saison — phase retour', caption: 'Phase retour' }
-    ]
+    subtitle: "Toutes les journées de la saison en un coup d'œil.",
+    /** Vide → le site affiche l'état « bientôt disponible ». */
+    images: []
+  },
+
+  standings: {
+    title: 'Classement',
+    subtitle: "La position de l'OSA dans la poule, mise à jour après chaque journée.",
+    /** Une ou plusieurs captures du classement, téléversées depuis l'admin. */
+    images: []
   },
 
   stats: {

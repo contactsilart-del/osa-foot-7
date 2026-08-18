@@ -68,6 +68,15 @@ function parseDate(value) {
   return Number.isNaN(date.getTime()) ? null : date;
 }
 
+/** « https://www.agencetriceratops.fr/ » → « agencetriceratops.fr ». */
+function domainOf(url) {
+  try {
+    return new URL(url).hostname.replace(/^www\./, '');
+  } catch {
+    return '';
+  }
+}
+
 function capitalize(text) {
   return text.charAt(0).toUpperCase() + text.slice(1);
 }
@@ -331,7 +340,9 @@ function applyBindings(content) {
     'nextMatch.dateFull': kickoff ? capitalize(DATE_FULL.format(kickoff)) : 'Date à venir',
     'nextMatch.dateLabel': kickoff ? capitalize(DATE_SHORT.format(kickoff)) : 'À venir',
     // L'adresse de contact des mentions légales retombe sur celle du club.
-    'legal.email': content.legal?.email || content.club?.email || ''
+    'legal.email': content.legal?.email || content.club?.email || '',
+    'credits.agencyDomain': domainOf(content.credits?.agencyUrl),
+    'credits.brandDomain': domainOf(content.credits?.brandUrl)
   };
 
   $$('[data-bind]').forEach((el) => {
@@ -367,6 +378,11 @@ function applyBindings(content) {
     document.title = `${content.club?.name || 'OSA FOOT 7'} — ${content.club?.tagline || ''}`
       .trim().replace(/—\s*$/, '');
   }
+
+  // La mention de conception ne s'affiche que si elle est renseignée.
+  $$('[data-credits]').forEach((el) => {
+    el.hidden = !(content.credits?.agency || content.credits?.manager);
+  });
 
   // L'avertissement « à compléter » disparaît dès que l'essentiel est renseigné.
   const warning = $('[data-legal-warning]');
@@ -472,36 +488,64 @@ function openNewsModal(item) {
   `);
 }
 
-function renderCalendar(content) {
-  const grid = $('#calendar-grid');
+/** Métadonnées des deux sections faites d'images téléversées. */
+const IMAGE_SECTIONS = [
+  {
+    key: 'calendar',
+    grid: '#calendar-grid',
+    fallbackAlt: 'Calendrier de la saison',
+    emptyTitle: 'Bientôt disponible',
+    emptyText: "Le calendrier de la saison n'est pas encore paru. Il sera publié ici dès réception."
+  },
+  {
+    key: 'standings',
+    grid: '#standings-grid',
+    fallbackAlt: 'Classement de la poule',
+    emptyTitle: 'Bientôt disponible',
+    emptyText: 'Le classement sera publié ici dès les premières journées disputées.'
+  }
+];
+
+/** État affiché tant qu'une section n'a aucune image. */
+function soonState(title, text) {
+  return `
+    <div class="soon" data-reveal>
+      <span class="soon__icon" aria-hidden="true">
+        <svg viewBox="0 0 24 24"><path d="M12 2a10 10 0 1 0 10 10A10 10 0 0 0 12 2zm0 2a8 8 0 1 1 0 16 8 8 0 0 1 0-16zm-1 3v6l5 3 .8-1.3-4.3-2.5V7H11z"/></svg>
+      </span>
+      <p class="soon__title">${esc(title)}</p>
+      <p class="soon__text">${esc(text)}</p>
+    </div>`;
+}
+
+function renderImageSection(content, section) {
+  const grid = $(section.grid);
   if (!grid) return;
 
-  const images = Array.isArray(content.calendar?.images) ? content.calendar.images : [];
-  if (!images.length) {
-    grid.innerHTML = '<p class="empty">Le calendrier sera publié prochainement.</p>';
-    return;
-  }
+  const images = Array.isArray(content[section.key]?.images) ? content[section.key].images : [];
 
-  grid.innerHTML = images.map((image, index) => `
-    <figure class="calendar-item" data-reveal style="--delay:${index * 90}ms">
-      <button class="calendar-item__zoom" type="button" data-calendar="${index}" aria-label="Agrandir : ${esc(image.caption || image.alt || 'calendrier')}">
-        <img src="${esc(image.src)}" alt="${esc(image.alt || image.caption || 'Calendrier de la saison')}" loading="lazy" decoding="async">
-        <span class="calendar-item__icon" aria-hidden="true">
-          <svg viewBox="0 0 24 24"><path d="M10 2a8 8 0 1 0 4.9 14.3l5.4 5.4 1.4-1.4-5.4-5.4A8 8 0 0 0 10 2zm0 2a6 6 0 1 1 0 12 6 6 0 0 1 0-12zm-1 2v2H7v2h2v2h2v-2h2V8h-2V6H9z"/></svg>
-        </span>
-      </button>
-      ${image.caption ? `<figcaption>${esc(image.caption)}</figcaption>` : ''}
-    </figure>
-  `).join('');
+  grid.innerHTML = images.length
+    ? images.map((image, index) => `
+        <figure class="image-card" data-reveal style="--delay:${index * 90}ms">
+          <button class="image-card__zoom" type="button" data-zoom="${esc(section.key)}" data-index="${index}"
+                  aria-label="Agrandir : ${esc(image.caption || image.alt || section.fallbackAlt)}">
+            <img src="${esc(image.src)}" alt="${esc(image.alt || image.caption || section.fallbackAlt)}" loading="lazy" decoding="async">
+            <span class="image-card__icon" aria-hidden="true">
+              <svg viewBox="0 0 24 24"><path d="M10 2a8 8 0 1 0 4.9 14.3l5.4 5.4 1.4-1.4-5.4-5.4A8 8 0 0 0 10 2zm0 2a6 6 0 1 1 0 12 6 6 0 0 1 0-12zm-1 2v2H7v2h2v2h2v-2h2V8h-2V6H9z"/></svg>
+            </span>
+          </button>
+          ${image.caption ? `<figcaption>${esc(image.caption)}</figcaption>` : ''}
+        </figure>`).join('')
+    : soonState(section.emptyTitle, section.emptyText);
 
   initReveal(grid);
 }
 
-function openCalendarModal(image) {
+function openImageModal(image, fallbackAlt) {
   if (!image) return;
   modal.open(`
     <figure class="modal__figure modal__figure--full">
-      <img src="${esc(image.src)}" alt="${esc(image.alt || image.caption || 'Calendrier')}">
+      <img src="${esc(image.src)}" alt="${esc(image.alt || image.caption || fallbackAlt)}">
     </figure>
     ${image.caption ? `<div class="modal__content"><h2 class="modal__title" id="modal-title">${esc(image.caption)}</h2></div>` : ''}
   `);
@@ -509,7 +553,7 @@ function openCalendarModal(image) {
 
 /**
  * Délégation d'événements branchée une seule fois : les grilles sont
- * ré-générées à chaque rendu, mais les conteneurs, eux, ne changent jamais.
+ * régénérées à chaque rendu, mais leurs conteneurs ne changent jamais.
  */
 function initGridDelegates() {
   $('#news-grid')?.addEventListener('click', (event) => {
@@ -518,10 +562,27 @@ function initGridDelegates() {
     openNewsModal(state.content?.news?.[Number(button.dataset.news)]);
   });
 
-  $('#calendar-grid')?.addEventListener('click', (event) => {
-    const button = event.target.closest('[data-calendar]');
-    if (!button) return;
-    openCalendarModal(state.content?.calendar?.images?.[Number(button.dataset.calendar)]);
+  IMAGE_SECTIONS.forEach((section) => {
+    $(section.grid)?.addEventListener('click', (event) => {
+      const button = event.target.closest('[data-zoom]');
+      if (!button) return;
+      const images = state.content?.[button.dataset.zoom]?.images;
+      openImageModal(images?.[Number(button.dataset.index)], section.fallbackAlt);
+    });
+  });
+
+  // Déroulé du classement complet, au-delà du podium.
+  $('#stats-grid')?.addEventListener('click', (event) => {
+    const toggle = event.target.closest('[data-more]');
+    if (!toggle) return;
+    const card = toggle.closest('.stat-card');
+    const rest = $('.podium--rest', card);
+    const open = card.classList.toggle('is-expanded');
+    toggle.setAttribute('aria-expanded', String(open));
+    rest.setAttribute('aria-hidden', String(!open));
+    $('.podium__more-label', toggle).textContent = open
+      ? 'Réduire'
+      : 'Voir les ' + rest.children.length + ' suivants';
   });
 }
 
@@ -531,19 +592,50 @@ const STAT_ICONS = {
   oops: '<path d="M12 2 1 21h22L12 2zm0 5.6 6.9 11.9H5.1L12 7.6zM11 10v5h2v-5h-2zm0 6v2h2v-2h-2z"/>'
 };
 
+/** Une ligne de classement. `rank` est l'index 0-based. */
+function podiumRow(player, rank, leader, unit) {
+  const value = Number(player.value) || 0;
+  const fill = Math.round((value / leader) * 100);
+  const medal = rank < 3 ? ' podium__row--' + (rank + 1) : '';
+
+  return `
+    <li class="podium__row${medal}">
+      <span class="podium__rank">${rank + 1}</span>
+      <span class="podium__avatar">
+        ${player.photo
+          ? `<img src="${esc(player.photo)}" alt="" loading="lazy" decoding="async" width="120" height="120">`
+          : `<span class="podium__initial" aria-hidden="true">${esc((player.name || '?').charAt(0))}</span>`}
+      </span>
+      <span class="podium__body">
+        <span class="podium__name">${esc(player.name)}</span>
+        <span class="podium__bar"><i style="--fill:${fill}%"></i></span>
+      </span>
+      <span class="podium__value">
+        <b>${esc(value)}</b>
+        <small>${esc(unit || '')}</small>
+      </span>
+    </li>`;
+}
+
 function renderStats(content) {
   const grid = $('#stats-grid');
   if (!grid) return;
 
   const groups = Array.isArray(content.stats?.groups) ? content.stats.groups : [];
   if (!groups.length) {
-    grid.innerHTML = '<p class="empty empty--light">Les statistiques arrivent bientôt.</p>';
+    grid.innerHTML = soonState('Bientôt disponible', 'Les statistiques de la saison seront publiées ici.');
+    initReveal(grid);
     return;
   }
 
   grid.innerHTML = groups.map((group, gIndex) => {
-    const players = Array.isArray(group.players) ? group.players : [];
+    // Toujours du meilleur au moins bon, quel que soit l'ordre de saisie en admin.
+    const players = (Array.isArray(group.players) ? [...group.players] : [])
+      .sort((a, b) => (Number(b.value) || 0) - (Number(a.value) || 0));
     const leader = players.reduce((max, p) => Math.max(max, Number(p.value) || 0), 0) || 1;
+
+    const podium = players.slice(0, 3);
+    const rest = players.slice(3);
 
     return `
       <article class="stat-card stat-card--${esc(group.accent || 'blue')}" data-reveal style="--delay:${gIndex * 110}ms">
@@ -553,25 +645,22 @@ function renderStats(content) {
           </span>
           <h3>${esc(group.title)}</h3>
         </header>
-        <ol class="podium">
-          ${players.map((player, index) => `
-            <li class="podium__row${index === 0 ? ' podium__row--leader' : ''}">
-              <span class="podium__rank">${index + 1}</span>
-              <span class="podium__avatar">
-                ${player.photo
-                  ? `<img src="${esc(player.photo)}" alt="" loading="lazy" decoding="async" width="88" height="88">`
-                  : `<span class="podium__initial" aria-hidden="true">${esc((player.name || '?').charAt(0))}</span>`}
-              </span>
-              <span class="podium__body">
-                <span class="podium__name">${esc(player.name)}</span>
-                <span class="podium__bar"><i style="--fill:${Math.round(((Number(player.value) || 0) / leader) * 100)}%"></i></span>
-              </span>
-              <span class="podium__value">
-                <b>${esc(player.value)}</b>
-                <small>${esc(group.unit || '')}</small>
-              </span>
-            </li>`).join('')}
-        </ol>
+
+        ${players.length ? `
+          <ol class="podium">
+            ${podium.map((p, i) => podiumRow(p, i, leader, group.unit)).join('')}
+          </ol>
+          ${rest.length ? `
+            <div class="podium__wrap">
+              <ol class="podium podium--rest" aria-hidden="true">
+                ${rest.map((p, i) => podiumRow(p, i + 3, leader, group.unit)).join('')}
+              </ol>
+            </div>
+            <button class="podium__more" type="button" data-more aria-expanded="false">
+              <span class="podium__more-label">Voir les ${rest.length} suivants</span>
+              <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 15.4 5.6 9 7 7.6l5 5 5-5L18.4 9z"/></svg>
+            </button>` : ''}
+        ` : '<p class="stat-card__empty">Aucun joueur classe pour l instant.</p>'}
       </article>`;
   }).join('');
 
@@ -673,7 +762,7 @@ function render(content) {
   state.content = content;
   applyBindings(content);
   renderNews(content);
-  renderCalendar(content);
+  IMAGE_SECTIONS.forEach((section) => renderImageSection(content, section));
   renderStats(content);
   startCountdown(content.nextMatch?.kickoff);
 }

@@ -16,8 +16,9 @@
   <meta property="og:locale" content="fr_FR">
   <meta name="twitter:card" content="summary_large_image">
 
-  <link rel="icon" href="/favicon.svg" type="image/svg+xml">
-  <link rel="apple-touch-icon" href="/img/osa.png">
+  <link rel="icon" href="/img/favicon-32.png" sizes="32x32" type="image/png">
+  <link rel="icon" href="/img/favicon-192.png" sizes="192x192" type="image/png">
+  <link rel="apple-touch-icon" href="/img/apple-touch-icon.png">
   <link rel="preload" as="image" href="/img/osa.png" fetchpriority="high">
   <link rel="stylesheet" href="/assets/css/style.css">
 
@@ -54,6 +55,7 @@
         <li><a class="nav__link" href="#accueil">Accueil</a></li>
         <li><a class="nav__link" href="#actus">Actus</a></li>
         <li><a class="nav__link" href="#calendrier">Calendrier</a></li>
+        <li><a class="nav__link" href="#classement">Classement</a></li>
         <li><a class="nav__link" href="#stats">Stats Saison</a></li>
         <li><a class="nav__link" href="#contact">Contact</a></li>
       </ul>
@@ -90,12 +92,11 @@
     <div class="shell hero__inner">
       <p class="eyebrow eyebrow--light" data-reveal>
         <span class="pulse" aria-hidden="true"></span>
-        Prochain match
+        <span data-bind="nextMatch.competition">Championnat UFOLEP</span>
       </p>
 
       <h1 class="hero__title" data-reveal>
-        <span class="hero__title-sub" data-bind="nextMatch.competition">Championnat UFOLEP</span>
-        <span class="hero__title-main">On remet ça<em>.</em></span>
+        <span class="hero__title-main">Prochain match<em>.</em></span>
       </h1>
 
       <div class="fixture" data-reveal>
@@ -155,7 +156,7 @@
     <div class="shell">
       <header class="section__head" data-reveal>
         <p class="eyebrow">Actualités</p>
-        <h2 class="section__title">Les 6 derniers matchs</h2>
+        <h2 class="section__title">Les derniers matchs</h2>
         <p class="section__lead">Résultats, buteurs et récits de nos dernières sorties.</p>
       </header>
 
@@ -174,8 +175,23 @@
         <p class="section__lead" data-bind="calendar.subtitle">Toutes les journées de la saison en un coup d'œil. Cliquez sur une image pour l'agrandir.</p>
       </header>
 
-      <div class="calendar-grid" id="calendar-grid">
+      <div class="image-grid" id="calendar-grid">
         <!-- injecté par app.js -->
+      </div>
+    </div>
+  </section>
+
+  <!-- ═══════════════════════════════════════ CLASSEMENT ══ -->
+  <section class="section section--light" id="classement">
+    <div class="shell">
+      <header class="section__head" data-reveal>
+        <p class="eyebrow">Poule</p>
+        <h2 class="section__title" data-bind="standings.title">Classement</h2>
+        <p class="section__lead" data-bind="standings.subtitle">La position de l'OSA dans la poule, mise &agrave; jour apr&egrave;s chaque journ&eacute;e.</p>
+      </header>
+
+      <div class="image-grid" id="standings-grid">
+        <!-- inject&eacute; par app.js -->
       </div>
     </div>
   </section>
@@ -202,7 +218,7 @@
       <div class="contact">
         <div class="contact__intro" data-reveal>
           <p class="eyebrow">Contact</p>
-          <h2 class="section__title">Envie de nous rejoindre&nbsp;?</h2>
+          <h2 class="section__title">Une question&nbsp;?</h2>
           <p class="section__lead">
             Nouveau joueur, partenaire, ou simple curieux&nbsp;: écris-nous, on répond vite.
           </p>
@@ -301,6 +317,7 @@
         <li><a href="#accueil">Prochain match</a></li>
         <li><a href="#actus">Actualités</a></li>
         <li><a href="#calendrier">Calendrier &amp; Résultats</a></li>
+        <li><a href="#classement">Classement</a></li>
         <li><a href="#stats">Stats Saison</a></li>
       </ul>
     </nav>
@@ -331,6 +348,11 @@
   <div class="shell site-footer__bottom">
     <p>&copy; <span data-bind="club.copyrightYear">2026</span>
        <span data-bind="club.name">OSA FOOT 7</span> — Tous droits réservés.</p>
+    <p class="site-footer__credits" data-credits>
+      Site conçu par <a data-bind-href="credits.agencyUrl" href="#" target="_blank" rel="noopener noreferrer"><span data-bind="credits.agency">Triceratops</span></a>,
+      géré par <span data-bind="credits.manager">Silas Clamens Albert</span> au nom de
+      <a data-bind-href="credits.brandUrl" href="#" target="_blank" rel="noopener noreferrer"><span data-bind="credits.brand">SILART</span></a>.
+    </p>
     <p><a href="/mentions-legales">Mentions légales</a></p>
   </div>
 </footer>

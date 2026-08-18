@@ -199,9 +199,10 @@ Rendez-vous sur `/admin/` et connectez-vous avec `ADMIN_PASSWORD`.
 | **Prochain match** | Équipes, logos, date/heure du coup d'envoi (alimente le compte à rebours), lieu, compétition |
 | **Actualités** | Ajouter / réordonner / supprimer les matchs : titre, score, buteurs, accroche, texte complet, photo |
 | **Calendrier** | Images du calendrier, légendes, textes alternatifs |
-| **Stats saison** | Buteurs, passeurs, CSC : joueurs, valeurs, photos, couleur et icône de chaque colonne |
+| **Classement** | Captures du classement de la poule, téléversées et légendées |
+| **Stats saison** | Buteurs, passeurs, CSC : joueurs, valeurs, photos, couleur et icône de chaque colonne. Les 3 premiers forment le podium, le reste se déroule à la demande |
 | **Club & réseaux** | Nom, logo, e-mail public, adresse, Facebook, Instagram, année du copyright |
-| **Mentions légales** | Dénomination, statut, siège social, RNA/SIREN, directeur de la publication, e-mail légal |
+| **Mentions légales** | Dénomination, statut, siège social, RNA/SIREN, directeur de la publication, e-mail légal, crédits de réalisation |
 | **Médiathèque** | Téléverser des images (glisser-déposer), copier leur chemin, supprimer |
 | **Messages** | Lire, marquer lu/non lu, répondre et supprimer les messages du formulaire |
 
@@ -214,6 +215,10 @@ Rendez-vous sur `/admin/` et connectez-vous avec `ADMIN_PASSWORD`.
   d'origine de `public/assets/js/content.js`.
 - Laisser les **deux** champs de score vides marque un match comme non joué :
   la pastille Victoire / Nul / Défaite disparaît.
+- Les classements sont **triés automatiquement** par valeur décroissante : l'ordre
+  de saisie n'a aucune importance.
+- Une section d'images laissée vide (calendrier, classement) affiche
+  « Bientôt disponible » plutôt qu'un trou dans la page.
 - Les images acceptées sont JPG, PNG, WebP, GIF et AVIF, jusqu'à 5 Mo.
   Le SVG est refusé pour des raisons de sécurité.
 

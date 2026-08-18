@@ -7,7 +7,9 @@
   <meta name="description" content="Mentions légales, hébergement et politique de confidentialité du site de l'OSA FOOT 7.">
   <meta name="robots" content="index, follow">
   <meta name="theme-color" content="#071227">
-  <link rel="icon" href="/favicon.svg" type="image/svg+xml">
+  <link rel="icon" href="/img/favicon-32.png" sizes="32x32" type="image/png">
+  <link rel="icon" href="/img/favicon-192.png" sizes="192x192" type="image/png">
+  <link rel="apple-touch-icon" href="/img/apple-touch-icon.png">
   <link rel="stylesheet" href="/assets/css/style.css">
   <style>
     .legal { padding-block: calc(var(--header-h) + 3.5rem) 5rem; }
@@ -176,7 +178,27 @@
       le retrait sera effectué dans les meilleurs délais.
     </p>
 
-    <h2>7. Responsabilité</h2>
+    <h2>7. Conception et réalisation</h2>
+    <dl>
+      <dt>Conception et développement</dt>
+      <dd>
+        Agence <a data-bind-href="credits.agencyUrl" href="https://agencetriceratops.fr" target="_blank" rel="noopener noreferrer"><span data-bind="credits.agency">Triceratops</span></a>
+        &mdash; <span data-bind="credits.agencyDomain">agencetriceratops.fr</span>
+      </dd>
+      <dt>Gestion et maintenance</dt>
+      <dd>
+        <span data-bind="credits.manager">Silas Clamens Albert</span>, au nom de
+        <a data-bind-href="credits.brandUrl" href="https://bysilart.fr" target="_blank" rel="noopener noreferrer"><span data-bind="credits.brand">SILART</span></a>
+        &mdash; <span data-bind="credits.brandDomain">bysilart.fr</span>
+      </dd>
+    </dl>
+    <p>
+      Le code source, les feuilles de style et les composants d&rsquo;interface de ce site
+      demeurent la propri&eacute;t&eacute; de leur auteur. Leur mise &agrave; disposition vaut licence
+      d&rsquo;utilisation pour ce seul site, &agrave; l&rsquo;exclusion de toute cession de droits.
+    </p>
+
+    <h2>8. Responsabilité</h2>
     <p>
       Les informations publiées (calendrier, résultats, statistiques) sont fournies à titre
       indicatif et mises à jour au mieux des moyens de l'association. Elles ne sauraient
@@ -185,7 +207,7 @@
       éditeurs respectifs.
     </p>
 
-    <h2>8. Droit applicable</h2>
+    <h2>9. Droit applicable</h2>
     <p>
       Les présentes mentions légales sont régies par le droit français. En cas de litige et
       à défaut de résolution amiable, les tribunaux français seront seuls compétents.
@@ -197,6 +219,11 @@
   <div class="shell site-footer__bottom">
     <p>&copy; <span data-bind="club.copyrightYear">2026</span>
        <span data-bind="club.name">OSA FOOT 7</span> — Tous droits réservés.</p>
+    <p class="site-footer__credits" data-credits>
+      Site conçu par <a data-bind-href="credits.agencyUrl" href="#" target="_blank" rel="noopener noreferrer"><span data-bind="credits.agency">Triceratops</span></a>,
+      géré par <span data-bind="credits.manager">Silas Clamens Albert</span> au nom de
+      <a data-bind-href="credits.brandUrl" href="#" target="_blank" rel="noopener noreferrer"><span data-bind="credits.brand">SILART</span></a>.
+    </p>
     <p><a href="/">Retour à l'accueil</a></p>
   </div>
 </footer>

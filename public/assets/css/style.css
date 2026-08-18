@@ -496,15 +496,6 @@ ul, ol { list-style: none; padding: 0; }
 .hero__inner { text-align: center; }
 
 .hero__title { margin-block: 1rem 2.2rem; }
-.hero__title-sub {
-  display: block;
-  font-size: clamp(.82rem, 1.6vw, .98rem);
-  font-weight: 700;
-  letter-spacing: .22em;
-  text-transform: uppercase;
-  color: var(--brand-300);
-  margin-bottom: .55rem;
-}
 .hero__title-main {
   display: block;
   font-size: clamp(2.4rem, 7.5vw, 4.7rem);
@@ -760,18 +751,23 @@ ul, ol { list-style: none; padding: 0; }
   overflow: hidden;
 }
 
-/* ────────────────────────────────────── 8. Calendrier ── */
-.calendar-grid {
+/* ──────────────────────── 8. Calendrier & classement ── */
+/* Ces images sont téléversées par le club : leurs proportions sont
+   inconnues à l'avance. On les affiche donc entières (`contain`) plutôt
+   que recadrées — un tableau de classement tronqué ne servirait à rien. */
+.image-grid {
   display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(min(100%, 340px), 1fr));
+  grid-template-columns: repeat(auto-fit, minmax(min(100%, 320px), 1fr));
   gap: clamp(1.3rem, 3vw, 2.2rem);
-  max-width: 900px;
+  align-items: start;
+  max-width: 960px;
   margin-inline: auto;
 }
 
-.calendar-item {
+.image-card {
   display: grid;
   gap: .85rem;
+  margin: 0;
   padding: .8rem;
   background: var(--surface);
   border: 1px solid var(--line);
@@ -779,33 +775,35 @@ ul, ol { list-style: none; padding: 0; }
   box-shadow: var(--shadow-sm);
   transition: transform var(--t), box-shadow var(--t);
 }
-.calendar-item:hover { transform: translateY(-5px); box-shadow: var(--shadow-lg); }
+.image-card:hover { transform: translateY(-5px); box-shadow: var(--shadow-lg); }
 
-.calendar-item__zoom {
+.image-card__zoom {
   position: relative;
   display: block;
+  width: 100%;
+  padding: 0;
   border-radius: var(--radius);
   overflow: hidden;
   background: var(--bg-soft);
-  aspect-ratio: 210 / 297;
 }
-.calendar-item__zoom img {
-  width: 100%; height: 100%;
-  object-fit: cover;
-  object-position: top center;
-  transition: transform var(--t-slow), filter var(--t);
+.image-card__zoom img {
+  width: 100%;
+  height: auto;
+  max-height: 70svh;
+  object-fit: contain;
+  transition: transform var(--t-slow);
 }
-.calendar-item__zoom::after {
+.image-card__zoom::after {
   content: "";
   position: absolute; inset: 0;
-  background: linear-gradient(180deg, rgba(7, 18, 39, .05), rgba(7, 18, 39, .45));
+  background: linear-gradient(180deg, rgba(7, 18, 39, .04), rgba(7, 18, 39, .38));
   opacity: 0;
   transition: opacity var(--t);
 }
-.calendar-item__zoom:hover img { transform: scale(1.035); }
-.calendar-item__zoom:hover::after { opacity: 1; }
+.image-card__zoom:hover img { transform: scale(1.025); }
+.image-card__zoom:hover::after { opacity: 1; }
 
-.calendar-item__icon {
+.image-card__icon {
   position: absolute;
   left: 50%; top: 50%;
   z-index: 2;
@@ -820,11 +818,11 @@ ul, ol { list-style: none; padding: 0; }
   transition: transform var(--t), opacity var(--t);
   box-shadow: var(--shadow);
 }
-.calendar-item__icon svg { width: 26px; height: 26px; fill: currentColor; }
-.calendar-item__zoom:hover .calendar-item__icon,
-.calendar-item__zoom:focus-visible .calendar-item__icon { opacity: 1; transform: translate(-50%, -50%) scale(1); }
+.image-card__icon svg { width: 26px; height: 26px; fill: currentColor; }
+.image-card__zoom:hover .image-card__icon,
+.image-card__zoom:focus-visible .image-card__icon { opacity: 1; transform: translate(-50%, -50%) scale(1); }
 
-.calendar-item figcaption {
+.image-card figcaption {
   text-align: center;
   font-weight: 800;
   font-size: .92rem;
@@ -833,6 +831,45 @@ ul, ol { list-style: none; padding: 0; }
   color: var(--brand-700);
   padding-bottom: .35rem;
 }
+
+/* État « bientôt disponible » — section sans contenu, mais assumée. */
+.soon {
+  grid-column: 1 / -1;
+  display: grid;
+  justify-items: center;
+  gap: .55rem;
+  max-width: 30rem;
+  margin-inline: auto;
+  padding: clamp(2.2rem, 5vw, 3.2rem) 1.5rem;
+  text-align: center;
+  background: var(--surface);
+  border: 1px dashed var(--line-strong, var(--line));
+  border-radius: var(--radius-lg);
+}
+.soon__icon {
+  display: grid;
+  place-items: center;
+  width: 54px; height: 54px;
+  margin-bottom: .35rem;
+  border-radius: 50%;
+  background: rgba(29, 79, 165, .09);
+  color: var(--brand-600);
+}
+.soon__icon svg { width: 27px; height: 27px; fill: currentColor; }
+.soon__title {
+  font-family: var(--font-display);
+  font-size: 1.15rem;
+  font-weight: 800;
+  letter-spacing: .01em;
+}
+.soon__text { color: var(--muted); font-size: .93rem; max-width: 34ch; }
+
+.section--dark .soon {
+  background: var(--dark-surface);
+  border-color: var(--dark-line);
+}
+.section--dark .soon__icon { background: rgba(255, 255, 255, .09); color: var(--brand-300); }
+.section--dark .soon__text { color: var(--dark-muted); }
 
 /* ──────────────────────────────────────────── 9. Stats ── */
 .stats-grid {
@@ -883,46 +920,73 @@ ul, ol { list-style: none; padding: 0; }
 }
 .stat-card__icon svg { width: 24px; height: 24px; fill: currentColor; }
 
-.podium { display: grid; gap: .85rem; }
+/* Le podium se lit d'un coup d'œil : la 1re place domine visuellement,
+   les 2e et 3e décroissent, le reste du classement se déroule à la demande. */
+.podium { display: grid; gap: .6rem; margin: 0; padding: 0; }
 
 .podium__row {
+  --medal: rgba(255, 255, 255, .28);
+  --avatar: 42px;
+  --value: 1.2rem;
   display: grid;
   grid-template-columns: auto auto 1fr auto;
   align-items: center;
-  gap: .85rem;
-  padding: .7rem .85rem;
+  gap: .8rem;
+  padding: .6rem .8rem;
   border-radius: var(--radius);
   background: rgba(255, 255, 255, .045);
   border: 1px solid transparent;
   transition: background var(--t-fast), border-color var(--t-fast), transform var(--t-fast);
 }
 .podium__row:hover { background: rgba(255, 255, 255, .09); transform: translateX(3px); }
-.podium__row--leader {
-  background: color-mix(in srgb, var(--accent) 14%, transparent);
-  border-color: color-mix(in srgb, var(--accent) 34%, transparent);
+
+.podium__row--1 { --medal: #E9BE4A; --avatar: 58px; --value: 1.95rem; padding: .9rem 1rem; }
+.podium__row--2 { --medal: #C3CDDA; --avatar: 50px; --value: 1.6rem;  padding: .75rem .9rem; }
+.podium__row--3 { --medal: #CE8E52; --avatar: 46px; --value: 1.4rem;  padding: .68rem .85rem; }
+
+.podium__row--1 {
+  background: linear-gradient(100deg, color-mix(in srgb, var(--medal) 20%, transparent), rgba(255, 255, 255, .05));
+  border-color: color-mix(in srgb, var(--medal) 42%, transparent);
+  box-shadow: 0 10px 26px -18px color-mix(in srgb, var(--medal) 80%, transparent);
+}
+.podium__row--2, .podium__row--3 {
+  background: color-mix(in srgb, var(--medal) 9%, rgba(255, 255, 255, .045));
+  border-color: color-mix(in srgb, var(--medal) 24%, transparent);
 }
 
+/* Les trois premiers portent une médaille, les suivants un simple rang. */
 .podium__rank {
-  width: 22px;
+  display: grid;
+  place-items: center;
+  width: 24px; height: 24px;
   font-family: var(--font-display);
-  font-size: .95rem;
+  font-size: .82rem;
   font-weight: 900;
   color: var(--dark-muted);
-  text-align: center;
+  font-variant-numeric: tabular-nums;
 }
-.podium__row--leader .podium__rank { color: var(--accent); }
+.podium__row--1 .podium__rank,
+.podium__row--2 .podium__rank,
+.podium__row--3 .podium__rank {
+  width: 26px; height: 26px;
+  border-radius: 50%;
+  background: var(--medal);
+  color: #10203A;
+  box-shadow: inset 0 -2px 4px rgba(0, 0, 0, .18);
+}
 
 .podium__avatar {
   display: grid;
   place-items: center;
-  width: 46px; height: 46px;
+  width: var(--avatar); height: var(--avatar);
   border-radius: 50%;
   overflow: hidden;
   background: rgba(255, 255, 255, .12);
-  border: 2px solid color-mix(in srgb, var(--accent) 50%, transparent);
+  border: 2px solid var(--medal);
+  transition: width var(--t), height var(--t);
 }
 .podium__avatar img { width: 100%; height: 100%; object-fit: cover; }
-.podium__initial { font-weight: 900; color: #fff; }
+.podium__initial { font-weight: 900; color: #fff; font-size: calc(var(--avatar) * .38); }
 
 .podium__body { display: grid; gap: .38rem; min-width: 0; }
 .podium__name {
@@ -933,6 +997,8 @@ ul, ol { list-style: none; padding: 0; }
   overflow: hidden;
   text-overflow: ellipsis;
 }
+.podium__row--1 .podium__name { font-size: 1.12rem; }
+
 .podium__bar {
   display: block;
   height: 5px;
@@ -948,16 +1014,26 @@ ul, ol { list-style: none; padding: 0; }
   background: linear-gradient(90deg, var(--accent), color-mix(in srgb, var(--accent) 45%, #fff));
   animation: grow 1s var(--ease) both;
 }
+.podium__row--1 .podium__bar i,
+.podium__row--2 .podium__bar i,
+.podium__row--3 .podium__bar i {
+  background: linear-gradient(90deg, var(--medal), color-mix(in srgb, var(--medal) 50%, #fff));
+}
 @keyframes grow { from { width: 0; } }
 
-.podium__value { text-align: right; line-height: 1.1; }
+.podium__value { text-align: right; line-height: 1.05; }
 .podium__value b {
   display: block;
   font-family: var(--font-display);
-  font-size: 1.5rem;
+  font-size: var(--value);
   font-weight: 900;
   color: var(--accent);
+  font-variant-numeric: tabular-nums;
+  transition: font-size var(--t);
 }
+.podium__row--1 .podium__value b,
+.podium__row--2 .podium__value b,
+.podium__row--3 .podium__value b { color: var(--medal); }
 .podium__value small {
   font-size: .62rem;
   font-weight: 700;
@@ -965,6 +1041,37 @@ ul, ol { list-style: none; padding: 0; }
   text-transform: uppercase;
   color: var(--dark-muted);
 }
+
+/* Déroulé du reste du classement : grid-template-rows animable. */
+.podium__wrap {
+  display: grid;
+  grid-template-rows: 0fr;
+  transition: grid-template-rows .42s var(--ease);
+}
+.stat-card.is-expanded .podium__wrap { grid-template-rows: 1fr; }
+.podium--rest { min-height: 0; overflow: hidden; padding-top: .6rem; }
+
+.podium__more {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: .45rem;
+  width: 100%;
+  padding: .6rem;
+  border-radius: var(--radius);
+  border: 1px solid var(--dark-line);
+  background: rgba(255, 255, 255, .04);
+  color: var(--dark-muted);
+  font-size: .84rem;
+  font-weight: 800;
+  letter-spacing: .04em;
+  transition: background var(--t-fast), color var(--t-fast), border-color var(--t-fast);
+}
+.podium__more svg { width: 17px; height: 17px; fill: currentColor; transition: transform var(--t); }
+.podium__more:hover { background: rgba(255, 255, 255, .09); color: #fff; border-color: var(--dark-line); }
+.stat-card.is-expanded .podium__more svg { transform: rotate(180deg); }
+
+.stat-card__empty { color: var(--dark-muted); font-size: .92rem; text-align: center; padding: 1rem 0; }
 
 /* ────────────────────────────────────────── 10. Contact ── */
 .contact {
@@ -1146,6 +1253,19 @@ ul, ol { list-style: none; padding: 0; }
   font-size: .85rem;
   color: var(--dark-muted);
 }
+.site-footer__credits {
+  flex-basis: 100%;
+  order: 3;
+  padding-top: .9rem;
+  margin-top: .3rem;
+  border-top: 1px solid rgba(255, 255, 255, .07);
+  font-size: .8rem;
+  color: rgba(159, 178, 212, .75);
+  text-align: center;
+}
+.site-footer__credits a { color: var(--brand-300); font-weight: 700; text-decoration: none; }
+.site-footer__credits a:hover { color: #fff; text-decoration: underline; }
+
 .site-footer__bottom a { text-decoration: underline; }
 .site-footer__bottom a:hover { color: #fff; }
 
@@ -1360,6 +1480,11 @@ ul, ol { list-style: none; padding: 0; }
   .countdown__label { font-size: .55rem; letter-spacing: .1em; }
 
   .form__row { grid-template-columns: 1fr; }
+
+  .podium__row { gap: .6rem; padding: .55rem .6rem; }
+  .podium__row--1 { --avatar: 50px; --value: 1.6rem; }
+  .podium__row--2 { --avatar: 44px; --value: 1.35rem; }
+  .podium__row--3 { --avatar: 42px; --value: 1.25rem; }
 
   .site-footer__grid { grid-template-columns: 1fr; }
   .site-footer__bottom { justify-content: center; text-align: center; }

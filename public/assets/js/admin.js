@@ -234,7 +234,8 @@ function repeatHead(listPath, index, label) {
 const TABS = {
   match:    { title: 'Prochain match', render: renderMatch },
   news:     { title: 'Actualités', render: renderNews },
-  calendar: { title: 'Calendrier', render: renderCalendar },
+  calendar: { title: 'Calendrier', render: () => renderImageSection('calendar') },
+  standings: { title: 'Classement', render: () => renderImageSection('standings') },
   stats:    { title: 'Stats saison', render: renderStats },
   club:     { title: 'Club & réseaux', render: renderClub },
   legal:    { title: 'Mentions légales', render: renderLegal },
@@ -326,37 +327,59 @@ function newsItem(item, index) {
     </article>`;
 }
 
-function renderCalendar() {
-  const images = state.draft.calendar?.images || [];
+/** Les deux sections faites d'images téléversées partagent le même éditeur. */
+const IMAGE_SECTIONS = {
+  calendar: {
+    label: 'calendrier',
+    heading: 'Section calendrier',
+    listTitle: 'Images du calendrier',
+    addLabel: '+ Ajouter une image',
+    captionExample: 'Phase aller',
+    empty: "Aucune image. Le site affiche « Bientôt disponible » à la place — c'est volontaire tant que le calendrier n'est pas paru."
+  },
+  standings: {
+    label: 'classement',
+    heading: 'Section classement',
+    listTitle: 'Images du classement',
+    addLabel: '+ Ajouter une capture',
+    captionExample: 'Poule B — 6e journée',
+    empty: "Aucune image. Le site affiche « Bientôt disponible » à la place. Téléversez une capture du classement depuis l'onglet Médiathèque, puis ajoutez-la ici."
+  }
+};
+
+function renderImageSection(key) {
+  const meta = IMAGE_SECTIONS[key];
+  const images = state.draft[key]?.images || [];
+
   return `
     <section class="a-card">
       <header class="a-card__head">
-        <div><h2>Section calendrier</h2><p>Titre, sous-titre et images affichées.</p></div>
+        <div><h2>${esc(meta.heading)}</h2><p>Titre et sous-titre affichés au-dessus des images.</p></div>
       </header>
       <div class="a-card__body">
-        ${field('Titre de la section', 'calendar.title')}
-        ${field('Sous-titre', 'calendar.subtitle', { type: 'textarea' })}
+        ${field('Titre de la section', `${key}.title`)}
+        ${field('Sous-titre', `${key}.subtitle`, { type: 'textarea' })}
       </div>
     </section>
 
     <section class="a-card">
       <header class="a-card__head">
-        <div><h2>Images du calendrier</h2><p>${images.length} image${images.length > 1 ? 's' : ''}.</p></div>
-        <button class="a-btn a-btn--primary a-btn--sm" type="button" data-add="calendar">+ Ajouter une image</button>
+        <div><h2>${esc(meta.listTitle)}</h2><p>${images.length} image${images.length > 1 ? 's' : ''}.</p></div>
+        <button class="a-btn a-btn--primary a-btn--sm" type="button" data-add="images" data-target="${esc(key)}.images">${esc(meta.addLabel)}</button>
       </header>
       <div class="a-card__body">
         ${images.length ? `<div class="repeat">${images.map((image, index) => `
           <article class="repeat__item">
-            ${repeatHead('calendar.images', index, image.caption || image.src || 'Image')}
+            ${repeatHead(`${key}.images`, index, image.caption || image.src || 'Image')}
             <div class="repeat__body">
-              ${imageField('Fichier', `calendar.images.${index}.src`)}
+              ${imageField('Fichier', `${key}.images.${index}.src`)}
               <div class="a-grid a-grid--2">
-                ${field('Légende', `calendar.images.${index}.caption`, { placeholder: 'Phase aller' })}
-                ${field('Texte alternatif', `calendar.images.${index}.alt`, { hint: 'Décrit l\'image pour les lecteurs d\'écran.' })}
+                ${field('Légende', `${key}.images.${index}.caption`, { placeholder: meta.captionExample })}
+                ${field('Texte alternatif', `${key}.images.${index}.alt`, { hint: "Décrit l'image pour les lecteurs d'écran." })}
               </div>
             </div>
           </article>`).join('')}</div>`
-          : '<p class="empty-state">Aucune image de calendrier.</p>'}
+          : `<p class="empty-state">${esc(meta.empty)}</p>`}
       </div>
     </section>`;
 }
@@ -516,6 +539,27 @@ function renderLegal() {
 
     <section class="a-card">
       <header class="a-card__head">
+        <div>
+          <h2>Conception et réalisation</h2>
+          <p>Affiché en pied de page et dans les mentions légales.</p>
+        </div>
+      </header>
+      <div class="a-card__body">
+        <div class="a-grid a-grid--2">
+          ${field('Agence', 'credits.agency', { placeholder: 'Triceratops' })}
+          ${field('Site de l\'agence', 'credits.agencyUrl', { placeholder: 'https://agencetriceratops.fr' })}
+        </div>
+        <div class="a-grid a-grid--2">
+          ${field('Responsable', 'credits.manager', { placeholder: 'Silas Clamens Albert' })}
+          ${field('Structure', 'credits.brand', { placeholder: 'SILART' })}
+        </div>
+        ${field('Site de la structure', 'credits.brandUrl', { placeholder: 'https://bysilart.fr' })}
+        <p class="a-hint">Videz le champ « Agence » pour masquer entièrement la mention.</p>
+      </div>
+    </section>
+
+    <section class="a-card">
+      <header class="a-card__head">
         <div><h2>Le reste de la page</h2></div>
       </header>
       <div class="a-card__body">
@@ -645,6 +689,7 @@ function refreshCounts() {
   const counts = {
     news: (state.draft?.news || []).length,
     calendar: (state.draft?.calendar?.images || []).length,
+    standings: (state.draft?.standings?.images || []).length,
     media: state.media.length,
     messages: state.messages.length
   };
@@ -715,7 +760,7 @@ const BLANK = {
     id: '', title: 'Nouveau match', excerpt: '', body: '', image: '',
     competition: '', opponent: '', venue: 'home', score: null, scorers: [], date: ''
   }),
-  calendarImage: () => ({ src: '', alt: '', caption: '' }),
+  image: () => ({ src: '', alt: '', caption: '' }),
   statGroup: () => ({ id: '', title: 'Nouveau classement', unit: 'buts', accent: 'blue', icon: 'ball', players: [] }),
   player: () => ({ name: 'Nouveau joueur', photo: '', value: 0 })
 };
@@ -729,8 +774,9 @@ function onPanelClick(event) {
     state.draft.news.unshift(BLANK.news());
     return renderTab();
   }
-  if (target.dataset.add === 'calendar') {
-    (state.draft.calendar.images ||= []).push(BLANK.calendarImage());
+  if (target.dataset.add === 'images') {
+    const list = getPath(state.draft, target.dataset.target);
+    if (Array.isArray(list)) list.push(BLANK.image());
     return renderTab();
   }
   if (target.dataset.add === 'stat-group') {
