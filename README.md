@@ -32,7 +32,8 @@ le calendrier, les statistiques et les photos — sans toucher au code.
 ```
 OSA/
 ├─ public/                     ← tout ce qui est publié (build output)
-│  ├─ index.html               ← la page unique
+│  ├─ index.html               ← la page d'accueil
+│  ├─ effectif.html            ← fiches des joueurs
 │  ├─ mentions-legales.html
 │  ├─ robots.txt · sitemap.xml
 │  ├─ _headers                 ← en-têtes HTTP + CSP + cache
@@ -43,6 +44,7 @@ OSA/
 │  │  ├─ css/admin.css         ← administration
 │  │  └─ js/
 │  │     ├─ content.js         ← contenu par défaut (source de vérité initiale)
+│  │     ├─ squad.js           ← cartes et fiches de l'effectif
 │  │     ├─ app.js             ← logique du site public
 │  │     └─ admin.js           ← logique de l'administration
 │  └─ img/                     ← photos, logos, calendriers (optimisés)
@@ -198,6 +200,7 @@ Rendez-vous sur `/admin/` et connectez-vous avec `ADMIN_PASSWORD`.
 |---|---|
 | **Prochain match** | Équipes, logos, date/heure du coup d'envoi (alimente le compte à rebours), lieu, compétition |
 | **Actualités** | Ajouter / réordonner / supprimer les matchs : titre, score, buteurs, accroche, texte complet, photo |
+| **Effectif** | Fiches de joueurs : photo, identité, âge, nationalité, poste, année d'arrivée, étoiles mauvais pied et gestes techniques, 6 notes sur 99, descriptif, valeur marchande |
 | **Calendrier** | Images du calendrier, légendes, textes alternatifs |
 | **Classement** | Captures du classement de la poule, téléversées et légendées |
 | **Stats saison** | Buteurs, passeurs, CSC : joueurs, valeurs, photos, couleur et icône de chaque colonne. Les 3 premiers forment le podium, le reste se déroule à la demande |
@@ -219,6 +222,10 @@ Rendez-vous sur `/admin/` et connectez-vous avec `ADMIN_PASSWORD`.
   de saisie n'a aucune importance.
 - Une section d'images laissée vide (calendrier, classement) affiche
   « Bientôt disponible » plutôt qu'un trou dans la page.
+- La **note générale** d'un joueur n'est pas saisie : c'est la moyenne des six
+  notes, recalculée à l'affichage.
+- Chaque fiche a une adresse partageable : `/effectif#joueur-keks`. Le bandeau
+  défilant de l'accueil pointe dessus, et l'ancre s'efface à la fermeture.
 - Les images acceptées sont JPG, PNG, WebP, GIF et AVIF, jusqu'à 5 Mo.
   Le SVG est refusé pour des raisons de sécurité.
 

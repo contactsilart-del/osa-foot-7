@@ -57,6 +57,7 @@
       <ul class="nav__list">
         <li><a class="nav__link" href="#accueil">Accueil</a></li>
         <li><a class="nav__link" href="#actus">Actus</a></li>
+        <li><a class="nav__link" href="/effectif">Effectif</a></li>
         <li><a class="nav__link" href="#calendrier">Calendrier</a></li>
         <li><a class="nav__link" href="#classement">Classement</a></li>
         <li><a class="nav__link" href="#stats">Stats Saison</a></li>
@@ -166,6 +167,29 @@
       <div class="news-grid" id="news-grid">
         <!-- injecté par app.js -->
       </div>
+    </div>
+  </section>
+
+  <!-- ═══════════════════════════════════════════ EFFECTIF ══ -->
+  <section class="section section--dark" id="effectif-apercu">
+    <div class="section__bg" aria-hidden="true"><span class="hero__glow hero__glow--c"></span></div>
+
+    <div class="shell">
+      <header class="section__head" data-reveal>
+        <p class="eyebrow eyebrow--light">Effectif</p>
+        <h2 class="section__title" data-bind="squad.title">L&rsquo;effectif</h2>
+        <p class="section__lead" data-bind="squad.subtitle">Les joueurs qui font vivre l&rsquo;OSA cette saison.</p>
+      </header>
+    </div>
+
+    <div class="marquee" id="squad-strip">
+      <!-- injecté par app.js -->
+    </div>
+
+    <div class="shell squad-cta" data-reveal>
+      <a class="btn btn--primary" href="/effectif">Voir tout l&rsquo;effectif
+        <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M13 5l7 7-7 7v-4H4v-6h9V5z"/></svg>
+      </a>
     </div>
   </section>
 
@@ -319,6 +343,7 @@
       <ul>
         <li><a href="#accueil">Prochain match</a></li>
         <li><a href="#actus">Actualités</a></li>
+        <li><a href="/effectif">Effectif</a></li>
         <li><a href="#calendrier">Calendrier &amp; Résultats</a></li>
         <li><a href="#classement">Classement</a></li>
         <li><a href="#stats">Stats Saison</a></li>

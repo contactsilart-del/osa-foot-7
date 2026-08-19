@@ -131,6 +131,109 @@ export const DEFAULT_CONTENT = {
     }
   ],
 
+  /**
+   * Effectif. Toutes les valeurs ci-dessous sont des repères de départ,
+   * destinés à être ajustés depuis l'onglet « Effectif » de l'administration :
+   * l'âge est laissé à 0 (la ligne se masque alors), et les notes sont des
+   * estimations, pas des mesures.
+   */
+  squad: {
+    title: "L'effectif",
+    subtitle: 'Les joueurs qui font vivre l\'OSA cette saison.',
+    players: [
+      {
+        id: 'keks',
+        firstName: 'Keks', lastName: '',
+        photo: '/img/keks.jpg',
+        age: 0, nationality: 'France', position: 'ATT', since: 2022,
+        weakFoot: 3, skillMoves: 3,
+        ratings: { pace: 78, dribbling: 74, shooting: 84, passing: 66, defending: 40, physical: 72 },
+        description: "Le renard des surfaces. Toujours au bon endroit au bon moment : meilleur buteur du groupe, avec un sens du placement qui fait la différence dans les seize mètres.",
+        marketValue: '240 000 €'
+      },
+      {
+        id: 'silas',
+        firstName: 'Silas', lastName: 'Clamens Albert',
+        photo: '/img/silas.jpg',
+        age: 0, nationality: 'France', position: 'MIL', since: 2021,
+        weakFoot: 4, skillMoves: 4,
+        ratings: { pace: 74, dribbling: 79, shooting: 70, passing: 81, defending: 58, physical: 64 },
+        description: "Relayeur créatif, à l'aise des deux pieds. Casse les lignes par la passe et se projette volontiers pour finir l'action.",
+        marketValue: '210 000 €'
+      },
+      {
+        id: 'claude',
+        firstName: 'Claude', lastName: '',
+        photo: '/img/claude.jpg',
+        age: 0, nationality: 'France', position: 'ATT', since: 2023,
+        weakFoot: 3, skillMoves: 3,
+        ratings: { pace: 80, dribbling: 73, shooting: 76, passing: 63, defending: 38, physical: 66 },
+        description: "Attaquant de profondeur. Prend systématiquement l'espace dans le dos de la défense et pèse sur les derniers défenseurs.",
+        marketValue: '185 000 €'
+      },
+      {
+        id: 'vale',
+        firstName: 'Valé', lastName: '',
+        photo: '/img/val.jpg',
+        age: 0, nationality: 'France', position: 'MIL', since: 2020,
+        weakFoot: 4, skillMoves: 3,
+        ratings: { pace: 69, dribbling: 75, shooting: 64, passing: 84, defending: 62, physical: 61 },
+        description: "Le métronome de l'entrejeu. Meilleur passeur de la saison, il dicte le tempo et trouve toujours la solution la plus simple.",
+        marketValue: '225 000 €'
+      },
+      {
+        id: 'noan',
+        firstName: 'Noan', lastName: '',
+        photo: '/img/noan.jpg',
+        age: 0, nationality: 'France', position: 'MIL', since: 2023,
+        weakFoot: 3, skillMoves: 4,
+        ratings: { pace: 82, dribbling: 78, shooting: 68, passing: 74, defending: 52, physical: 58 },
+        description: "Ailier percutant, très difficile à cadrer en un contre un. Sa vitesse déséquilibre les blocs bas.",
+        marketValue: '195 000 €'
+      },
+      {
+        id: 'joris',
+        firstName: 'Joris', lastName: '',
+        photo: '/img/joris.jpg',
+        age: 0, nationality: 'France', position: 'ATT', since: 2022,
+        weakFoot: 2, skillMoves: 3,
+        ratings: { pace: 77, dribbling: 71, shooting: 79, passing: 65, defending: 41, physical: 69 },
+        description: "Buteur opportuniste, auteur d'un doublé en coupe. Frappe sans se poser de questions dès que l'angle s'ouvre.",
+        marketValue: '175 000 €'
+      },
+      {
+        id: 'pierre',
+        firstName: 'Pierre', lastName: '',
+        photo: '/img/pierre.jpg',
+        age: 0, nationality: 'France', position: 'DEF', since: 2019,
+        weakFoot: 2, skillMoves: 2,
+        ratings: { pace: 62, dribbling: 55, shooting: 45, passing: 64, defending: 80, physical: 78 },
+        description: "Patron de la défense, présent depuis les débuts de l'équipe. Un CSC au compteur, et tout le vestiaire qui le lui rappelle.",
+        marketValue: '160 000 €'
+      },
+      {
+        id: 'samy',
+        firstName: 'Samy', lastName: '',
+        photo: '',
+        age: 0, nationality: 'France', position: 'MIL', since: 2024,
+        weakFoot: 3, skillMoves: 3,
+        ratings: { pace: 72, dribbling: 70, shooting: 66, passing: 72, defending: 60, physical: 63 },
+        description: "Milieu polyvalent, capable de dépanner à tous les postes de l'entrejeu.",
+        marketValue: '120 000 €'
+      },
+      {
+        id: 'julien',
+        firstName: 'Julien', lastName: '',
+        photo: '',
+        age: 0, nationality: 'France', position: 'DEF', since: 2024,
+        weakFoot: 2, skillMoves: 2,
+        ratings: { pace: 66, dribbling: 54, shooting: 50, passing: 61, defending: 74, physical: 73 },
+        description: "Défenseur solide sur l'homme, qui n'hésite pas à monter sur coup de pied arrêté.",
+        marketValue: '110 000 €'
+      }
+    ]
+  },
+
   calendar: {
     title: 'Calendrier & Résultats',
     subtitle: "Toutes les journées de la saison en un coup d'œil.",

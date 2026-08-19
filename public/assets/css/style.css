@@ -1301,7 +1301,310 @@ ul, ol { list-style: none; padding: 0; }
 .site-footer__bottom a { text-decoration: underline; }
 .site-footer__bottom a:hover { color: #fff; }
 
-/* ────────────────────────────────────── 12. Modale & toast ── */
+/* ────────────────────────────────────────── 12. Effectif ── */
+
+/* Carte de joueur — inspirée des cartes de jeu, sans en copier la maquette :
+   note générale colorée, photo ronde, accent lié au poste. */
+.player-card {
+  --position-accent: var(--brand-400);
+  --overall-color: var(--brand-400);
+  position: relative;
+  display: grid;
+  justify-items: center;
+  gap: .55rem;
+  width: 100%;
+  padding: 1.1rem 1rem 1.3rem;
+  border-radius: var(--radius-lg);
+  background:
+    radial-gradient(120% 70% at 50% 0%, color-mix(in srgb, var(--position-accent) 22%, transparent), transparent 70%),
+    linear-gradient(180deg, rgba(255, 255, 255, .09), rgba(255, 255, 255, .03));
+  border: 1px solid var(--dark-line);
+  color: var(--dark-ink);
+  text-align: center;
+  overflow: hidden;
+  transition: transform var(--t), border-color var(--t), box-shadow var(--t);
+}
+.player-card::after {
+  content: "";
+  position: absolute;
+  inset: auto 0 0 0;
+  height: 3px;
+  background: var(--position-accent);
+  opacity: .8;
+}
+.player-card:hover,
+.player-card:focus-visible {
+  transform: translateY(-6px);
+  border-color: color-mix(in srgb, var(--position-accent) 55%, transparent);
+  box-shadow: 0 26px 50px -28px color-mix(in srgb, var(--position-accent) 90%, transparent);
+}
+
+.player-card__top {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  width: 100%;
+  gap: .5rem;
+}
+.player-card__overall {
+  font-family: var(--font-display);
+  font-size: 1.75rem;
+  font-weight: 900;
+  line-height: 1;
+  color: var(--overall-color);
+  font-variant-numeric: tabular-nums;
+  text-shadow: 0 2px 10px color-mix(in srgb, var(--overall-color) 55%, transparent);
+}
+.player-card__position {
+  padding: .18rem .55rem;
+  border-radius: 999px;
+  background: color-mix(in srgb, var(--position-accent) 22%, transparent);
+  border: 1px solid color-mix(in srgb, var(--position-accent) 45%, transparent);
+  color: var(--position-accent);
+  font-size: .64rem;
+  font-weight: 900;
+  letter-spacing: .1em;
+  text-transform: uppercase;
+}
+
+.player-avatar {
+  display: grid;
+  place-items: center;
+  border-radius: 50%;
+  overflow: hidden;
+  background: rgba(255, 255, 255, .1);
+  border: 3px solid color-mix(in srgb, var(--position-accent) 60%, transparent);
+  flex: none;
+}
+.player-avatar img { width: 100%; height: 100%; object-fit: cover; }
+.player-avatar__initials {
+  font-family: var(--font-display);
+  font-weight: 900;
+  color: rgba(255, 255, 255, .82);
+}
+.player-avatar--card { width: clamp(88px, 22vw, 108px); aspect-ratio: 1; }
+.player-avatar--card .player-avatar__initials { font-size: 2rem; }
+
+.player-card__identity { display: grid; gap: .05rem; line-height: 1.1; }
+.player-card__first { font-size: .82rem; color: var(--dark-muted); }
+.player-card__last {
+  font-family: var(--font-display);
+  font-size: 1.05rem;
+  font-weight: 900;
+  letter-spacing: .02em;
+  text-transform: uppercase;
+}
+/* Sans nom de famille, le prénom devient le nom affiché. */
+.player-card__last:empty { display: none; }
+.player-card__identity:has(.player-card__last:empty) .player-card__first {
+  font-family: var(--font-display);
+  font-size: 1.05rem;
+  font-weight: 900;
+  letter-spacing: .02em;
+  text-transform: uppercase;
+  color: var(--dark-ink);
+}
+
+.player-card__meta {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: .2rem .6rem;
+  font-size: .76rem;
+  color: var(--dark-muted);
+}
+.player-card__meta span + span::before { content: "· "; }
+
+/* Grille de la page Effectif */
+.squad-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(min(100%, 190px), 1fr));
+  gap: clamp(.9rem, 2.2vw, 1.5rem);
+}
+
+/* ── Bandeau défilant de la page d'accueil ── */
+.marquee {
+  position: relative;
+  margin-top: clamp(1.5rem, 4vw, 2.5rem);
+  overflow: hidden;
+  -webkit-mask-image: linear-gradient(90deg, transparent, #000 5%, #000 95%, transparent);
+  mask-image: linear-gradient(90deg, transparent, #000 5%, #000 95%, transparent);
+}
+/* L'écart est porté par les cartes, pas par `gap` : avec `gap`, la piste
+   mesure 2N cartes + (2N−1) écarts, et un décalage de −50 % tomberait une
+   demi-gouttière trop loin — la boucle sauterait à chaque tour. */
+.marquee__track {
+  display: flex;
+  width: max-content;
+  animation: marquee var(--marquee-duration, 60s) linear infinite;
+}
+.marquee__track > * { margin-right: 1rem; flex: none; }
+.marquee:hover .marquee__track,
+.marquee:focus-within .marquee__track { animation-play-state: paused; }
+@keyframes marquee { to { transform: translateX(-50%); } }
+
+.player-card--compact { width: 168px; padding: .9rem .8rem 1.05rem; }
+.player-card--compact .player-avatar--card { width: 76px; }
+.player-card--compact .player-card__overall { font-size: 1.45rem; }
+.player-card--compact .player-card__last,
+.player-card--compact .player-card__identity:has(.player-card__last:empty) .player-card__first { font-size: .95rem; }
+
+.squad-cta { display: flex; justify-content: center; margin-top: clamp(1.6rem, 4vw, 2.4rem); }
+
+/* Sans animation : le bandeau devient une zone que l'on fait défiler à la main. */
+@media (prefers-reduced-motion: reduce) {
+  .marquee { overflow-x: auto; }
+  .marquee__track { animation: none; width: auto; }
+}
+
+/* ── Profil détaillé ── */
+.player-profile { --position-accent: var(--brand-400); --overall-color: var(--brand-400); }
+
+.player-profile__head {
+  display: flex;
+  align-items: center;
+  gap: clamp(1rem, 3vw, 1.6rem);
+  padding: clamp(1.4rem, 3.5vw, 2rem);
+  background:
+    radial-gradient(90% 120% at 0% 0%, color-mix(in srgb, var(--position-accent) 24%, transparent), transparent 65%),
+    linear-gradient(135deg, var(--brand-800), var(--dark-bg));
+  color: var(--dark-ink);
+}
+.player-avatar--profile { width: clamp(84px, 20vw, 116px); aspect-ratio: 1; }
+.player-avatar--profile .player-avatar__initials { font-size: 2.2rem; }
+
+.player-profile__title { display: grid; gap: .25rem; min-width: 0; }
+.player-profile__position {
+  font-size: .7rem;
+  font-weight: 900;
+  letter-spacing: .14em;
+  text-transform: uppercase;
+  color: var(--position-accent);
+}
+.player-profile__title .modal__title { color: #fff; font-size: clamp(1.35rem, 3.5vw, 1.95rem); }
+.player-profile__overall { display: flex; align-items: baseline; gap: .5rem; margin-top: .2rem; }
+.player-profile__overall b {
+  font-family: var(--font-display);
+  font-size: 1.9rem;
+  font-weight: 900;
+  color: var(--overall-color);
+  font-variant-numeric: tabular-nums;
+}
+.player-profile__overall small {
+  font-size: .68rem;
+  font-weight: 700;
+  letter-spacing: .12em;
+  text-transform: uppercase;
+  color: var(--dark-muted);
+}
+
+.player-profile__body { padding: clamp(1.3rem, 3.5vw, 2rem); display: grid; gap: 1.5rem; }
+
+.player-facts {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(9rem, 1fr));
+  gap: .9rem;
+  margin: 0;
+}
+.player-facts div { display: grid; gap: .1rem; }
+.player-facts dt {
+  font-size: .68rem;
+  font-weight: 800;
+  letter-spacing: .12em;
+  text-transform: uppercase;
+  color: var(--muted);
+}
+.player-facts dd { margin: 0; font-weight: 700; color: var(--ink); font-size: .95rem; }
+
+.player-skills {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(11rem, 1fr));
+  gap: .8rem;
+  padding: .9rem 1.1rem;
+  border-radius: var(--radius);
+  background: var(--bg-soft);
+}
+.player-skills__item { display: grid; gap: .35rem; }
+.player-skills__item > span {
+  font-size: .68rem;
+  font-weight: 800;
+  letter-spacing: .12em;
+  text-transform: uppercase;
+  color: var(--muted);
+}
+.stars { display: inline-flex; gap: .18rem; }
+.stars__item { width: 18px; height: 18px; fill: rgba(11, 27, 51, .16); }
+.stars__item.is-on { fill: var(--gold-500); filter: drop-shadow(0 1px 2px rgba(180, 125, 6, .35)); }
+
+/* Barres de notes : du rouge au vert foncé, couleur calculée en JS. */
+.player-ratings { display: grid; grid-template-columns: repeat(auto-fit, minmax(14rem, 1fr)); gap: .85rem 1.4rem; }
+.rating {
+  --rating-color: var(--brand-500);
+  --rating-fill: 0%;
+  display: grid;
+  grid-template-columns: 1fr auto;
+  gap: .2rem .6rem;
+  align-items: baseline;
+}
+.rating__label {
+  font-size: .72rem;
+  font-weight: 800;
+  letter-spacing: .1em;
+  text-transform: uppercase;
+  color: var(--muted);
+}
+.rating__value {
+  font-family: var(--font-display);
+  font-size: 1.05rem;
+  font-weight: 900;
+  color: var(--rating-color);
+  font-variant-numeric: tabular-nums;
+}
+.rating__bar {
+  grid-column: 1 / -1;
+  height: 8px;
+  border-radius: 4px;
+  background: rgba(11, 27, 51, .09);
+  overflow: hidden;
+}
+.rating__bar i {
+  display: block;
+  height: 100%;
+  width: var(--rating-fill);
+  border-radius: 4px;
+  background: linear-gradient(90deg, color-mix(in srgb, var(--rating-color) 72%, #fff), var(--rating-color));
+  animation: grow 1s var(--ease) both;
+}
+
+.player-profile__text { color: var(--ink-2); display: grid; gap: .8rem; }
+
+/* En-tête réduit de la page Effectif */
+.page-hero {
+  position: relative;
+  padding-block: calc(var(--header-h) + clamp(2.5rem, 6vw, 4rem)) clamp(2rem, 5vw, 3rem);
+  background: var(--dark-bg);
+  color: var(--dark-ink);
+  overflow: hidden;
+  isolation: isolate;
+  text-align: center;
+}
+.page-hero .section__lead { color: var(--dark-muted); }
+.page-hero__title { font-size: clamp(2rem, 5.5vw, 3.2rem); margin-block: .5rem .7rem; }
+.page-hero__count {
+  display: inline-flex;
+  align-items: center;
+  gap: .4rem;
+  margin-top: 1.2rem;
+  padding: .4rem 1rem;
+  border-radius: 999px;
+  background: rgba(255, 255, 255, .08);
+  border: 1px solid var(--dark-line);
+  font-size: .82rem;
+  font-weight: 700;
+  color: var(--dark-muted);
+}
+
+/* ────────────────────────────────────── 13. Modale & toast ── */
 .modal {
   position: fixed;
   inset: 0;
@@ -1353,6 +1656,8 @@ ul, ol { list-style: none; padding: 0; }
 }
 .modal__close svg { width: 18px; height: 18px; fill: currentColor; }
 .modal__close:hover { background: var(--loss); transform: rotate(90deg); }
+
+.modal__dialog:has(.player-profile) { width: min(100%, 780px); }
 
 .modal__figure { margin: 0; background: var(--bg-soft); }
 .modal__figure img { width: 100%; aspect-ratio: 1; object-fit: cover; }
@@ -1434,7 +1739,7 @@ ul, ol { list-style: none; padding: 0; }
 }
 .noscript a { text-decoration: underline; }
 
-/* ────────────────────────────────── 13. Reveal & motion ── */
+/* ────────────────────────────────── 14. Reveal & motion ── */
 [data-reveal] {
   opacity: 0;
   transform: translateY(24px);
@@ -1453,7 +1758,7 @@ ul, ol { list-style: none; padding: 0; }
   [data-reveal] { opacity: 1; transform: none; }
 }
 
-/* ───────────────────────────────────── 14. Responsive ── */
+/* ───────────────────────────────────── 15. Responsive ── */
 @media (max-width: 1020px) {
   .site-footer__grid { grid-template-columns: 1fr 1fr; }
   .site-footer__brand { grid-column: 1 / -1; }
@@ -1549,6 +1854,10 @@ ul, ol { list-style: none; padding: 0; }
   .countdown__label { font-size: .55rem; letter-spacing: .1em; }
 
   .form__row { grid-template-columns: 1fr; }
+
+  .player-card--compact { width: 146px; }
+  .player-profile__head { flex-direction: column; text-align: center; }
+  .player-profile__overall { justify-content: center; }
 
   .podium__row { gap: .6rem; padding: .55rem .6rem; }
   .podium__row--1 { --avatar: 50px; --value: 1.6rem; }

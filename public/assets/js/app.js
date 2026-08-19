@@ -7,6 +7,7 @@
  */
 
 import { DEFAULT_CONTENT, cloneContent, deepMerge } from './content.js';
+import { playerCardHTML, playerProfileHTML } from './squad.js';
 
 /* ═══════════════════════════════════════════ Utilitaires ══ */
 
@@ -86,8 +87,9 @@ const modal = {
   body: $('#modal-body'),
   lastFocused: null,
 
-  open(html) {
+  open(html, onClose = null) {
     if (!this.root) return;
+    this.onClose = onClose;
     this.lastFocused = document.activeElement;
     this.body.innerHTML = html;
     this.root.hidden = false;
@@ -103,10 +105,13 @@ const modal = {
     if (!this.root || this.root.hidden) return;
     this.root.classList.remove('is-open');
     document.body.classList.remove('is-locked');
+    const callback = this.onClose;
+    this.onClose = null;
     const finish = () => {
       this.root.hidden = true;
       this.body.innerHTML = '';
       if (this.lastFocused && document.contains(this.lastFocused)) this.lastFocused.focus();
+      callback?.();
     };
     REDUCED_MOTION ? finish() : setTimeout(finish, 220);
   },
@@ -549,6 +554,11 @@ function initGridDelegates() {
     });
   });
 
+  $('#squad-grid')?.addEventListener('click', (event) => {
+    const button = event.target.closest('[data-player]');
+    if (button) openPlayer(button.dataset.player);
+  });
+
   // Déroulé du classement complet, au-delà du podium.
   $('#stats-grid')?.addEventListener('click', (event) => {
     const toggle = event.target.closest('[data-more]');
@@ -593,6 +603,83 @@ function podiumRow(player, rank, leader, unit) {
         <small>${esc(unit || '')}</small>
       </span>
     </li>`;
+}
+
+/* ════════════════════════════════════════════ Effectif ══ */
+
+const PLAYER_HASH = /^#joueur-(.+)$/;
+
+function playerById(id) {
+  return state.content?.squad?.players?.find((player) => player.id === id) || null;
+}
+
+/** Grille complète, page /effectif. */
+function renderSquadGrid(content) {
+  const grid = $('#squad-grid');
+  if (!grid) return;
+
+  const players = Array.isArray(content.squad?.players) ? content.squad.players : [];
+  grid.innerHTML = players.length
+    ? players.map((player, index) => playerCardHTML(player, { index })).join('')
+    : soonState('Effectif à venir', "Les fiches des joueurs seront publiées ici prochainement.");
+
+  const count = $('#squad-count');
+  if (count) {
+    count.hidden = !players.length;
+    count.textContent = `${players.length} joueur${players.length > 1 ? 's' : ''} dans l'effectif`;
+  }
+
+  initReveal(grid);
+}
+
+/** Bandeau défilant, page d'accueil. Chaque carte mène au profil sur /effectif. */
+function renderSquadStrip(content) {
+  const strip = $('#squad-strip');
+  if (!strip) return;
+
+  const players = Array.isArray(content.squad?.players) ? content.squad.players : [];
+  const section = strip.closest('section');
+  if (section) section.hidden = !players.length;
+  if (!players.length) { strip.innerHTML = ''; return; }
+
+  const card = (player, index, clone) => playerCardHTML(player, {
+    index,
+    compact: true,
+    clone,
+    href: `/effectif#joueur-${encodeURIComponent(player.id)}`
+  });
+
+  const original = players.map((player, index) => card(player, index, false)).join('');
+  const duplicate = players.map((player, index) => card(player, index, true)).join('');
+
+  // La durée suit le nombre de cartes : la vitesse perçue reste constante.
+  strip.innerHTML = `
+    <div class="marquee__track" style="--marquee-duration:${Math.max(28, players.length * 7)}s">
+      ${original}${duplicate}
+    </div>`;
+}
+
+function openPlayer(id) {
+  const player = playerById(id);
+  if (!player) return false;
+
+  modal.open(playerProfileHTML(player), () => {
+    // L'ancre disparaît à la fermeture : recharger la page ne rouvre pas la fiche.
+    if (PLAYER_HASH.test(window.location.hash)) {
+      window.history.replaceState(null, '', window.location.pathname + window.location.search);
+    }
+  });
+
+  const hash = `#joueur-${encodeURIComponent(id)}`;
+  if (window.location.hash !== hash) window.history.replaceState(null, '', hash);
+  return true;
+}
+
+/** Ouvre la fiche désignée par l'ancre de l'URL, si elle existe. */
+function syncPlayerFromHash() {
+  if (modal.isOpen) return;
+  const match = PLAYER_HASH.exec(window.location.hash);
+  if (match) openPlayer(decodeURIComponent(match[1]));
 }
 
 function renderStats(content) {
@@ -740,6 +827,8 @@ function render(content) {
   state.content = content;
   applyBindings(content);
   renderNews(content);
+  renderSquadGrid(content);
+  renderSquadStrip(content);
   IMAGE_SECTIONS.forEach((section) => renderImageSection(content, section));
   renderStats(content);
   startCountdown(content.nextMatch?.kickoff);
@@ -763,10 +852,17 @@ async function boot() {
   initContactForm();
   initReveal();
 
+  window.addEventListener('hashchange', syncPlayerFromHash);
+
   render(cloneContent(DEFAULT_CONTENT));
+  syncPlayerFromHash();
 
   const remote = await loadRemoteContent();
-  if (remote) render(deepMerge(cloneContent(DEFAULT_CONTENT), remote));
+  if (remote) {
+    render(deepMerge(cloneContent(DEFAULT_CONTENT), remote));
+    // Le joueur visé n'existait peut-être que dans le contenu distant.
+    syncPlayerFromHash();
+  }
 }
 
 boot();

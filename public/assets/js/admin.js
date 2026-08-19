@@ -234,6 +234,7 @@ function repeatHead(listPath, index, label) {
 const TABS = {
   match:    { title: 'Prochain match', render: renderMatch },
   news:     { title: 'Actualités', render: renderNews },
+  squad:    { title: 'Effectif', render: renderSquad },
   calendar: { title: 'Calendrier', render: () => renderImageSection('calendar') },
   standings: { title: 'Classement', render: () => renderImageSection('standings') },
   stats:    { title: 'Stats saison', render: renderStats },
@@ -323,6 +324,109 @@ function newsItem(item, index) {
         ${field('Accroche (affichée sur la carte)', `${path}.excerpt`, { type: 'textarea', placeholder: 'Un match compliqué à Carlus…' })}
         ${field('Texte complet (fenêtre « Lire la suite »)', `${path}.body`, { type: 'textarea', hint: 'Une ligne vide crée un nouveau paragraphe.' })}
         ${imageField('Image du match', `${path}.image`)}
+      </div>
+    </article>`;
+}
+
+/** Les six notes de l'effectif, dans l'ordre d'affichage sur la fiche. */
+const RATING_FIELDS = [
+  ['pace', 'Vitesse'],
+  ['dribbling', 'Dribble'],
+  ['shooting', 'Tir'],
+  ['passing', 'Passe'],
+  ['defending', 'Défense'],
+  ['physical', 'Physique']
+];
+
+const POSITION_OPTIONS = [
+  { value: 'GB', label: 'Gardien' },
+  { value: 'DEF', label: 'Défenseur' },
+  { value: 'MIL', label: 'Milieu' },
+  { value: 'ATT', label: 'Attaquant' }
+];
+
+const STAR_OPTIONS = [0, 1, 2, 3, 4, 5].map((n) => ({
+  value: String(n),
+  label: n === 0 ? 'Non renseigné' : '★'.repeat(n) + '☆'.repeat(5 - n)
+}));
+
+function renderSquad() {
+  const players = state.draft.squad?.players || [];
+
+  return `
+    <section class="a-card">
+      <header class="a-card__head">
+        <div><h2>Page Effectif</h2><p>Titre et sous-titre, repris sur la page d'accueil et sur /effectif.</p></div>
+        <a class="a-btn a-btn--sm" href="/effectif" target="_blank" rel="noopener">Voir la page ↗</a>
+      </header>
+      <div class="a-card__body">
+        ${field('Titre', 'squad.title')}
+        ${field('Sous-titre', 'squad.subtitle', { type: 'textarea' })}
+      </div>
+    </section>
+
+    <section class="a-card">
+      <header class="a-card__head">
+        <div><h2>Joueurs</h2><p>${players.length} fiche${players.length > 1 ? 's' : ''} dans l'effectif.</p></div>
+        <button class="a-btn a-btn--primary a-btn--sm" type="button" data-add="player-card">+ Ajouter un joueur</button>
+      </header>
+      <div class="a-card__body">
+        ${players.length
+          ? `<div class="repeat">${players.map(playerEditor).join('')}</div>`
+          : '<p class="empty-state">Aucun joueur. Cliquez sur « Ajouter un joueur » pour créer la première fiche.</p>'}
+      </div>
+    </section>`;
+}
+
+function playerEditor(player, index) {
+  const path = `squad.players.${index}`;
+  const name = [player.firstName, player.lastName].filter(Boolean).join(' ') || 'Nouveau joueur';
+
+  return `
+    <article class="repeat__item">
+      ${repeatHead('squad.players', index, name)}
+      <div class="repeat__body">
+        <div class="a-grid a-grid--2">
+          ${field('Prénom', `${path}.firstName`, { placeholder: 'Silas' })}
+          ${field('Nom', `${path}.lastName`, { placeholder: 'Clamens Albert', hint: 'Facultatif.' })}
+        </div>
+
+        ${imageField('Photo', `${path}.photo`)}
+
+        <div class="a-grid a-grid--3">
+          ${field('Âge', `${path}.age`, { type: 'number', hint: '0 = non renseigné, la ligne se masque.' })}
+          ${field('Nationalité', `${path}.nationality`, { placeholder: 'France' })}
+          ${field('Poste', `${path}.position`, { type: 'select', options: POSITION_OPTIONS })}
+        </div>
+
+        <div class="a-grid a-grid--3">
+          ${field('Au club depuis', `${path}.since`, { type: 'number', placeholder: '2021', hint: "Année d'arrivée : l'ancienneté en est déduite." })}
+          ${field('Mauvais pied', `${path}.weakFoot`, { type: 'select', options: STAR_OPTIONS })}
+          ${field('Gestes techniques', `${path}.skillMoves`, { type: 'select', options: STAR_OPTIONS })}
+        </div>
+
+        <div class="a-field">
+          <span class="a-field__label">Notes sur 99</span>
+          <div class="a-grid a-grid--3">
+            ${RATING_FIELDS.map(([key, label]) =>
+              field(label, `${path}.ratings.${key}`, { type: 'number' })).join('')}
+          </div>
+          <small class="a-hint">
+            La barre affichée sur la fiche passe du rouge au vert foncé à mesure que la note monte vers 99.
+          </small>
+        </div>
+
+        <div class="a-grid a-grid--2">
+          ${field('Valeur marchande', `${path}.marketValue`, { placeholder: '240 000 €', hint: 'Texte libre : vide = ligne masquée.' })}
+          <div class="a-field">
+            <span class="a-field__label">Note générale</span>
+            <p class="a-hint">
+              Calculée automatiquement : moyenne des six notes ci-dessus. Elle s'affiche en gros sur la carte.
+            </p>
+          </div>
+        </div>
+
+        ${field('Descriptif', `${path}.description`, { type: 'textarea', hint: 'Une ligne vide crée un nouveau paragraphe.' })}
       </div>
     </article>`;
 }
@@ -654,6 +758,7 @@ function refreshCounts() {
   const unread = state.messages.filter((m) => !m.is_read).length;
   const counts = {
     news: (state.draft?.news || []).length,
+    squad: (state.draft?.squad?.players || []).length,
     calendar: (state.draft?.calendar?.images || []).length,
     standings: (state.draft?.standings?.images || []).length,
     media: state.media.length,
@@ -706,6 +811,16 @@ function onFieldChange(event) {
     if (label) label.textContent = value || '—';
   }
 
+  // Une fiche de joueur est titrée par « prénom nom » : les deux champs comptent.
+  const player = /^squad\.players\.(\d+)\.(firstName|lastName)$/.exec(path);
+  if (player) {
+    const fiche = state.draft.squad.players[Number(player[1])];
+    const label = input.closest('.repeat__item')?.querySelector('.repeat__label');
+    if (label) {
+      label.textContent = [fiche.firstName, fiche.lastName].filter(Boolean).join(' ') || 'Nouveau joueur';
+    }
+  }
+
   refreshDirtyState();
 }
 
@@ -720,6 +835,13 @@ const BLANK = {
     competition: '', opponent: '', venue: 'home', score: null, scorers: [], date: ''
   }),
   image: () => ({ src: '', alt: '', caption: '' }),
+  playerCard: () => ({
+    id: '', firstName: '', lastName: 'Nouveau joueur', photo: '',
+    age: 0, nationality: 'France', position: 'MIL', since: new Date().getFullYear(),
+    weakFoot: 3, skillMoves: 3,
+    ratings: { pace: 50, dribbling: 50, shooting: 50, passing: 50, defending: 50, physical: 50 },
+    description: '', marketValue: ''
+  }),
   statGroup: () => ({ id: '', title: 'Nouveau classement', unit: 'buts', accent: 'blue', icon: 'ball', players: [] }),
   player: () => ({ name: 'Nouveau joueur', photo: '', value: 0 })
 };
@@ -736,6 +858,10 @@ function onPanelClick(event) {
   if (target.dataset.add === 'images') {
     const list = getPath(state.draft, target.dataset.target);
     if (Array.isArray(list)) list.push(BLANK.image());
+    return renderTab();
+  }
+  if (target.dataset.add === 'player-card') {
+    (state.draft.squad.players ||= []).push(BLANK.playerCard());
     return renderTab();
   }
   if (target.dataset.add === 'stat-group') {
