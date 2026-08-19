@@ -359,6 +359,31 @@ code, pre { font-family: var(--a-mono); font-size: .86em; }
 .repeat__tools { display: flex; gap: .3rem; }
 .repeat__body { padding: 1rem; display: grid; gap: 1rem; }
 
+/* Fiche repliable : l'en-tête devient le bouton d'ouverture. */
+.repeat__toggle {
+  display: flex;
+  align-items: center;
+  gap: .55rem;
+  flex: 1;
+  min-width: 0;
+  padding: 0;
+  text-align: left;
+  color: inherit;
+}
+.repeat__chevron {
+  width: 16px;
+  height: 16px;
+  flex: none;
+  fill: var(--a-muted);
+  transition: transform var(--a-t);
+}
+.repeat__item:not(.is-collapsed) .repeat__chevron { transform: rotate(180deg); fill: var(--a-brand-2); }
+.repeat__toggle:hover .repeat__label { color: #fff; }
+.repeat__item.is-collapsed .repeat__body { display: none; }
+.repeat__item.is-collapsed .repeat__head { border-bottom: 0; }
+.repeat__item:not(.is-collapsed) { border-color: var(--a-line-2); }
+.repeat__item:not(.is-collapsed) .repeat__head { background: rgba(44, 107, 214, .12); }
+
 .empty-state {
   padding: 2rem 1rem;
   text-align: center;

@@ -200,7 +200,7 @@ Rendez-vous sur `/admin/` et connectez-vous avec `ADMIN_PASSWORD`.
 |---|---|
 | **Prochain match** | Équipes, logos, date/heure du coup d'envoi (alimente le compte à rebours), lieu, compétition |
 | **Actualités** | Ajouter / réordonner / supprimer les matchs : titre, score, buteurs, accroche, texte complet, photo |
-| **Effectif** | Fiches de joueurs : photo, identité, âge, nationalité, poste, année d'arrivée, étoiles mauvais pied et gestes techniques, 6 notes sur 99, descriptif, valeur marchande |
+| **Effectif** | Fiches de joueurs repliées en accordéon : photo, identité, âge, nationalité, poste, année d'arrivée, étoiles mauvais pied et gestes techniques, 6 notes sur 99 (jeu de notes propre aux gardiens), descriptif, valeur marchande |
 | **Calendrier** | Images du calendrier, légendes, textes alternatifs |
 | **Classement** | Captures du classement de la poule, téléversées et légendées |
 | **Stats saison** | Buteurs, passeurs, CSC : joueurs, valeurs, photos, couleur et icône de chaque colonne. Les 3 premiers forment le podium, le reste se déroule à la demande |
@@ -226,10 +226,15 @@ Rendez-vous sur `/admin/` et connectez-vous avec `ADMIN_PASSWORD`.
   notes, recalculée à l'affichage.
 - Chaque fiche a une adresse partageable : `/effectif#joueur-keks`. Le bandeau
   défilant de l'accueil pointe dessus, et l'ancre s'efface à la fermeture.
-- La page Effectif se trie par poste, note, âge ou ancienneté, dans les deux
-  sens. Chaque critère a son sens naturel (meilleures notes d'abord, joueurs
-  les plus anciens d'abord), et « Ordre de l'effectif » rend la main à l'ordre
-  défini dans l'administration.
+- La page Effectif s'ouvre classée sur la meilleure note, et se trie aussi par
+  poste, âge ou ancienneté, dans les deux sens. Chaque critère a son sens
+  naturel, et « Ordre de l'effectif » rend la main à l'ordre défini dans
+  l'administration.
+- Un gardien a ses propres notes (réflexes, positionnement, plongeon, jeu au
+  pied, jeu à la main, vitesse). Les deux jeux cohabitent dans la fiche :
+  changer un joueur de poste n'efface rien.
+- Couleur des barres de notes, par palier : rouge en dessous de 65, jaune de
+  65 à 74, vert de 75 à 84, vert foncé à partir de 85.
 - Les images acceptées sont JPG, PNG, WebP, GIF et AVIF, jusqu'à 5 Mo.
   Le SVG est refusé pour des raisons de sécurité.
 

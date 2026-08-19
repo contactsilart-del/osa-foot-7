@@ -23,8 +23,8 @@ export const POSITIONS = {
   ATT: { label: 'Attaquant', accent: '#E2604A' }
 };
 
-/** Les six notes, dans l'ordre d'affichage. */
-export const RATINGS = [
+/** Les six notes d'un joueur de champ, dans l'ordre d'affichage. */
+export const RATINGS_OUTFIELD = [
   ['pace', 'Vitesse'],
   ['dribbling', 'Dribble'],
   ['shooting', 'Tir'],
@@ -33,26 +33,53 @@ export const RATINGS = [
   ['physical', 'Physique']
 ];
 
+/** Celles d'un gardien : rien à voir avec le tir ou le dribble. */
+export const RATINGS_GK = [
+  ['reflexes', 'Réflexes'],
+  ['positioning', 'Positionnement'],
+  ['diving', 'Plongeon'],
+  ['kicking', 'Jeu au pied'],
+  ['handling', 'Jeu à la main'],
+  ['speed', 'Vitesse']
+];
+
+/**
+ * Les deux jeux cohabitent dans la même fiche : changer un joueur de poste
+ * n'efface pas les notes de l'autre jeu, elles cessent seulement d'être
+ * affichées.
+ */
+export function ratingsFor(player) {
+  return player?.position === 'GB' ? RATINGS_GK : RATINGS_OUTFIELD;
+}
+
+/** Compatibilité : l'ancien nom pointe sur le jeu des joueurs de champ. */
+export const RATINGS = RATINGS_OUTFIELD;
+
 export const RATING_MAX = 99;
 
 /**
- * Couleur d'une note : rouge vif à 0, vert foncé à 99.
+ * Paliers de couleur des notes. Un dégradé continu rendait deux notes voisines
+ * indiscernables ; des paliers nets se lisent d'un coup d'œil.
  *
- * La teinte parcourt le rouge → orange → jaune → vert, pendant que la
- * luminosité descend : sans cela le haut de l'échelle virerait au vert fluo
- * au lieu du vert profond attendu.
+ * Le seuil du vert court jusqu'à 84 pour ne laisser aucun trou entre les
+ * paliers demandés (75-80 vert, 85-99 vert foncé).
  */
+export const RATING_BANDS = [
+  { min: 85, color: '#14663C', label: 'vert foncé' },
+  { min: 75, color: '#2FA35A', label: 'vert' },
+  { min: 65, color: '#C9911A', label: 'jaune' },
+  { min: 0,  color: '#D23B30', label: 'rouge' }
+];
+
+/** Couleur d'une note, par palier. */
 export function ratingColor(value) {
-  const ratio = Math.max(0, Math.min(RATING_MAX, Number(value) || 0)) / RATING_MAX;
-  const hue = 4 + ratio * 136;
-  const saturation = 74 - ratio * 16;
-  const lightness = 47 - ratio * 15;
-  return `hsl(${Math.round(hue)} ${Math.round(saturation)}% ${Math.round(lightness)}%)`;
+  const note = Math.max(0, Math.min(RATING_MAX, Number(value) || 0));
+  return RATING_BANDS.find((band) => note >= band.min).color;
 }
 
-/** Moyenne des six notes, arrondie. Sert de note générale sur la carte. */
+/** Moyenne des six notes du poste, arrondie. Sert de note générale. */
 export function overallOf(player) {
-  const values = RATINGS.map(([key]) => Number(player?.ratings?.[key]) || 0);
+  const values = ratingsFor(player).map(([key]) => Number(player?.ratings?.[key]) || 0);
   return Math.round(values.reduce((sum, v) => sum + v, 0) / values.length);
 }
 
@@ -236,7 +263,7 @@ export function playerProfileHTML(player) {
         </div>
 
         <div class="player-ratings">
-          ${RATINGS.map(([key, label]) => {
+          ${ratingsFor(player).map(([key, label]) => {
             const value = Math.max(0, Math.min(RATING_MAX, Number(player.ratings?.[key]) || 0));
             return `
               <div class="rating" style="--rating-color:${ratingColor(value)}; --rating-fill:${Math.round((value / RATING_MAX) * 100)}%">

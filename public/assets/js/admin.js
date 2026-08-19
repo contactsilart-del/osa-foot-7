@@ -8,6 +8,7 @@
  */
 
 import { DEFAULT_CONTENT, cloneContent, deepMerge } from './content.js';
+import { RATINGS_OUTFIELD, RATINGS_GK, ratingsFor } from './squad.js';
 
 /* ═════════════════════════════════════════ Utilitaires ══ */
 
@@ -91,7 +92,9 @@ const state = {
   media: [],
   messages: [],
   storage: { content: false, media: false },
-  pickerTarget: null
+  pickerTarget: null,
+  /** Index de la fiche de joueur dépliée, ou `null` si toutes sont repliées. */
+  openEditor: null
 };
 
 /* ═══════════════════════════════════════════════ API ══ */
@@ -209,12 +212,25 @@ function imageField(label, path) {
     </div>`;
 }
 
-/** En-tête commun des éléments répétables (déplacer / supprimer). */
-function repeatHead(listPath, index, label) {
+/**
+ * En-tête commun des éléments répétables (déplacer / supprimer).
+ * `collapsible` transforme le titre en bouton d'ouverture : indispensable dès
+ * qu'une liste devient longue, comme l'effectif.
+ */
+function repeatHead(listPath, index, label, { collapsible = false } = {}) {
+  const titre = collapsible
+    ? `<button class="repeat__toggle" type="button" data-toggle-item="${index}"
+               aria-expanded="${state.openEditor === index}">
+         <svg class="repeat__chevron" viewBox="0 0 24 24" aria-hidden="true"><path d="M12 15.4 5.6 9 7 7.6l5 5 5-5L18.4 9z"/></svg>
+         <span class="repeat__index">${index + 1}</span>
+         <span class="repeat__label">${esc(label)}</span>
+       </button>`
+    : `<span class="repeat__index">${index + 1}</span>
+       <span class="repeat__label">${esc(label)}</span>`;
+
   return `
     <div class="repeat__head">
-      <span class="repeat__index">${index + 1}</span>
-      <span class="repeat__label">${esc(label)}</span>
+      ${titre}
       <span class="repeat__tools">
         <button class="a-btn a-btn--icon" type="button" data-move="${esc(listPath)}" data-index="${index}" data-dir="-1" aria-label="Monter">
           <svg viewBox="0 0 24 24"><path d="M12 6l7 7-1.4 1.4L12 8.8 6.4 14.4 5 13z"/></svg>
@@ -328,16 +344,6 @@ function newsItem(item, index) {
     </article>`;
 }
 
-/** Les six notes de l'effectif, dans l'ordre d'affichage sur la fiche. */
-const RATING_FIELDS = [
-  ['pace', 'Vitesse'],
-  ['dribbling', 'Dribble'],
-  ['shooting', 'Tir'],
-  ['passing', 'Passe'],
-  ['defending', 'Défense'],
-  ['physical', 'Physique']
-];
-
 const POSITION_OPTIONS = [
   { value: 'GB', label: 'Gardien' },
   { value: 'DEF', label: 'Défenseur' },
@@ -381,10 +387,12 @@ function renderSquad() {
 function playerEditor(player, index) {
   const path = `squad.players.${index}`;
   const name = [player.firstName, player.lastName].filter(Boolean).join(' ') || 'Nouveau joueur';
+  const position = POSITION_OPTIONS.find((o) => o.value === player.position)?.label || '';
+  const ouverte = state.openEditor === index;
 
   return `
-    <article class="repeat__item">
-      ${repeatHead('squad.players', index, name)}
+    <article class="repeat__item${ouverte ? '' : ' is-collapsed'}">
+      ${repeatHead('squad.players', index, `${name}${position ? ' · ' + position : ''}`, { collapsible: true })}
       <div class="repeat__body">
         <div class="a-grid a-grid--2">
           ${field('Prénom', `${path}.firstName`, { placeholder: 'Silas' })}
@@ -406,13 +414,17 @@ function playerEditor(player, index) {
         </div>
 
         <div class="a-field">
-          <span class="a-field__label">Notes sur 99</span>
+          <span class="a-field__label">Notes sur 99${player.position === 'GB' ? ' — gardien' : ''}</span>
           <div class="a-grid a-grid--3">
-            ${RATING_FIELDS.map(([key, label]) =>
+            ${ratingsFor(player).map(([key, label]) =>
               field(label, `${path}.ratings.${key}`, { type: 'number' })).join('')}
           </div>
           <small class="a-hint">
-            La barre affichée sur la fiche passe du rouge au vert foncé à mesure que la note monte vers 99.
+            Palier de couleur sur la fiche : rouge en dessous de 65, jaune de 65 à 74,
+            vert de 75 à 84, vert foncé à partir de 85.
+            ${player.position === 'GB'
+              ? " Les notes de joueur de champ sont conservées : elles reviendront si vous changez le poste."
+              : " Passez le joueur au poste de gardien pour saisir réflexes, plongeon et jeu au pied."}
           </small>
         </div>
 
@@ -811,6 +823,12 @@ function onFieldChange(event) {
     if (label) label.textContent = value || '—';
   }
 
+  // Changer de poste change les six notes proposées : il faut redessiner.
+  if (/^squad\.players\.\d+\.position$/.test(path)) {
+    refreshDirtyState();
+    return renderTab();
+  }
+
   // Une fiche de joueur est titrée par « prénom nom » : les deux champs comptent.
   const player = /^squad\.players\.(\d+)\.(firstName|lastName)$/.exec(path);
   if (player) {
@@ -839,7 +857,7 @@ const BLANK = {
     id: '', firstName: '', lastName: 'Nouveau joueur', photo: '',
     age: 0, nationality: 'France', position: 'MIL', since: new Date().getFullYear(),
     weakFoot: 3, skillMoves: 3,
-    ratings: { pace: 50, dribbling: 50, shooting: 50, passing: 50, defending: 50, physical: 50 },
+    ratings: Object.fromEntries([...RATINGS_OUTFIELD, ...RATINGS_GK].map(([key]) => [key, 50])),
     description: '', marketValue: ''
   }),
   statGroup: () => ({ id: '', title: 'Nouveau classement', unit: 'buts', accent: 'blue', icon: 'ball', players: [] }),
@@ -849,6 +867,14 @@ const BLANK = {
 function onPanelClick(event) {
   const target = event.target.closest('button');
   if (!target) return;
+
+  /* — Dépliage d'une fiche — */
+  if (target.dataset.toggleItem !== undefined) {
+    const index = Number(target.dataset.toggleItem);
+    // Accordéon : une seule fiche ouverte, sinon la liste redevient interminable.
+    state.openEditor = state.openEditor === index ? null : index;
+    return renderTab();
+  }
 
   /* — Ajouts — */
   if (target.dataset.add === 'news') {
@@ -862,6 +888,8 @@ function onPanelClick(event) {
   }
   if (target.dataset.add === 'player-card') {
     (state.draft.squad.players ||= []).push(BLANK.playerCard());
+    // Sans cela, on ajoute un joueur et rien ne s'affiche.
+    state.openEditor = state.draft.squad.players.length - 1;
     return renderTab();
   }
   if (target.dataset.add === 'stat-group') {
@@ -880,6 +908,7 @@ function onPanelClick(event) {
     const index = Number(target.dataset.index);
     if (Array.isArray(list) && confirm('Supprimer définitivement cet élément ?')) {
       list.splice(index, 1);
+      state.openEditor = null;
       renderTab();
     }
     return;
@@ -890,6 +919,7 @@ function onPanelClick(event) {
     const next = index + Number(target.dataset.dir);
     if (Array.isArray(list) && next >= 0 && next < list.length) {
       [list[index], list[next]] = [list[next], list[index]];
+      state.openEditor = null;
       renderTab();
     }
     return;

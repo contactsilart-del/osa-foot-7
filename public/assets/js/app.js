@@ -19,7 +19,8 @@ const state = {
   content: null,
   /** Fiche ouverte, pour la rafraîchir quand le contenu distant arrive. */
   openPlayerId: null,
-  squadSort: { key: 'default', direction: 'asc' }
+  // Sur le site, l'effectif s'ouvre sur les meilleures notes.
+  squadSort: { key: 'overall', direction: 'desc' }
 };
 
 const REDUCED_MOTION = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
@@ -654,6 +655,7 @@ function renderSquadStrip(content) {
   if (section) section.hidden = !players.length;
   if (!players.length) { strip.innerHTML = ''; return; }
 
+  const ordered = sortPlayers(players, state.squadSort.key, state.squadSort.direction);
   const card = (player, index, clone) => playerCardHTML(player, {
     index,
     compact: true,
@@ -661,8 +663,8 @@ function renderSquadStrip(content) {
     href: `/effectif#joueur-${encodeURIComponent(player.id)}`
   });
 
-  const original = players.map((player, index) => card(player, index, false)).join('');
-  const duplicate = players.map((player, index) => card(player, index, true)).join('');
+  const original = ordered.map((player, index) => card(player, index, false)).join('');
+  const duplicate = ordered.map((player, index) => card(player, index, true)).join('');
 
   // La durée suit le nombre de cartes : la vitesse perçue reste constante.
   strip.innerHTML = `
