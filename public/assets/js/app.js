@@ -6,8 +6,8 @@
  * parfaitement fonctionnel même déployé en 100 % statique.
  */
 
-import { DEFAULT_CONTENT, cloneContent, deepMerge } from './content.js';
-import { playerCardHTML, playerProfileHTML, sortPlayers, SORTS } from './squad.js';
+import { DEFAULT_CONTENT, cloneContent, deepMerge, migrateContent } from './content.js';
+import { playerCardHTML, playerProfileHTML, sortPlayers, SORTS, fullName } from './squad.js';
 
 /* ═══════════════════════════════════════════ Utilitaires ══ */
 
@@ -583,31 +583,40 @@ function initGridDelegates() {
 const STAT_ICONS = {
   ball: '<path d="M12 2a10 10 0 1 0 10 10A10 10 0 0 0 12 2zm0 3.2 3.4 2.5-1.3 4H9.9l-1.3-4zM4.6 12.6l1.3-1 3.3 2.4-.6 4.1a8 8 0 0 1-4-5.5zm10.8 5.5-.6-4.1 3.3-2.4 1.3 1a8 8 0 0 1-4 5.5z"/>',
   boot: '<path d="M3 6h6.3l2.2 3.4L15 7.8l1 1.8 2.6-.7A3.4 3.4 0 0 1 21 12.2V16H3V6zm0 11.5h18V20H3v-2.5z"/>',
-  oops: '<path d="M12 2 1 21h22L12 2zm0 5.6 6.9 11.9H5.1L12 7.6zM11 10v5h2v-5h-2zm0 6v2h2v-2h-2z"/>'
+  oops: '<path d="M12 2 1 21h22L12 2zm0 5.6 6.9 11.9H5.1L12 7.6zM11 10v5h2v-5h-2zm0 6v2h2v-2h-2z"/>',
+  card: '<path d="M7.5 2h9A1.5 1.5 0 0 1 18 3.5v17a1.5 1.5 0 0 1-1.5 1.5h-9A1.5 1.5 0 0 1 6 20.5v-17A1.5 1.5 0 0 1 7.5 2z"/>',
+  shirt: '<path d="m9 2 3 1.7L15 2l6 3.4-2.2 4.2-2.3-1.2V22H7.5V8.4L5.2 9.6 3 5.4 9 2z"/>',
+  check: '<path d="M9.6 18.6 3.2 12.2l1.8-1.8 4.6 4.6L19 5.6l1.8 1.8z"/>'
 };
 
-/** Une ligne de classement. `rank` est l'index 0-based. */
-function podiumRow(player, rank, leader, unit) {
-  const value = Number(player.value) || 0;
+/**
+ * Une ligne de classement. `rank` est l'index 0-based.
+ * Chaque ligne renvoie vers la fiche du joueur sur la page Effectif.
+ */
+function podiumRow(entry, rank, leader, unit) {
+  const { player, value } = entry;
   const fill = Math.round((value / leader) * 100);
   const medal = rank < 3 ? ' podium__row--' + (rank + 1) : '';
+  const name = fullName(player);
 
   return `
-    <li class="podium__row${medal}">
-      <span class="podium__rank">${rank + 1}</span>
-      <span class="podium__avatar">
-        ${player.photo
-          ? `<img src="${esc(player.photo)}" alt="" loading="lazy" decoding="async" width="120" height="120">`
-          : `<span class="podium__initial" aria-hidden="true">${esc((player.name || '?').charAt(0))}</span>`}
-      </span>
-      <span class="podium__body">
-        <span class="podium__name">${esc(player.name)}</span>
-        <span class="podium__bar"><i style="--fill:${fill}%"></i></span>
-      </span>
-      <span class="podium__value">
-        <b>${esc(value)}</b>
-        <small>${esc(unit || '')}</small>
-      </span>
+    <li>
+      <a class="podium__row${medal}" href="/effectif#joueur-${encodeURIComponent(player.id)}">
+        <span class="podium__rank">${rank + 1}</span>
+        <span class="podium__avatar">
+          ${player.photo
+            ? `<img src="${esc(player.photo)}" alt="" loading="lazy" decoding="async" width="120" height="120">`
+            : `<span class="podium__initial" aria-hidden="true">${esc(name.charAt(0))}</span>`}
+        </span>
+        <span class="podium__body">
+          <span class="podium__name">${esc(name)}</span>
+          <span class="podium__bar"><i style="--fill:${fill}%"></i></span>
+        </span>
+        <span class="podium__value">
+          <b>${esc(value)}</b>
+          <small>${esc(unit || '')}</small>
+        </span>
+      </a>
     </li>`;
 }
 
@@ -766,17 +775,22 @@ function renderStats(content) {
   if (!grid) return;
 
   const groups = Array.isArray(content.stats?.groups) ? content.stats.groups : [];
-  if (!groups.length) {
+  const squad = Array.isArray(content.squad?.players) ? content.squad.players : [];
+
+  if (!groups.length || !squad.length) {
     grid.innerHTML = soonState('Bientôt disponible', 'Les statistiques de la saison seront publiées ici.');
     initReveal(grid);
     return;
   }
 
   grid.innerHTML = groups.map((group, gIndex) => {
-    // Toujours du meilleur au moins bon, quel que soit l'ordre de saisie en admin.
-    const players = (Array.isArray(group.players) ? [...group.players] : [])
-      .sort((a, b) => (Number(b.value) || 0) - (Number(a.value) || 0));
-    const leader = players.reduce((max, p) => Math.max(max, Number(p.value) || 0), 0) || 1;
+    // Tout l'effectif figure dans chaque classement : les compteurs à zéro
+    // aussi. Du meilleur au moins bon, à égalité dans l'ordre de l'effectif.
+    const values = group.values && typeof group.values === 'object' ? group.values : {};
+    const players = squad
+      .map((player) => ({ player, value: Number(values[player.id]) || 0 }))
+      .sort((a, b) => b.value - a.value);
+    const leader = players.reduce((max, entry) => Math.max(max, entry.value), 0) || 1;
 
     const podium = players.slice(0, 3);
     const rest = players.slice(3);
@@ -804,7 +818,7 @@ function renderStats(content) {
               <span class="podium__more-label">Voir les ${rest.length} suivants</span>
               <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 15.4 5.6 9 7 7.6l5 5 5-5L18.4 9z"/></svg>
             </button>` : ''}
-        ` : '<p class="stat-card__empty">Aucun joueur classe pour l instant.</p>'}
+        ` : '<p class="stat-card__empty">Aucun joueur dans l&rsquo;effectif pour le moment.</p>'}
       </article>`;
   }).join('');
 
@@ -940,7 +954,7 @@ async function boot() {
 
   const remote = await loadRemoteContent();
   if (remote) {
-    render(deepMerge(cloneContent(DEFAULT_CONTENT), remote));
+    render(deepMerge(cloneContent(DEFAULT_CONTENT), migrateContent(remote)));
     // Le joueur visé n'existait peut-être que dans le contenu distant.
     syncPlayerFromHash();
   }

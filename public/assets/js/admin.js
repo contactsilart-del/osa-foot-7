@@ -7,8 +7,8 @@
  * aucune dépendance.
  */
 
-import { DEFAULT_CONTENT, cloneContent, deepMerge } from './content.js';
-import { RATINGS_OUTFIELD, RATINGS_GK, ratingsFor, averageOf, isStaff } from './squad.js';
+import { DEFAULT_CONTENT, cloneContent, deepMerge, migrateContent } from './content.js';
+import { RATINGS_OUTFIELD, RATINGS_GK, ratingsFor, averageOf, isStaff, fullName } from './squad.js';
 
 /* ═════════════════════════════════════════ Utilitaires ══ */
 
@@ -544,42 +544,60 @@ function renderStats() {
     </section>`;
 }
 
+/**
+ * Un classement de la saison. Les joueurs ne se saisissent plus ici : la liste
+ * est celle de l'onglet Effectif, et chaque fiche y reçoit son compteur.
+ */
 function statGroup(group, index) {
   const path = `stats.groups.${index}`;
-  const players = group.players || [];
+  const players = state.draft.squad?.players || [];
+  const values = group.values || {};
+  const comptes = players.filter((player) => Number(values[player.id]) > 0).length;
+  const ouverte = state.openEditor === index;
+
   return `
-    <article class="repeat__item">
-      ${repeatHead('stats.groups', index, group.title || 'Classement')}
+    <article class="repeat__item${ouverte ? '' : ' is-collapsed'}">
+      ${repeatHead('stats.groups', index, group.title || 'Classement', { collapsible: true })}
       <div class="repeat__body">
         <div class="a-grid a-grid--3">
           ${field('Titre', `${path}.title`, { placeholder: 'Meilleurs buteurs' })}
           ${field('Unité', `${path}.unit`, { placeholder: 'buts' })}
           ${field('Couleur', `${path}.accent`, {
             type: 'select',
-            options: [{ value: 'gold', label: 'Or' }, { value: 'blue', label: 'Bleu' }, { value: 'red', label: 'Rouge' }]
+            options: [
+              { value: 'gold', label: 'Or' }, { value: 'blue', label: 'Bleu' },
+              { value: 'red', label: 'Rouge' }, { value: 'green', label: 'Vert' }
+            ]
           })}
         </div>
         ${field('Icône', `${path}.icon`, {
           type: 'select',
-          options: [{ value: 'ball', label: 'Ballon' }, { value: 'boot', label: 'Crampon' }, { value: 'oops', label: 'Alerte (CSC)' }]
+          options: [
+            { value: 'ball', label: 'Ballon' }, { value: 'boot', label: 'Crampon' },
+            { value: 'oops', label: 'Alerte (CSC)' }, { value: 'card', label: 'Carton (penalty)' },
+            { value: 'shirt', label: 'Maillot (matchs joués)' }, { value: 'check', label: 'Coche (présence)' }
+          ]
         })}
 
         <div class="a-field">
-          <span class="a-field__label">Joueurs (${players.length})</span>
-          <div class="repeat">
-            ${players.map((player, pIndex) => `
-              <div class="repeat__item">
-                ${repeatHead(`${path}.players`, pIndex, player.name || 'Joueur')}
-                <div class="repeat__body">
-                  <div class="a-grid a-grid--2">
-                    ${field('Nom', `${path}.players.${pIndex}.name`)}
-                    ${field('Valeur', `${path}.players.${pIndex}.value`, { type: 'number' })}
-                  </div>
-                  ${imageField('Photo', `${path}.players.${pIndex}.photo`)}
-                </div>
-              </div>`).join('')}
-          </div>
-          <button class="a-btn a-btn--sm" type="button" data-add="player" data-target="${esc(path)}.players">+ Ajouter un joueur</button>
+          <span class="a-field__label">Compteurs de l'effectif</span>
+          <p class="a-hint">
+            La liste suit l'onglet Effectif : un joueur ajouté, renommé ou supprimé
+            s'y répercute tout seul. Un compteur laissé vide vaut zéro — le joueur
+            apparaît quand même dans le classement.
+            ${players.length ? ` ${comptes} joueur${comptes > 1 ? 's' : ''} sur ${players.length} au-dessus de zéro.` : ''}
+          </p>
+          ${players.length ? `
+            <div class="counters">
+              ${players.map((player) => `
+                <label class="counter">
+                  <span class="counter__name">${esc(fullName(player))}</span>
+                  <input type="number" min="0" inputmode="numeric" placeholder="0"
+                         data-path="${esc(path)}.values.${esc(player.id)}" data-type="number"
+                         value="${Number(values[player.id]) > 0 ? Number(values[player.id]) : ''}">
+                </label>`).join('')}
+            </div>`
+            : '<p class="empty-state">Aucun joueur dans l&rsquo;effectif : commencez par l&rsquo;onglet Effectif.</p>'}
         </div>
       </div>
     </article>`;
@@ -775,6 +793,9 @@ function renderMessages() {
 
 function renderTab(tab = state.tab) {
   const changedTab = tab !== state.tab;
+  // L'accordéon est propre à l'onglet : en changer referme tout, sinon on
+  // arrive dans les classements avec la troisième fiche déjà ouverte.
+  if (changedTab) state.openEditor = null;
   state.tab = tab;
   $('#page-title').textContent = TABS[tab].title;
   $('#panel').innerHTML = TABS[tab].render();
@@ -880,8 +901,7 @@ const BLANK = {
     ratings: Object.fromEntries([...RATINGS_OUTFIELD, ...RATINGS_GK].map(([key]) => [key, 50])),
     overall: 0, description: '', marketValue: ''
   }),
-  statGroup: () => ({ id: '', title: 'Nouveau classement', unit: 'buts', accent: 'blue', icon: 'ball', players: [] }),
-  player: () => ({ name: 'Nouveau joueur', photo: '', value: 0 })
+  statGroup: () => ({ id: '', title: 'Nouveau classement', unit: 'buts', accent: 'blue', icon: 'ball', values: {} })
 };
 
 function onPanelClick(event) {
@@ -914,11 +934,7 @@ function onPanelClick(event) {
   }
   if (target.dataset.add === 'stat-group') {
     (state.draft.stats.groups ||= []).push(BLANK.statGroup());
-    return renderTab();
-  }
-  if (target.dataset.add === 'player') {
-    const list = getPath(state.draft, target.dataset.target);
-    if (Array.isArray(list)) list.push(BLANK.player());
+    state.openEditor = state.draft.stats.groups.length - 1;
     return renderTab();
   }
 
@@ -1183,7 +1199,7 @@ async function loadContent() {
     // champ ajouté au modèle après le dernier enregistrement arriverait vide
     // dans le formulaire — et le prochain « Enregistrer » le figerait vide.
     state.draft = payload.content
-      ? deepMerge(cloneContent(DEFAULT_CONTENT), payload.content)
+      ? deepMerge(cloneContent(DEFAULT_CONTENT), migrateContent(payload.content))
       : cloneContent(DEFAULT_CONTENT);
   } catch {
     state.draft = cloneContent(DEFAULT_CONTENT);

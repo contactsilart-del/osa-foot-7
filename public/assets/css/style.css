@@ -922,6 +922,7 @@ ul, ol { list-style: none; padding: 0; }
 .stat-card--gold { --accent: var(--gold-500); }
 .stat-card--blue { --accent: var(--brand-400); }
 .stat-card--red  { --accent: var(--loss); }
+.stat-card--green { --accent: var(--win); }
 
 .stat-card__head { display: flex; align-items: center; gap: .85rem; }
 .stat-card__head h3 {
@@ -944,8 +945,13 @@ ul, ol { list-style: none; padding: 0; }
 /* Le podium se lit d'un coup d'œil : la 1re place domine visuellement,
    les 2e et 3e décroissent, le reste du classement se déroule à la demande. */
 .podium { display: grid; gap: .6rem; margin: 0; padding: 0; }
+/* Chaque rang est un <li> qui porte un lien : pas de puce. */
+.podium > li { list-style: none; display: grid; }
 
+/* Chaque ligne est un lien vers la fiche du joueur. */
 .podium__row {
+  color: inherit;
+  text-decoration: none;
   --medal: rgba(255, 255, 255, .28);
   --avatar: 42px;
   --value: 1.2rem;
@@ -959,7 +965,9 @@ ul, ol { list-style: none; padding: 0; }
   border: 1px solid transparent;
   transition: background var(--t-fast), border-color var(--t-fast), transform var(--t-fast);
 }
-.podium__row:hover { background: rgba(255, 255, 255, .09); transform: translateX(3px); }
+.podium__row:hover,
+.podium__row:focus-visible { background: rgba(255, 255, 255, .09); transform: translateX(3px); }
+.podium__row:focus-visible { outline: 2px solid var(--brand-400); outline-offset: 2px; }
 
 .podium__row--1 { --medal: #E9BE4A; --avatar: 58px; --value: 1.95rem; padding: .9rem 1rem; }
 .podium__row--2 { --medal: #C3CDDA; --avatar: 50px; --value: 1.6rem;  padding: .75rem .9rem; }

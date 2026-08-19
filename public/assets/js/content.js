@@ -248,46 +248,49 @@ export const DEFAULT_CONTENT = {
     images: []
   },
 
+  /**
+   * Les classements ne listent plus de noms : ils comptent les joueurs de
+   * l'effectif, par identifiant. Ajouter, renommer ou supprimer une fiche dans
+   * l'onglet Effectif se répercute donc partout, sans double saisie.
+   */
   stats: {
     season: '2025 / 2026',
     groups: [
-      {
-        id: 'scorers',
-        title: 'Meilleurs buteurs',
-        unit: 'buts',
-        accent: 'gold',
-        icon: 'ball',
-        players: [
-          { name: 'Keks', photo: '/img/keks.jpg', value: 4 },
-          { name: 'Silas', photo: '/img/silas.jpg', value: 2 },
-          { name: 'Claude', photo: '/img/claude.jpg', value: 2 }
-        ]
-      },
-      {
-        id: 'assists',
-        title: 'Meilleurs passeurs',
-        unit: 'passes déc.',
-        accent: 'blue',
-        icon: 'boot',
-        players: [
-          { name: 'Valé', photo: '/img/val.jpg', value: 4 },
-          { name: 'Noan', photo: '/img/noan.jpg', value: 3 },
-          { name: 'Joris', photo: '/img/joris.jpg', value: 2 }
-        ]
-      },
-      {
-        id: 'owngoals',
-        title: 'Contre son camp',
-        unit: 'CSC',
-        accent: 'red',
-        icon: 'oops',
-        players: [
-          { name: 'Pierre', photo: '/img/pierre.jpg', value: 1 }
-        ]
-      }
+      { id: 'scorers',   title: 'Meilleurs buteurs',    unit: 'buts',        accent: 'gold',  icon: 'ball',  values: {} },
+      { id: 'assists',   title: 'Meilleurs passeurs',   unit: 'passes déc.', accent: 'blue',  icon: 'boot',  values: {} },
+      { id: 'owngoals',  title: 'Contre son camp',      unit: 'CSC',         accent: 'red',   icon: 'oops',  values: {} },
+      { id: 'penalties', title: 'Penaltys concédés',    unit: 'penaltys',    accent: 'red',   icon: 'card',  values: {} },
+      { id: 'caps',      title: 'Matchs joués',         unit: 'matchs',      accent: 'blue',  icon: 'shirt', values: {} },
+      { id: 'training',  title: "Présence à l'entraînement", unit: 'séances', accent: 'green', icon: 'check', values: {} }
     ]
   }
 };
+
+/**
+ * Version du modèle de contenu. Le serveur l'estampille à chaque
+ * enregistrement ; un document plus ancien passe par `migrateContent`.
+ */
+export const SCHEMA_VERSION = 2;
+
+/**
+ * Met à niveau un document enregistré avant la version courante.
+ *
+ * v1 → v2 : les classements listaient des noms libres, sans lien avec
+ * l'effectif. Ils comptent désormais les joueurs par identifiant. Les anciens
+ * compteurs ne sont pas repris — ils repartent de zéro, comme demandé — et les
+ * classements manquants (penaltys, matchs joués, entraînement) sont ajoutés.
+ */
+export function migrateContent(stored) {
+  if (!stored || typeof stored !== 'object') return stored;
+  if (Number(stored.version) >= SCHEMA_VERSION) return stored;
+
+  const migrated = cloneContent(stored);
+  migrated.stats = {
+    ...migrated.stats,
+    groups: cloneContent(DEFAULT_CONTENT.stats.groups)
+  };
+  return migrated;
+}
 
 /** Copie profonde sûre (structuredClone n'est pas garanti sur tous les navigateurs cibles). */
 export function cloneContent(value) {
