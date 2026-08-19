@@ -200,7 +200,7 @@ Rendez-vous sur `/admin/` et connectez-vous avec `ADMIN_PASSWORD`.
 |---|---|
 | **Prochain match** | Équipes, logos, date/heure du coup d'envoi (alimente le compte à rebours), lieu, compétition |
 | **Actualités** | Ajouter / réordonner / supprimer les matchs : titre, score, buteurs, accroche, texte complet, photo |
-| **Effectif** | Fiches de joueurs repliées en accordéon : photo, identité, âge, nationalité, poste (gardien, défenseur, milieu, attaquant, coach), année d'arrivée, étoiles mauvais pied et gestes techniques, 6 notes sur 99 (jeu de notes propre aux gardiens), note générale, descriptif, valeur marchande |
+| **Effectif** | Fiches de joueurs repliées en accordéon : photo, identité, âge, nationalité, poste (gardien, défenseur, milieu, attaquant, coach), année d'arrivée, étoiles mauvais pied et gestes techniques, 6 notes sur 99 (jeu de notes propre aux gardiens, aucune pour le staff), note générale, descriptif, valeur marchande |
 | **Calendrier** | Images du calendrier, légendes, textes alternatifs |
 | **Classement** | Captures du classement de la poule, téléversées et légendées |
 | **Stats saison** | Buteurs, passeurs, CSC : joueurs, valeurs, photos, couleur et icône de chaque colonne. Les 3 premiers forment le podium, le reste se déroule à la demande |
@@ -228,12 +228,20 @@ Rendez-vous sur `/admin/` et connectez-vous avec `ADMIN_PASSWORD`.
   s'affiche sur la carte, colore le badge et sert au classement. Vider le champ
   rend la main au calcul.
 - Le poste **Coach** existe pour le staff : il porte sa propre couleur, se range
-  après les joueurs dans le tri par poste, et gagne à recevoir une note générale
-  imposée — la moyenne de six notes de terrain ne veut rien dire pour lui.
+  après les joueurs dans le tri par poste, et **n'est pas noté** — ni étoiles, ni
+  notes sur 99. Sa carte n'affiche une note générale que si vous en imposez une.
+- La **carte de joueur** montre, sous l'identité, ses **trois meilleures notes**
+  (chacune à la couleur de son palier) puis un pied de carte avec la **valeur
+  marchande** et le **rang de la saison** en cours au club. Le bandeau défilant
+  de l'accueil garde le pied de carte mais pas les points forts, pour rester léger.
+- La valeur marchande reste du **texte libre**, repris tel quel. Le tri
+  « Valeur marchande » sait en extraire un montant : `240 000 €`, `1,2 M€`,
+  `50k`, `12 millions`. Une fiche sans montant lisible reste en fin de liste,
+  dans les deux sens.
 - Chaque fiche a une adresse partageable : `/effectif#joueur-keks`. Le bandeau
   défilant de l'accueil pointe dessus, et l'ancre s'efface à la fermeture.
 - La page Effectif s'ouvre classée sur la meilleure note, et se trie aussi par
-  poste, âge ou ancienneté, dans les deux sens. Chaque critère a son sens
+  poste, valeur marchande, âge ou ancienneté, dans les deux sens. Chaque critère a son sens
   naturel, et « Ordre de l'effectif » rend la main à l'ordre défini dans
   l'administration.
 - Un gardien a ses propres notes (réflexes, positionnement, plongeon, jeu au

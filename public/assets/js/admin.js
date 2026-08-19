@@ -8,7 +8,7 @@
  */
 
 import { DEFAULT_CONTENT, cloneContent, deepMerge } from './content.js';
-import { RATINGS_OUTFIELD, RATINGS_GK, ratingsFor, averageOf } from './squad.js';
+import { RATINGS_OUTFIELD, RATINGS_GK, ratingsFor, averageOf, isStaff } from './squad.js';
 
 /* ═════════════════════════════════════════ Utilitaires ══ */
 
@@ -390,6 +390,8 @@ function playerEditor(player, index) {
   const name = [player.firstName, player.lastName].filter(Boolean).join(' ') || 'Nouveau joueur';
   const position = POSITION_OPTIONS.find((o) => o.value === player.position)?.label || '';
   const ouverte = state.openEditor === index;
+  // Le staff n'est pas noté : ni étoiles, ni notes sur 99.
+  const staff = isStaff(player);
 
   return `
     <article class="repeat__item${ouverte ? '' : ' is-collapsed'}">
@@ -410,34 +412,47 @@ function playerEditor(player, index) {
 
         <div class="a-grid a-grid--3">
           ${field('Au club depuis', `${path}.since`, { type: 'number', placeholder: '2021', hint: "Année d'arrivée : l'ancienneté en est déduite." })}
-          ${field('Mauvais pied', `${path}.weakFoot`, { type: 'select', options: STAR_OPTIONS })}
-          ${field('Gestes techniques', `${path}.skillMoves`, { type: 'select', options: STAR_OPTIONS })}
+          ${staff ? `
+            <div class="a-field a-field--wide">
+              <span class="a-field__label">Notes</span>
+              <p class="a-hint">
+                Un coach n'est pas noté : ni étoiles de mauvais pied ou de gestes
+                techniques, ni notes sur 99. Sa carte n'affiche que la note générale
+                ci-dessous, et seulement si vous en saisissez une.
+              </p>
+            </div>` : `
+            ${field('Mauvais pied', `${path}.weakFoot`, { type: 'select', options: STAR_OPTIONS })}
+            ${field('Gestes techniques', `${path}.skillMoves`, { type: 'select', options: STAR_OPTIONS })}`}
         </div>
 
-        <div class="a-field">
-          <span class="a-field__label">Notes sur 99${player.position === 'GB' ? ' — gardien' : ''}</span>
-          <div class="a-grid a-grid--3">
-            ${ratingsFor(player).map(([key, label]) =>
-              field(label, `${path}.ratings.${key}`, { type: 'number' })).join('')}
-          </div>
-          <small class="a-hint">
-            Palier de couleur sur la fiche : rouge en dessous de 65, jaune de 65 à 74,
-            vert de 75 à 84, vert foncé à partir de 85.
-            ${player.position === 'GB'
-              ? " Les notes de joueur de champ sont conservées : elles reviendront si vous changez le poste."
-              : player.position === 'COACH'
-                ? " Pour un coach, ces six notes n'ont guère de sens : laissez-les de côté et imposez plutôt la note générale ci-dessous."
+        ${staff ? '' : `
+          <div class="a-field">
+            <span class="a-field__label">Notes sur 99${player.position === 'GB' ? ' — gardien' : ''}</span>
+            <div class="a-grid a-grid--3">
+              ${ratingsFor(player).map(([key, label]) =>
+                field(label, `${path}.ratings.${key}`, { type: 'number' })).join('')}
+            </div>
+            <small class="a-hint">
+              Palier de couleur sur la fiche : rouge en dessous de 65, jaune de 65 à 74,
+              vert de 75 à 84, vert foncé à partir de 85.
+              ${player.position === 'GB'
+                ? " Les notes de joueur de champ sont conservées : elles reviendront si vous changez le poste."
                 : " Passez le joueur au poste de gardien pour saisir réflexes, plongeon et jeu au pied."}
-          </small>
-        </div>
+            </small>
+          </div>`}
 
         <div class="a-grid a-grid--2">
-          ${field('Valeur marchande', `${path}.marketValue`, { placeholder: '240 000 €', hint: 'Texte libre : vide = ligne masquée.' })}
+          ${field('Valeur marchande', `${path}.marketValue`, {
+            placeholder: '240 000 €',
+            hint: 'Texte libre, repris tel quel sur la carte. Le tri « Valeur marchande » sait lire 240 000 €, 1,2 M€ ou 50k.'
+          })}
           ${field('Note générale', `${path}.overall`, {
             type: 'number',
             value: Number(player.overall) > 0 ? player.overall : '',
-            placeholder: String(averageOf(player)),
-            hint: `Laissez vide pour garder la moyenne des six notes (${averageOf(player)}). `
+            placeholder: staff ? '' : String(averageOf(player)),
+            hint: staff
+              ? "Facultative : laissée vide, aucune note n'apparaît sur la carte du coach."
+              : `Laissez vide pour garder la moyenne des six notes (${averageOf(player)}). `
                 + "Saisissez un nombre de 1 à 99 pour l'imposer : c'est elle qui s'affiche "
                 + 'en gros sur la carte et qui sert au classement.'
           })}

@@ -263,6 +263,8 @@ code, pre { font-family: var(--a-mono); font-size: .86em; }
 .a-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: 1.1rem; }
 .a-grid--2 { grid-template-columns: repeat(auto-fit, minmax(260px, 1fr)); }
 .a-grid--3 { grid-template-columns: repeat(auto-fit, minmax(170px, 1fr)); }
+/* Occupe la place laissée par les champs qui ne concernent pas ce poste. */
+.a-field--wide { grid-column: span 2; }
 
 .a-hint { font-size: .8rem; color: var(--a-muted); }
 

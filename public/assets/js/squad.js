@@ -45,13 +45,40 @@ export const RATINGS_GK = [
   ['speed', 'Vitesse']
 ];
 
+/** Abréviations affichées sur la carte, où la place manque. */
+export const RATING_SHORT = {
+  pace: 'VIT', dribbling: 'DRI', shooting: 'TIR',
+  passing: 'PAS', defending: 'DÉF', physical: 'PHY',
+  reflexes: 'RÉF', positioning: 'PLA', diving: 'PLO',
+  kicking: 'PIED', handling: 'MAIN', speed: 'VIT'
+};
+
+/** Le staff n'est pas noté : ni vitesse, ni tir, ni réflexes. */
+export function isStaff(player) {
+  return player?.position === 'COACH';
+}
+
 /**
  * Les deux jeux cohabitent dans la même fiche : changer un joueur de poste
  * n'efface pas les notes de l'autre jeu, elles cessent seulement d'être
  * affichées.
  */
 export function ratingsFor(player) {
+  if (isStaff(player)) return [];
   return player?.position === 'GB' ? RATINGS_GK : RATINGS_OUTFIELD;
+}
+
+/** Les `count` meilleures notes du joueur, la plus haute d'abord. */
+export function bestRatings(player, count = 3) {
+  return ratingsFor(player)
+    .map(([key, label]) => ({
+      key,
+      label,
+      short: RATING_SHORT[key] || label.slice(0, 3).toUpperCase(),
+      value: Math.max(0, Math.min(RATING_MAX, Number(player?.ratings?.[key]) || 0))
+    }))
+    .sort((a, b) => b.value - a.value)
+    .slice(0, count);
 }
 
 /** Compatibilité : l'ancien nom pointe sur le jeu des joueurs de champ. */
@@ -79,9 +106,10 @@ export function ratingColor(value) {
   return RATING_BANDS.find((band) => note >= band.min).color;
 }
 
-/** Moyenne des six notes du poste, arrondie. */
+/** Moyenne des six notes du poste, arrondie. Zéro quand le poste n'est pas noté. */
 export function averageOf(player) {
   const values = ratingsFor(player).map(([key]) => Number(player?.ratings?.[key]) || 0);
+  if (!values.length) return 0;
   return Math.round(values.reduce((sum, v) => sum + v, 0) / values.length);
 }
 
@@ -95,6 +123,28 @@ export function averageOf(player) {
 export function overallOf(player) {
   const manual = Number(player?.overall) || 0;
   return manual > 0 ? Math.min(RATING_MAX, Math.round(manual)) : averageOf(player);
+}
+
+/**
+ * Valeur marchande en nombre, pour le tri seulement — l'affichage garde le
+ * texte tel qu'il a été saisi. Comprend « 240 000 € », « 1,2 M€ », « 50k »
+ * et « 12 millions ». Rend `null` quand aucun montant ne s'y trouve.
+ */
+export function marketValueOf(player) {
+  const raw = String(player?.marketValue ?? '')
+    .replace(/[\s\u00a0\u202f]/g, '')
+    .replace(',', '.');
+  const found = raw.match(/(\d+(?:\.\d+)?)([kKmM])?/);
+  if (!found) return null;
+  const amount = Number(found[1]);
+  if (!Number.isFinite(amount)) return null;
+  const suffix = (found[2] || '').toLowerCase();
+  return amount * (suffix === 'k' ? 1e3 : suffix === 'm' ? 1e6 : 1);
+}
+
+/** Rang de saison en français : 1re, 2e, 3e… */
+function ordinal(n) {
+  return n === 1 ? '1re' : `${n}e`;
 }
 
 /** Nom complet, sans espace superflu quand le nom de famille manque. */
@@ -148,6 +198,7 @@ export const SORTS = {
   default:  { label: "Ordre de l'effectif", direction: null },
   position: { label: 'Poste', direction: 'asc' },
   overall:  { label: 'Note générale', direction: 'desc' },
+  value:    { label: 'Valeur marchande', direction: 'desc' },
   age:      { label: 'Âge', direction: 'asc' },
   since:    { label: 'Ancienneté', direction: 'desc' }
 };
@@ -155,7 +206,10 @@ export const SORTS = {
 function sortValue(player, key) {
   switch (key) {
     case 'position': return POSITION_ORDER[player.position] ?? 9;
-    case 'overall': return overallOf(player);
+    // Une note à 0, c'est une fiche sans notes (un coach, souvent) : elle n'a
+    // pas sa place en tête du classement croissant.
+    case 'overall': return overallOf(player) || null;
+    case 'value': return marketValueOf(player);
     // Un âge ou une ancienneté à 0 signifie « non renseigné », pas « zéro ».
     case 'age': return Number(player.age) || null;
     case 'since': return seasonsAtClub(player) || null;
@@ -206,12 +260,26 @@ export function playerCardHTML(player, options = {}) {
     : `type="button" data-player="${esc(player.id)}"`;
   const hidden = clone ? ' aria-hidden="true" tabindex="-1"' : '';
 
+  // Les trois points forts, réservés à la grande carte : le bandeau défilant
+  // doit rester léger.
+  const best = compact ? [] : bestRatings(player);
+
+  // Pied de carte : la valeur marchande telle qu'elle a été saisie, et le rang
+  // de la saison en cours au club.
+  const seasons = seasonsAtClub(player);
+  // Seule la valeur marchande peut être tronquée : elle seule mérite une
+  // infobulle qui rend le texte complet.
+  const facts = [
+    player.marketValue ? [player.marketValue, 'valeur', true] : null,
+    seasons ? [ordinal(seasons), 'saison', false] : null
+  ].filter(Boolean);
+
   return `
     <${tag} class="player-card${compact ? ' player-card--compact' : ''}" ${attrs}${hidden}
             style="--position-accent:${position.accent}; --overall-color:${ratingColor(overall)}; --delay:${index * 60}ms"
             ${compact ? '' : 'data-reveal'}>
       <span class="player-card__top">
-        <span class="player-card__overall" aria-label="Note générale ${overall} sur ${RATING_MAX}">${overall}</span>
+        ${overall ? `<span class="player-card__overall" aria-label="Note générale ${overall} sur ${RATING_MAX}">${overall}</span>` : ''}
         <span class="player-card__position">${esc(position.label)}</span>
       </span>
 
@@ -226,6 +294,22 @@ export function playerCardHTML(player, options = {}) {
         ${player.nationality ? `<span>${esc(player.nationality)}</span>` : ''}
         ${Number(player.age) ? `<span>${esc(player.age)} ans</span>` : ''}
       </span>
+
+      ${best.length ? `
+        <span class="player-card__best">
+          ${best.map((note) => `
+            <span class="player-card__best-item" style="--rating-color:${ratingColor(note.value)}">
+              <b>${note.value}</b><small>${esc(note.short)}</small>
+            </span>`).join('')}
+        </span>` : ''}
+
+      ${facts.length ? `
+        <span class="player-card__footer">
+          ${facts.map(([value, label, titled]) => `
+            <span class="player-card__fact">
+              <b${titled ? ` title="${esc(value)}"` : ''}>${esc(value)}</b><small>${esc(label)}</small>
+            </span>`).join('')}
+        </span>` : ''}
     </${tag}>`;
 }
 
@@ -252,9 +336,10 @@ export function playerProfileHTML(player) {
         <div class="player-profile__title">
           <p class="player-profile__position">${esc(position.label)}</p>
           <h2 class="modal__title" id="modal-title">${esc(fullName(player))}</h2>
-          <p class="player-profile__overall">
-            <b>${overall}</b><small>note générale</small>
-          </p>
+          ${overall ? `
+            <p class="player-profile__overall">
+              <b>${overall}</b><small>note générale</small>
+            </p>` : ''}
         </div>
       </header>
 
@@ -265,28 +350,29 @@ export function playerProfileHTML(player) {
               <div><dt>${esc(label)}</dt><dd>${esc(value)}</dd></div>`).join('')}
           </dl>` : ''}
 
-        <div class="player-skills">
-          <div class="player-skills__item">
-            <span>Mauvais pied</span>
-            ${starsHTML(player.weakFoot, 'Mauvais pied')}
+        ${isStaff(player) ? '' : `
+          <div class="player-skills">
+            <div class="player-skills__item">
+              <span>Mauvais pied</span>
+              ${starsHTML(player.weakFoot, 'Mauvais pied')}
+            </div>
+            <div class="player-skills__item">
+              <span>Gestes techniques</span>
+              ${starsHTML(player.skillMoves, 'Gestes techniques')}
+            </div>
           </div>
-          <div class="player-skills__item">
-            <span>Gestes techniques</span>
-            ${starsHTML(player.skillMoves, 'Gestes techniques')}
-          </div>
-        </div>
 
-        <div class="player-ratings">
-          ${ratingsFor(player).map(([key, label]) => {
-            const value = Math.max(0, Math.min(RATING_MAX, Number(player.ratings?.[key]) || 0));
-            return `
-              <div class="rating" style="--rating-color:${ratingColor(value)}; --rating-fill:${Math.round((value / RATING_MAX) * 100)}%">
-                <span class="rating__label">${esc(label)}</span>
-                <span class="rating__value">${value}</span>
-                <span class="rating__bar"><i></i></span>
-              </div>`;
-          }).join('')}
-        </div>
+          <div class="player-ratings">
+            ${ratingsFor(player).map(([key, label]) => {
+              const value = Math.max(0, Math.min(RATING_MAX, Number(player.ratings?.[key]) || 0));
+              return `
+                <div class="rating" style="--rating-color:${ratingColor(value)}; --rating-fill:${Math.round((value / RATING_MAX) * 100)}%">
+                  <span class="rating__label">${esc(label)}</span>
+                  <span class="rating__value">${value}</span>
+                  <span class="rating__bar"><i></i></span>
+                </div>`;
+            }).join('')}
+          </div>`}
 
         ${player.description ? `
           <div class="player-profile__text">
