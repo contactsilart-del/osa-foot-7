@@ -7,7 +7,7 @@
  */
 
 import { DEFAULT_CONTENT, cloneContent, deepMerge } from './content.js';
-import { playerCardHTML, playerProfileHTML } from './squad.js';
+import { playerCardHTML, playerProfileHTML, sortPlayers, SORTS } from './squad.js';
 
 /* ═══════════════════════════════════════════ Utilitaires ══ */
 
@@ -15,7 +15,12 @@ const $  = (sel, root = document) => root.querySelector(sel);
 const $$ = (sel, root = document) => Array.from(root.querySelectorAll(sel));
 
 /** Contenu courant du site. Rempli par `render()`, lu par les gestionnaires d'événements. */
-const state = { content: null };
+const state = {
+  content: null,
+  /** Fiche ouverte, pour la rafraîchir quand le contenu distant arrive. */
+  openPlayerId: null,
+  squadSort: { key: 'default', direction: 'asc' }
+};
 
 const REDUCED_MOTION = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
 
@@ -619,9 +624,16 @@ function renderSquadGrid(content) {
   if (!grid) return;
 
   const players = Array.isArray(content.squad?.players) ? content.squad.players : [];
-  grid.innerHTML = players.length
-    ? players.map((player, index) => playerCardHTML(player, { index })).join('')
+  const { key, direction } = state.squadSort;
+  const ordered = sortPlayers(players, key, direction);
+
+  grid.innerHTML = ordered.length
+    ? ordered.map((player, index) => playerCardHTML(player, { index })).join('')
     : soonState('Effectif à venir', "Les fiches des joueurs seront publiées ici prochainement.");
+
+  // Le tri n'a pas de sens en dessous de deux fiches.
+  const toolbar = $('#squad-toolbar');
+  if (toolbar) toolbar.hidden = players.length < 2;
 
   const count = $('#squad-count');
   if (count) {
@@ -659,11 +671,56 @@ function renderSquadStrip(content) {
     </div>`;
 }
 
+/** Barre de tri de la page Effectif. */
+function initSquadSort() {
+  const select = $('#squad-sort');
+  const button = $('#squad-dir');
+  if (!select) return;
+
+  // L'option retenue est marquée dans le HTML plutôt qu'affectée après coup :
+  // une seule source, et rien à resynchroniser.
+  select.innerHTML = Object.entries(SORTS)
+    .map(([key, { label }]) =>
+      `<option value="${key}"${key === state.squadSort.key ? ' selected' : ''}>${esc(label)}</option>`)
+    .join('');
+
+  const paint = () => {
+    const { key, direction } = state.squadSort;
+    const sortable = key !== 'default';
+    button.disabled = !sortable;
+    button.setAttribute('aria-pressed', String(direction === 'desc'));
+    $('.squad-dir__label', button).textContent = sortable
+      ? (direction === 'asc' ? 'Croissant' : 'Décroissant')
+      : 'Ordre libre';
+    button.classList.toggle('is-desc', direction === 'desc');
+  };
+
+  select.addEventListener('change', () => {
+    const key = select.value;
+    // Chaque critère a un sens de lecture naturel : meilleures notes d'abord,
+    // joueurs les plus anciens d'abord…
+    state.squadSort = { key, direction: SORTS[key]?.direction || 'asc' };
+    paint();
+    renderSquadGrid(state.content);
+  });
+
+  button.addEventListener('click', () => {
+    if (state.squadSort.key === 'default') return;
+    state.squadSort.direction = state.squadSort.direction === 'asc' ? 'desc' : 'asc';
+    paint();
+    renderSquadGrid(state.content);
+  });
+
+  paint();
+}
+
 function openPlayer(id) {
   const player = playerById(id);
   if (!player) return false;
 
+  state.openPlayerId = id;
   modal.open(playerProfileHTML(player), () => {
+    state.openPlayerId = null;
     // L'ancre disparaît à la fermeture : recharger la page ne rouvre pas la fiche.
     if (PLAYER_HASH.test(window.location.hash)) {
       window.history.replaceState(null, '', window.location.pathname + window.location.search);
@@ -673,6 +730,26 @@ function openPlayer(id) {
   const hash = `#joueur-${encodeURIComponent(id)}`;
   if (window.location.hash !== hash) window.history.replaceState(null, '', hash);
   return true;
+}
+
+/**
+ * Remet la fiche ouverte à jour après un nouveau rendu.
+ *
+ * Au chargement d'une URL du type /effectif#joueur-keks, la fiche s'ouvre
+ * d'abord à partir du contenu livré avec le code, puis le contenu enregistré
+ * arrive de la base. Sans ce rafraîchissement, la modale resterait figée sur
+ * l'ancienne version du joueur.
+ */
+function refreshOpenPlayer() {
+  if (!state.openPlayerId || !modal.isOpen) return;
+
+  const player = playerById(state.openPlayerId);
+  if (player) {
+    modal.body.innerHTML = playerProfileHTML(player);
+  } else {
+    // La fiche a été supprimée entre-temps : inutile de garder la modale.
+    modal.close();
+  }
 }
 
 /** Ouvre la fiche désignée par l'ancre de l'URL, si elle existe. */
@@ -829,6 +906,7 @@ function render(content) {
   renderNews(content);
   renderSquadGrid(content);
   renderSquadStrip(content);
+  refreshOpenPlayer();
   IMAGE_SECTIONS.forEach((section) => renderImageSection(content, section));
   renderStats(content);
   startCountdown(content.nextMatch?.kickoff);
@@ -852,6 +930,7 @@ async function boot() {
   initContactForm();
   initReveal();
 
+  initSquadSort();
   window.addEventListener('hashchange', syncPlayerFromHash);
 
   render(cloneContent(DEFAULT_CONTENT));

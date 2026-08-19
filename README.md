@@ -226,6 +226,10 @@ Rendez-vous sur `/admin/` et connectez-vous avec `ADMIN_PASSWORD`.
   notes, recalculée à l'affichage.
 - Chaque fiche a une adresse partageable : `/effectif#joueur-keks`. Le bandeau
   défilant de l'accueil pointe dessus, et l'ancre s'efface à la fermeture.
+- La page Effectif se trie par poste, note, âge ou ancienneté, dans les deux
+  sens. Chaque critère a son sens naturel (meilleures notes d'abord, joueurs
+  les plus anciens d'abord), et « Ordre de l'effectif » rend la main à l'ordre
+  défini dans l'administration.
 - Les images acceptées sont JPG, PNG, WebP, GIF et AVIF, jusqu'à 5 Mo.
   Le SVG est refusé pour des raisons de sécurité.
 

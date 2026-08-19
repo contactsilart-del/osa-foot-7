@@ -85,6 +85,17 @@
   <section class="section section--dark" id="effectif">
     <div class="section__bg" aria-hidden="true"><span class="hero__glow hero__glow--c"></span></div>
     <div class="shell">
+      <div class="squad-toolbar" id="squad-toolbar" hidden>
+        <label class="squad-sort">
+          <span class="squad-sort__label">Trier par</span>
+          <select id="squad-sort"></select>
+        </label>
+        <button class="squad-dir" id="squad-dir" type="button" aria-pressed="false">
+          <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M7 4l4 5H8v11H6V9H3l4-5zm10 16l-4-5h3V4h2v11h3l-4 5z"/></svg>
+          <span class="squad-dir__label">Croissant</span>
+        </button>
+      </div>
+
       <div class="squad-grid" id="squad-grid">
         <!-- injecté par app.js -->
       </div>

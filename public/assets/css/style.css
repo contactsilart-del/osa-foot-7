@@ -1415,6 +1415,64 @@ ul, ol { list-style: none; padding: 0; }
 }
 .player-card__meta span + span::before { content: "· "; }
 
+/* Barre de tri de l'effectif */
+.squad-toolbar {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: flex-end;
+  gap: .6rem;
+  margin-bottom: clamp(1.2rem, 3vw, 1.8rem);
+}
+
+.squad-sort {
+  display: inline-flex;
+  align-items: center;
+  gap: .55rem;
+  padding: .35rem .35rem .35rem .9rem;
+  border-radius: 999px;
+  background: var(--dark-surface);
+  border: 1px solid var(--dark-line);
+}
+.squad-sort__label {
+  font-size: .72rem;
+  font-weight: 800;
+  letter-spacing: .12em;
+  text-transform: uppercase;
+  color: var(--dark-muted);
+}
+.squad-sort select {
+  appearance: none;
+  padding: .4rem 2rem .4rem .7rem;
+  border: 0;
+  border-radius: 999px;
+  background: rgba(255, 255, 255, .08) url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='%239FB2D4'%3E%3Cpath d='M7 10l5 5 5-5z'/%3E%3C/svg%3E") no-repeat right .45rem center / 20px;
+  color: var(--dark-ink);
+  font-size: .88rem;
+  font-weight: 700;
+  cursor: pointer;
+}
+.squad-sort select:focus-visible { outline: 2px solid var(--brand-400); outline-offset: 2px; }
+.squad-sort select option { background: var(--dark-bg); color: var(--dark-ink); }
+
+.squad-dir {
+  display: inline-flex;
+  align-items: center;
+  gap: .45rem;
+  padding: .55rem 1rem;
+  border-radius: 999px;
+  background: var(--dark-surface);
+  border: 1px solid var(--dark-line);
+  color: var(--dark-ink);
+  font-size: .82rem;
+  font-weight: 800;
+  transition: background var(--t-fast), border-color var(--t-fast), opacity var(--t-fast);
+}
+.squad-dir svg { width: 17px; height: 17px; fill: var(--brand-400); transition: transform var(--t); }
+.squad-dir.is-desc svg { transform: scaleY(-1); }
+.squad-dir:hover:not(:disabled) { background: rgba(255, 255, 255, .1); border-color: var(--brand-400); }
+.squad-dir:disabled { opacity: .45; cursor: default; }
+
 /* Grille de la page Effectif */
 .squad-grid {
   display: grid;

@@ -93,6 +93,57 @@ function avatarHTML(player, size) {
     : `<span class="player-avatar__initials" aria-hidden="true">${esc(initialsOf(player))}</span>`;
 }
 
+/* ═════════════════════════════════════════════ Tri ══ */
+
+/** Ordre naturel des postes : du but vers l'attaque. */
+const POSITION_ORDER = { GB: 0, DEF: 1, MIL: 2, ATT: 3 };
+
+/**
+ * Critères de tri de l'effectif.
+ * `direction` est le sens par défaut appliqué quand on choisit le critère —
+ * les meilleures notes d'abord, les plus anciens d'abord, etc.
+ */
+export const SORTS = {
+  default:  { label: "Ordre de l'effectif", direction: null },
+  position: { label: 'Poste', direction: 'asc' },
+  overall:  { label: 'Note générale', direction: 'desc' },
+  age:      { label: 'Âge', direction: 'asc' },
+  since:    { label: 'Ancienneté', direction: 'desc' }
+};
+
+function sortValue(player, key) {
+  switch (key) {
+    case 'position': return POSITION_ORDER[player.position] ?? 9;
+    case 'overall': return overallOf(player);
+    // Un âge ou une ancienneté à 0 signifie « non renseigné », pas « zéro ».
+    case 'age': return Number(player.age) || null;
+    case 'since': return seasonsAtClub(player) || null;
+    default: return null;
+  }
+}
+
+/**
+ * Trie une copie de l'effectif. Les fiches dont la valeur manque restent en fin
+ * de liste dans les deux sens : les remonter en tête à la moindre inversion
+ * n'aurait aucun intérêt pour le lecteur.
+ */
+export function sortPlayers(players, key = 'default', direction = 'asc') {
+  const list = Array.isArray(players) ? players : [];
+  if (!SORTS[key] || key === 'default') return [...list];
+
+  const sign = direction === 'asc' ? 1 : -1;
+
+  return [...list].sort((a, b) => {
+    const va = sortValue(a, key);
+    const vb = sortValue(b, key);
+    if (va === null && vb === null) return 0;
+    if (va === null) return 1;
+    if (vb === null) return -1;
+    if (va !== vb) return (va - vb) * sign;
+    return fullName(a).localeCompare(fullName(b), 'fr');
+  });
+}
+
 /* ═════════════════════════════════════════════ Carte ══ */
 
 /**
