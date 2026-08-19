@@ -8,7 +8,7 @@
  */
 
 import { DEFAULT_CONTENT, cloneContent, deepMerge } from './content.js';
-import { RATINGS_OUTFIELD, RATINGS_GK, ratingsFor } from './squad.js';
+import { RATINGS_OUTFIELD, RATINGS_GK, ratingsFor, averageOf } from './squad.js';
 
 /* ═════════════════════════════════════════ Utilitaires ══ */
 
@@ -348,7 +348,8 @@ const POSITION_OPTIONS = [
   { value: 'GB', label: 'Gardien' },
   { value: 'DEF', label: 'Défenseur' },
   { value: 'MIL', label: 'Milieu' },
-  { value: 'ATT', label: 'Attaquant' }
+  { value: 'ATT', label: 'Attaquant' },
+  { value: 'COACH', label: 'Coach' }
 ];
 
 const STAR_OPTIONS = [0, 1, 2, 3, 4, 5].map((n) => ({
@@ -424,18 +425,22 @@ function playerEditor(player, index) {
             vert de 75 à 84, vert foncé à partir de 85.
             ${player.position === 'GB'
               ? " Les notes de joueur de champ sont conservées : elles reviendront si vous changez le poste."
-              : " Passez le joueur au poste de gardien pour saisir réflexes, plongeon et jeu au pied."}
+              : player.position === 'COACH'
+                ? " Pour un coach, ces six notes n'ont guère de sens : laissez-les de côté et imposez plutôt la note générale ci-dessous."
+                : " Passez le joueur au poste de gardien pour saisir réflexes, plongeon et jeu au pied."}
           </small>
         </div>
 
         <div class="a-grid a-grid--2">
           ${field('Valeur marchande', `${path}.marketValue`, { placeholder: '240 000 €', hint: 'Texte libre : vide = ligne masquée.' })}
-          <div class="a-field">
-            <span class="a-field__label">Note générale</span>
-            <p class="a-hint">
-              Calculée automatiquement : moyenne des six notes ci-dessus. Elle s'affiche en gros sur la carte.
-            </p>
-          </div>
+          ${field('Note générale', `${path}.overall`, {
+            type: 'number',
+            value: Number(player.overall) > 0 ? player.overall : '',
+            placeholder: String(averageOf(player)),
+            hint: `Laissez vide pour garder la moyenne des six notes (${averageOf(player)}). `
+                + "Saisissez un nombre de 1 à 99 pour l'imposer : c'est elle qui s'affiche "
+                + 'en gros sur la carte et qui sert au classement.'
+          })}
         </div>
 
         ${field('Descriptif', `${path}.description`, { type: 'textarea', hint: 'Une ligne vide crée un nouveau paragraphe.' })}
@@ -858,7 +863,7 @@ const BLANK = {
     age: 0, nationality: 'France', position: 'MIL', since: new Date().getFullYear(),
     weakFoot: 3, skillMoves: 3,
     ratings: Object.fromEntries([...RATINGS_OUTFIELD, ...RATINGS_GK].map(([key]) => [key, 50])),
-    description: '', marketValue: ''
+    overall: 0, description: '', marketValue: ''
   }),
   statGroup: () => ({ id: '', title: 'Nouveau classement', unit: 'buts', accent: 'blue', icon: 'ball', players: [] }),
   player: () => ({ name: 'Nouveau joueur', photo: '', value: 0 })

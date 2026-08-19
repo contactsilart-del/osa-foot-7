@@ -200,7 +200,7 @@ Rendez-vous sur `/admin/` et connectez-vous avec `ADMIN_PASSWORD`.
 |---|---|
 | **Prochain match** | Équipes, logos, date/heure du coup d'envoi (alimente le compte à rebours), lieu, compétition |
 | **Actualités** | Ajouter / réordonner / supprimer les matchs : titre, score, buteurs, accroche, texte complet, photo |
-| **Effectif** | Fiches de joueurs repliées en accordéon : photo, identité, âge, nationalité, poste, année d'arrivée, étoiles mauvais pied et gestes techniques, 6 notes sur 99 (jeu de notes propre aux gardiens), descriptif, valeur marchande |
+| **Effectif** | Fiches de joueurs repliées en accordéon : photo, identité, âge, nationalité, poste (gardien, défenseur, milieu, attaquant, coach), année d'arrivée, étoiles mauvais pied et gestes techniques, 6 notes sur 99 (jeu de notes propre aux gardiens), note générale, descriptif, valeur marchande |
 | **Calendrier** | Images du calendrier, légendes, textes alternatifs |
 | **Classement** | Captures du classement de la poule, téléversées et légendées |
 | **Stats saison** | Buteurs, passeurs, CSC : joueurs, valeurs, photos, couleur et icône de chaque colonne. Les 3 premiers forment le podium, le reste se déroule à la demande |
@@ -222,8 +222,14 @@ Rendez-vous sur `/admin/` et connectez-vous avec `ADMIN_PASSWORD`.
   de saisie n'a aucune importance.
 - Une section d'images laissée vide (calendrier, classement) affiche
   « Bientôt disponible » plutôt qu'un trou dans la page.
-- La **note générale** d'un joueur n'est pas saisie : c'est la moyenne des six
-  notes, recalculée à l'affichage.
+- La **note générale** se calcule seule — moyenne des six notes — tant que le
+  champ « Note générale » reste vide ; la moyenne du moment y sert de valeur
+  fantôme. Y saisir un nombre de 1 à 99 l'impose : c'est cette note-là qui
+  s'affiche sur la carte, colore le badge et sert au classement. Vider le champ
+  rend la main au calcul.
+- Le poste **Coach** existe pour le staff : il porte sa propre couleur, se range
+  après les joueurs dans le tri par poste, et gagne à recevoir une note générale
+  imposée — la moyenne de six notes de terrain ne veut rien dire pour lui.
 - Chaque fiche a une adresse partageable : `/effectif#joueur-keks`. Le bandeau
   défilant de l'accueil pointe dessus, et l'ancre s'efface à la fermeture.
 - La page Effectif s'ouvre classée sur la meilleure note, et se trie aussi par

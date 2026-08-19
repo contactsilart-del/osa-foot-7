@@ -17,10 +17,12 @@ function esc(value) {
 }
 
 export const POSITIONS = {
-  GB:  { label: 'Gardien',   accent: '#E9A13B' },
-  DEF: { label: 'Défenseur', accent: '#3DA5E0' },
-  MIL: { label: 'Milieu',    accent: '#3DC08A' },
-  ATT: { label: 'Attaquant', accent: '#E2604A' }
+  GB:    { label: 'Gardien',   accent: '#E9A13B' },
+  DEF:   { label: 'Défenseur', accent: '#3DA5E0' },
+  MIL:   { label: 'Milieu',    accent: '#3DC08A' },
+  ATT:   { label: 'Attaquant', accent: '#E2604A' },
+  // Le staff porte sa propre couleur : il ne se confond avec aucune ligne.
+  COACH: { label: 'Coach',     accent: '#9B7BE8' }
 };
 
 /** Les six notes d'un joueur de champ, dans l'ordre d'affichage. */
@@ -77,10 +79,22 @@ export function ratingColor(value) {
   return RATING_BANDS.find((band) => note >= band.min).color;
 }
 
-/** Moyenne des six notes du poste, arrondie. Sert de note générale. */
-export function overallOf(player) {
+/** Moyenne des six notes du poste, arrondie. */
+export function averageOf(player) {
   const values = ratingsFor(player).map(([key]) => Number(player?.ratings?.[key]) || 0);
   return Math.round(values.reduce((sum, v) => sum + v, 0) / values.length);
+}
+
+/**
+ * Note générale affichée sur la carte et le profil.
+ *
+ * Une note saisie à la main l'emporte sur la moyenne : la moyenne des six
+ * notes ne dit pas tout d'un joueur, et elle ne veut rien dire du tout pour un
+ * coach. `overall` à 0 (ou absent) signifie « laisse le calcul faire ».
+ */
+export function overallOf(player) {
+  const manual = Number(player?.overall) || 0;
+  return manual > 0 ? Math.min(RATING_MAX, Math.round(manual)) : averageOf(player);
 }
 
 /** Nom complet, sans espace superflu quand le nom de famille manque. */
@@ -123,7 +137,7 @@ function avatarHTML(player, size) {
 /* ═════════════════════════════════════════════ Tri ══ */
 
 /** Ordre naturel des postes : du but vers l'attaque. */
-const POSITION_ORDER = { GB: 0, DEF: 1, MIL: 2, ATT: 3 };
+const POSITION_ORDER = { GB: 0, DEF: 1, MIL: 2, ATT: 3, COACH: 4 };
 
 /**
  * Critères de tri de l'effectif.
