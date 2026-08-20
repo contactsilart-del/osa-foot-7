@@ -344,10 +344,14 @@ function toV4(content) {
 }
 
 /**
- * v4 → v5 : le site annonçait Saint-Affrique (12400), en Aveyron, alors que le
- * stade est à Saint-Affrique-les-Montagnes, dans le Tarn — cent kilomètres
- * d'écart. La correction ne s'applique qu'aux valeurs restées telles quelles :
- * une adresse déjà personnalisée n'est jamais écrasée.
+ * Correction d'adresse : le site annonçait Saint-Affrique (12400), en Aveyron,
+ * alors que le stade est à Saint-Affrique-les-Montagnes, dans le Tarn — cent
+ * kilomètres d'écart.
+ *
+ * Contrairement aux autres étapes, celle-ci ne dépend pas du numéro de version.
+ * Elle ne remplace que trois valeurs précises, connues pour être fausses, ce qui
+ * la rend inoffensive à rejouer : une adresse déjà personnalisée n'est jamais
+ * touchée. C'est ce qui permet de rattraper un document mal estampillé.
  */
 const ADRESSES_ERRONEES = ['', 'Saint-Affrique (12400)', 'Saint-Affrique'];
 const LIEUX_ERRONES = ['', 'Stade municipal — Saint-Affrique', 'Stade municipal - Saint-Affrique'];
@@ -369,13 +373,15 @@ function toV5(content) {
 export function migrateContent(stored) {
   if (!stored || typeof stored !== 'object') return stored;
   const version = Number(stored.version) || 1;
-  if (version >= SCHEMA_VERSION) return stored;
+  // La correction d'adresse se rejoue même sur un document à jour : elle répare
+  // les documents estampillés par une version du panel qui ne l'avait pas.
+  if (version >= SCHEMA_VERSION) return toV5(cloneContent(stored));
 
   let migrated = cloneContent(stored);
   if (version < 2) migrated = toV2(migrated);
   if (version < 3) migrated = toV3(migrated);
   if (version < 4) migrated = toV4(migrated);
-  if (version < 5) migrated = toV5(migrated);
+  migrated = toV5(migrated);
   // Estampiller évite de rejouer la migration à chaque rendu de la page.
   migrated.version = SCHEMA_VERSION;
   return migrated;

@@ -350,6 +350,15 @@ Rien à administrer : la page se sert de l'effectif tel qu'il est saisi.
   **sans toucher aux compteurs déjà saisis**, et sans faire revenir un classement
   supprimé exprès ; v3 → v4 marque les cinq cartes légendaires ; v4 → v5 corrige
   l'adresse du stade, **uniquement si elle était restée sur l'ancienne valeur**.
+- La version est **écrite par le navigateur**, pas par le serveur : seul le code
+  qui a réellement appliqué les migrations sait où en est le contenu. Si le
+  serveur l'estampillait lui-même, un enregistrement fait depuis un onglet resté
+  sur l'ancien code marquerait le document « à jour » sans l'être, et les
+  migrations manquantes ne seraient jamais rejouées.
+- La correction d'adresse fait exception : elle se rejoue à chaque chargement,
+  même sur un document à jour. Elle ne remplace que des valeurs connues pour être
+  fausses, donc la rejouer ne coûte rien — et cela rattrape un document mal
+  estampillé.
 
 ---
 
