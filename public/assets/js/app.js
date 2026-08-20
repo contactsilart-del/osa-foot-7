@@ -666,7 +666,7 @@ function renderStandings(content) {
 
 /* ══════════════════════════════════════════ Résultats ══ */
 
-function resultRowHTML(content, match) {
+function resultRowHTML(content, match, groupe = '') {
   const champ = champOf(content);
   const nous = usId(content);
   const joue = isPlayed(match);
@@ -693,7 +693,9 @@ function resultRowHTML(content, match) {
       </span>
 
       <span class="result__meta">
-        ${match.competition ? `<span class="chip chip--soft">${esc(match.competition)}</span>` : ''}
+        ${match.competition && match.competition !== groupe
+          ? `<span class="chip chip--soft">${esc(match.competition)}</span>`
+          : ''}
         ${quand ? `<span class="result__when">${esc(quand)}</span>` : ''}
         ${match.title && recit >= 0
           ? `<button class="link-btn" type="button" data-news="${recit}">Le récit</button>`
@@ -717,7 +719,7 @@ function renderResults(content) {
     <section class="matchday" data-reveal style="--delay:${index * 60}ms">
       <h3 class="matchday__title">${esc(groupe.label)}</h3>
       <ul class="matchday__list">
-        ${groupe.matches.map((match) => resultRowHTML(content, match)).join('')}
+        ${groupe.matches.map((match) => resultRowHTML(content, match, groupe.label)).join('')}
       </ul>
     </section>`).join('');
 
