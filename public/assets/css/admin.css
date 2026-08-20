@@ -266,6 +266,16 @@ code, pre { font-family: var(--a-mono); font-size: .86em; }
 /* Occupe la place laissée par les champs qui ne concernent pas ce poste. */
 .a-field--wide { grid-column: span 2; }
 
+/* Encadré des opérations irréversibles. */
+.a-card--danger { border-color: color-mix(in srgb, var(--a-danger) 45%, transparent); }
+.a-card--danger .a-card__head { background: color-mix(in srgb, var(--a-danger) 10%, transparent); }
+.a-btn--danger {
+  background: var(--a-danger);
+  border-color: var(--a-danger);
+  color: #fff;
+}
+.a-btn--danger:hover { filter: brightness(1.1); }
+
 /* Case à cocher : la zone cliquable englobe le libellé. */
 .a-check {
   display: flex;

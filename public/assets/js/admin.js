@@ -10,6 +10,9 @@
 import { DEFAULT_CONTENT, cloneContent, deepMerge, migrateContent } from './content.js';
 import { RATINGS_OUTFIELD, RATINGS_GK, ratingsFor, averageOf, isStaff, fullName } from './squad.js';
 
+/** Doit rester aligné sur `SIGNUP_PACKS` de lib/players.js. */
+const SIGNUP_PACKS = 15;
+
 /* ═════════════════════════════════════════ Utilitaires ══ */
 
 const $  = (sel, root = document) => root.querySelector(sel);
@@ -393,6 +396,26 @@ function renderSquad() {
         ${players.length
           ? `<div class="repeat">${players.map(playerEditor).join('')}</div>`
           : '<p class="empty-state">Aucun joueur. Cliquez sur « Ajouter un joueur » pour créer la première fiche.</p>'}
+      </div>
+    </section>
+
+    <section class="a-card a-card--danger">
+      <header class="a-card__head">
+        <div>
+          <h2>Collections des supporters</h2>
+          <p>Le jeu de packs distribue les cartes de cet effectif.</p>
+        </div>
+        <button class="a-btn a-btn--danger a-btn--sm" type="button" id="reset-packs">Remettre à zéro</button>
+      </header>
+      <div class="a-card__body">
+        <p class="a-hint">
+          Efface <b>toutes les collections</b> et rend à chaque compte ses
+          ${SIGNUP_PACKS} packs de départ. Les comptes ne sont pas supprimés :
+          pseudo et mot de passe restent valables, personne n'a à se réinscrire.
+          À faire après avoir remanié les notes ou les raretés, quand les
+          collections déjà constituées ne suivent plus les règles du jeu.
+          <b>Cette action est définitive.</b>
+        </p>
       </div>
     </section>`;
 }
@@ -1216,6 +1239,22 @@ async function resetToDefaults() {
   }
 }
 
+async function resetPacks() {
+  const question = 'Effacer toutes les collections et rendre à chaque compte ses '
+    + SIGNUP_PACKS + ' packs de départ ?\n\nLes comptes sont conservés. Cette action est définitive.';
+  if (!confirm(question)) return;
+
+  try {
+    const payload = await api('/api/club/reset', { method: 'POST' });
+    toast(payload.users
+      ? `${payload.users} compte${payload.users > 1 ? 's' : ''} remis à zéro, `
+        + `${payload.cards} carte${payload.cards > 1 ? 's' : ''} effacée${payload.cards > 1 ? 's' : ''}.`
+      : 'Aucun compte à remettre à zéro.', 'success');
+  } catch (error) {
+    toast(error.message, 'error');
+  }
+}
+
 /* ══════════════════════════════════════════ Amorçage ══ */
 
 function showOnly(id) {
@@ -1273,6 +1312,10 @@ async function boot() {
   $('#logout').addEventListener('click', onLogout);
   $('#save-btn').addEventListener('click', save);
   $('#reset-btn').addEventListener('click', resetToDefaults);
+  // Délégué : le bouton n'existe que dans l'onglet Effectif, redessiné souvent.
+  $('#panel').addEventListener('click', (event) => {
+    if (event.target.closest('#reset-packs')) resetPacks();
+  });
   $('#picker').addEventListener('click', onPickerClick);
 
   $('#tabs').addEventListener('click', (event) => {

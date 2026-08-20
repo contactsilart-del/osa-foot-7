@@ -276,6 +276,13 @@ site : l'administration garde sa propre session, sur un cookie distinct.
 - Deux garde-fous : **5 inscriptions par adresse IP et par jour**, et un délai de
   600 ms après un mot de passe refusé.
 
+- **Remettre les collections à zéro** : onglet *Effectif*, encadré rouge en bas
+  de page. Efface toutes les collections et rend à chaque compte ses 15 packs de
+  départ. **Les comptes sont conservés** — pseudo et mot de passe restent
+  valables, personne n'a à se réinscrire. C'est le geste à faire après avoir
+  remanié les notes ou les raretés : les collections constituées sous les
+  anciennes règles ne veulent plus rien dire. L'action est **définitive**.
+
 **Nouvelles tables D1** — `users` et `user_cards`. Elles se créent toutes seules
 à la première inscription, comme le reste du schéma ; `schema.sql` les décrit
 pour qui préfère provisionner à la main.
