@@ -649,6 +649,86 @@ function podiumRow(entry, rank, leader, unit) {
     </li>`;
 }
 
+/* ═══════════════════════════════════════════ Stade ══ */
+
+/**
+ * La carte Google n'est pas chargée d'emblée : l'afficher ouvre une connexion
+ * aux serveurs de Google, qui peuvent y déposer des cookies. Un clic explicite
+ * du visiteur vaut mieux qu'un traceur imposé — et la page se charge d'autant
+ * plus vite pour ceux que le plan n'intéresse pas.
+ */
+let venueMapAccepted = false;
+
+function renderVenue(content) {
+  const zone = $('#venue-map');
+  if (!zone) return;
+
+  const adresse = content.club?.address || '';
+  const embed = content.venue?.mapsEmbed || '';
+
+  const itineraire = $('#venue-directions');
+  if (itineraire) {
+    itineraire.setAttribute('href', adresse
+      ? `https://www.google.com/maps/dir/?api=1&destination=${encodeURIComponent(adresse)}`
+      : 'https://www.google.com/maps');
+    itineraire.setAttribute('aria-label', `Itinéraire vers ${adresse || 'le stade'}`);
+  }
+
+  if (!embed) {
+    zone.innerHTML = `
+      <p class="venue__none">Le plan sera ajouté prochainement. En attendant, le bouton
+        « Itinéraire » ouvre l'adresse dans votre application de cartes.</p>`;
+    return;
+  }
+
+  if (venueMapAccepted) {
+    showVenueMap(embed);
+    return;
+  }
+
+  zone.innerHTML = `
+    <button class="venue__consent" type="button" id="venue-load">
+      <span class="venue__consent-ico" aria-hidden="true">
+        <svg viewBox="0 0 24 24"><path d="M20.5 3.1 15 5 9 3 3.4 4.9a1 1 0 0 0-.7 1V20a.5.5 0 0 0 .7.5L9 18.5l6 2 5.6-1.9a1 1 0 0 0 .7-1V3.6a.5.5 0 0 0-.8-.5zM9 16.4 5 17.8V6.6l4-1.4v11.2zm6 2-4-1.4V5.6l4 1.4v11.4zm4-1.2-3 1V6.9l3-1v11.3z"/></svg>
+      </span>
+      <b>Afficher le plan du stade</b>
+      <small>La carte est fournie par Google. En l'affichant, votre navigateur se
+        connecte aux serveurs de Google, qui peuvent y déposer des cookies.</small>
+    </button>`;
+}
+
+function showVenueMap(embed) {
+  const zone = $('#venue-map');
+  if (!zone || !embed) return;
+  venueMapAccepted = true;
+  zone.innerHTML = `
+    <iframe class="venue__frame" src="${esc(embed)}" title="Plan du stade"
+            loading="lazy" allowfullscreen
+            referrerpolicy="strict-origin-when-cross-origin"></iframe>`;
+}
+
+function initVenue() {
+  $('#venue-map')?.addEventListener('click', (event) => {
+    if (!event.target.closest('#venue-load')) return;
+    showVenueMap(state.content?.venue?.mapsEmbed || '');
+  });
+
+  $('#venue-copy')?.addEventListener('click', async () => {
+    const adresse = state.content?.club?.address || '';
+    if (!adresse) return;
+    const presse = window.navigator?.clipboard;
+    try {
+      if (!presse?.writeText) throw new Error('presse-papiers indisponible');
+      await presse.writeText(adresse);
+      toast("Adresse copiée !");
+    } catch {
+      // Sans presse-papiers, on montre l'adresse : elle reste sélectionnable.
+      if (typeof window.prompt === 'function') window.prompt("Copiez l'adresse :", adresse);
+      else toast(adresse);
+    }
+  });
+}
+
 /* ════════════════════════════════════════════ Effectif ══ */
 
 const PLAYER_HASH = /^#joueur-(.+)$/;
@@ -958,6 +1038,7 @@ function render(content) {
   refreshOpenPlayer();
   IMAGE_SECTIONS.forEach((section) => renderImageSection(content, section));
   renderStats(content);
+  renderVenue(content);
   renderCompo(content);
   renderPacks(content);
   startCountdown(content.nextMatch?.kickoff);
@@ -982,6 +1063,7 @@ async function boot() {
   initReveal();
 
   initSquadSort();
+  initVenue();
   initCompo();
   initPacks();
   window.addEventListener('hashchange', syncPlayerFromHash);

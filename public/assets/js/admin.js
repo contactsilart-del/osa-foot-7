@@ -297,7 +297,7 @@ function renderMatch() {
         </div>
         <div class="a-grid a-grid--2">
           ${field('Coup d\'envoi', 'nextMatch.kickoff', { type: 'datetime', hint: 'Heure locale. Laisser vide si la date n\'est pas connue.' })}
-          ${field('Lieu', 'nextMatch.venue', { placeholder: 'Stade municipal — Saint-Affrique' })}
+          ${field('Lieu', 'nextMatch.venue', { placeholder: 'Stade de Saint-Affrique-les-Montagnes' })}
         </div>
       </div>
     </section>`;
@@ -691,13 +691,34 @@ function renderClub() {
       <div class="a-card__body">
         <div class="a-grid a-grid--2">
           ${field('E-mail public', 'club.email', { placeholder: 'contact@osafoot7.fr' })}
-          ${field('Terrain / adresse', 'club.address', { placeholder: 'Saint-Affrique (12400)' })}
+          ${field('Terrain / adresse', 'club.address', {
+            placeholder: '21 Rte du Stade, 81290 Saint-Affrique-les-Montagnes',
+            hint: 'Adresse postale du stade. Elle apparaît en section Contact, en pied de page et sur la carte.'
+          })}
         </div>
         <div class="a-grid a-grid--2">
           ${field('Page Facebook', 'club.facebook', { placeholder: 'https://www.facebook.com/…', hint: 'URL complète. Vide = lien masqué.' })}
           ${field('Compte Instagram', 'club.instagram', { placeholder: 'https://www.instagram.com/…', hint: 'URL complète. Vide = lien masqué.' })}
         </div>
         ${field('Année du copyright', 'club.copyrightYear', { placeholder: '2026', hint: 'Affichée en bas de chaque page.' })}
+      </div>
+    </section>
+
+    <section class="a-card">
+      <header class="a-card__head">
+        <div><h2>Notre stade</h2><p>Section dédiée sur la page d'accueil, avec la carte.</p></div>
+      </header>
+      <div class="a-card__body">
+        <div class="a-grid a-grid--2">
+          ${field('Titre de la section', 'venue.title', { placeholder: 'Notre stade' })}
+          ${field('Nom du stade', 'venue.name', { placeholder: 'Stade de Saint-Affrique-les-Montagnes' })}
+        </div>
+        ${field('Accroche', 'venue.subtitle', { type: 'textarea' })}
+        ${field('Carte Google Maps', 'venue.mapsEmbed', {
+          placeholder: 'https://www.google.com/maps/embed?pb=…',
+          hint: "Sur Google Maps : « Partager » → « Intégrer une carte » → copiez uniquement l'adresse entre guillemets après src=. "
+              + 'Seules les adresses google.com/maps/embed sont acceptées. Vide = la section affiche le plan sans carte interactive.'
+        })}
       </div>
     </section>`;
 }
@@ -723,7 +744,7 @@ function renderLegal() {
         </div>
 
         ${field('Siège social', 'legal.address', {
-          placeholder: '12 rue du Stade, 12400 Saint-Affrique, France',
+          placeholder: '21 Rte du Stade, 81290 Saint-Affrique-les-Montagnes',
           hint: 'Adresse postale complète.'
         })}
 

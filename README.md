@@ -205,7 +205,7 @@ Rendez-vous sur `/admin/` et connectez-vous avec `ADMIN_PASSWORD`.
 | **Classement** | Captures du classement de la poule, téléversées et légendées |
 | **Galerie** | Photos du club : téléversement, légende, texte alternatif, réordonnancement. Jusqu'à 200 photos |
 | **Stats saison** | Neuf classements (buteurs, passeurs, CSC, penaltys concédés, matchs joués, présence à l'entraînement, buts sur coup franc, buts sur penalty, arrêts) : un compteur par joueur de l'effectif, plus le titre, l'unité, la couleur, l'icône et le poste concerné de chaque colonne. Les 3 premiers forment le podium, le reste se déroule à la demande |
-| **Club & réseaux** | Nom, logo, e-mail public, adresse, Facebook, Instagram, année du copyright |
+| **Club & réseaux** | Nom, logo, e-mail public, adresse du stade, Facebook, Instagram, année du copyright, et la section « Notre stade » (titre, nom du stade, accroche, carte Google Maps) |
 | **Mentions légales** | Dénomination, statut, siège social, RNA/SIREN, directeur de la publication, e-mail légal, crédits de réalisation |
 | **Médiathèque** | Téléverser des images (glisser-déposer), copier leur chemin, supprimer |
 | **Messages** | Lire, marquer lu/non lu, répondre et supprimer les messages du formulaire |
@@ -336,6 +336,13 @@ Rien à administrer : la page se sert de l'effectif tel qu'il est saisi.
   65 à 74, vert de 75 à 84, vert foncé à partir de 85.
 - Les images acceptées sont JPG, PNG, WebP, GIF et AVIF, jusqu'à 5 Mo.
   Le SVG est refusé pour des raisons de sécurité.
+- **La carte du stade ne se charge qu'au clic.** Tant que le visiteur n'a pas
+  appuyé sur « Afficher le plan », aucune requête ne part vers Google : le site
+  reste sans tiers ni cookie par défaut, et la page se charge plus vite. Le
+  bandeau explique ce qui se passe avant d'y consentir.
+- Le champ **Carte Google Maps** n'accepte que l'adresse `google.com/maps/embed`
+  (pas le code de l'iframe entier), et la politique de sécurité du site
+  n'autorise l'affichage d'aucun autre domaine dans un cadre.
 - Le document enregistré porte une **version de modèle** (`version`, actuellement 3).
   Un contenu plus ancien est migré à la volée au chargement, étape par étape :
   v1 → v2 remplace les anciens classements à noms libres par ceux liés à

@@ -18,7 +18,7 @@ export const DEFAULT_CONTENT = {
     tagline: 'Olympique Saint-Affrique',
     logo: '/img/osa.png',
     email: 'contact@osafoot7.fr',
-    address: 'Saint-Affrique (12400)',
+    address: '21 Rte du Stade, 81290 Saint-Affrique-les-Montagnes',
     facebook: 'https://www.facebook.com/osafoot7',
     instagram: 'https://www.instagram.com/olympique.saint.affrique/',
     copyrightYear: '2026'
@@ -47,7 +47,19 @@ export const DEFAULT_CONTENT = {
     away: { name: 'Cambon', logo: '/img/cambon.png' },
     /** Date ISO 8601 avec fuseau horaire. Modifiable depuis l'admin. */
     kickoff: '2026-09-05T20:30:00+02:00',
-    venue: 'Stade municipal — Saint-Affrique'
+    venue: 'Stade de Saint-Affrique-les-Montagnes'
+  },
+
+  /**
+   * Le stade, avec sa carte. `mapsEmbed` est l'adresse d'intégration fournie
+   * par Google (bouton « Partager » → « Intégrer une carte ») : seul le lien,
+   * pas le code de l'iframe. Vide = la section affiche l'adresse sans carte.
+   */
+  venue: {
+    title: 'Notre stade',
+    subtitle: 'C’est ici qu’on joue à domicile. Venez nous voir, l’entrée est libre.',
+    name: 'Stade de Saint-Affrique-les-Montagnes',
+    mapsEmbed: 'https://www.google.com/maps/embed?pb=!4v1787216107105!6m8!1m7!1swks-0fh3G_gcwxZo6v61Lw!2m2!1d43.53481788434512!2d2.212477912054208!3f245.89353672967366!4f4.870021632036583!5f0.7820865974627469'
   },
 
   news: [

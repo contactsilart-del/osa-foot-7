@@ -1634,6 +1634,102 @@ ul, ol { list-style: none; padding: 0; }
   .club-bar__actions { width: 100%; justify-content: center; }
 }
 
+/* ──────────────────────────────────────────── 11a. Stade ── */
+
+.venue {
+  display: grid;
+  grid-template-columns: minmax(0, 360px) minmax(0, 1fr);
+  gap: clamp(1.2rem, 3vw, 2.2rem);
+  align-items: stretch;
+}
+.venue__info {
+  display: flex;
+  flex-direction: column;
+  gap: .8rem;
+  padding: clamp(1.2rem, 3vw, 1.8rem);
+  border-radius: var(--radius-lg);
+  background: var(--surface);
+  border: 1px solid var(--line);
+  box-shadow: var(--shadow-sm);
+}
+.venue__name { margin: 0; font-size: clamp(1.1rem, 2.5vw, 1.35rem); }
+.venue__address {
+  display: flex;
+  align-items: flex-start;
+  gap: .6rem;
+  margin: 0;
+  font-size: .96rem;
+  line-height: 1.5;
+}
+.venue__ico {
+  display: grid;
+  place-items: center;
+  width: 30px; height: 30px;
+  flex: none;
+  border-radius: 50%;
+  background: color-mix(in srgb, var(--brand-500) 14%, transparent);
+}
+.venue__ico svg { width: 17px; height: 17px; fill: var(--brand-500); }
+.venue__actions { display: flex; flex-wrap: wrap; gap: .6rem; margin-top: auto; }
+.venue__actions .btn svg { width: 16px; height: 16px; }
+
+.venue__map {
+  position: relative;
+  min-height: 320px;
+  border-radius: var(--radius-lg);
+  overflow: hidden;
+  border: 1px solid var(--line);
+  background: var(--bg-soft);
+}
+.venue__frame { display: block; width: 100%; height: 100%; min-height: 320px; border: 0; }
+
+/* Le plan ne se charge qu'à la demande : tant qu'on n'a pas cliqué, aucune
+   requête ne part vers Google. */
+.venue__consent {
+  display: grid;
+  justify-items: center;
+  align-content: center;
+  gap: .5rem;
+  width: 100%;
+  min-height: 320px;
+  height: 100%;
+  padding: clamp(1.4rem, 4vw, 2.4rem);
+  text-align: center;
+  color: var(--ink);
+  background:
+    repeating-linear-gradient(45deg, color-mix(in srgb, var(--brand-500) 5%, transparent) 0 12px, transparent 12px 24px),
+    var(--bg-soft);
+  transition: background var(--t-fast);
+}
+.venue__consent:hover { background: color-mix(in srgb, var(--brand-500) 10%, var(--bg-soft)); }
+.venue__consent:focus-visible { outline: 2px solid var(--brand-500); outline-offset: -4px; }
+.venue__consent-ico {
+  display: grid;
+  place-items: center;
+  width: 52px; height: 52px;
+  border-radius: 50%;
+  background: color-mix(in srgb, var(--brand-500) 16%, transparent);
+}
+.venue__consent-ico svg { width: 26px; height: 26px; fill: var(--brand-500); }
+.venue__consent b { font-size: 1.02rem; }
+.venue__consent small { max-width: 44ch; font-size: .8rem; line-height: 1.5; color: var(--muted); }
+
+.venue__none {
+  display: grid;
+  place-items: center;
+  min-height: 320px;
+  margin: 0;
+  padding: 2rem;
+  text-align: center;
+  font-size: .9rem;
+  color: var(--muted);
+}
+
+@media (max-width: 860px) {
+  .venue { grid-template-columns: 1fr; }
+  .venue__map, .venue__consent, .venue__frame, .venue__none { min-height: 260px; }
+}
+
 /* ──────────────────────────────────────────── 11b. Compo ── */
 
 .compo-toolbar {

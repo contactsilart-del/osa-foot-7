@@ -31,7 +31,20 @@
     "sport": "Football à 7",
     "url": "https://osa-foot-7.pages.dev/",
     "logo": "https://osa-foot-7.pages.dev/img/osa.png",
-    "memberOf": { "@type": "SportsOrganization", "name": "UFOLEP" }
+    "memberOf": { "@type": "SportsOrganization", "name": "UFOLEP" },
+    "location": {
+      "@type": "Place",
+      "name": "Stade de Saint-Affrique-les-Montagnes",
+      "address": {
+        "@type": "PostalAddress",
+        "streetAddress": "21 route du Stade",
+        "postalCode": "81290",
+        "addressLocality": "Saint-Affrique-les-Montagnes",
+        "addressRegion": "Tarn",
+        "addressCountry": "FR"
+      },
+      "geo": { "@type": "GeoCoordinates", "latitude": 43.534818, "longitude": 2.212478 }
+    }
   }
   </script>
 </head>
@@ -269,6 +282,43 @@
     </div>
   </section>
 
+  <!-- ═══════════════════════════════════════════ STADE ══ -->
+  <section class="section section--soft" id="stade">
+    <div class="shell">
+      <header class="section__head" data-reveal>
+        <p class="eyebrow">Où nous trouver</p>
+        <h2 class="section__title" data-bind="venue.title">Notre stade</h2>
+        <p class="section__lead" data-bind="venue.subtitle">C&rsquo;est ici qu&rsquo;on joue &agrave; domicile. Venez nous voir, l&rsquo;entr&eacute;e est libre.</p>
+      </header>
+
+      <div class="venue" data-reveal>
+        <div class="venue__info">
+          <h3 class="venue__name" data-bind="venue.name">Stade de Saint-Affrique-les-Montagnes</h3>
+          <p class="venue__address">
+            <span class="venue__ico" aria-hidden="true">
+              <svg viewBox="0 0 24 24"><path d="M12 2a7 7 0 0 0-7 7c0 5.2 7 13 7 13s7-7.8 7-13a7 7 0 0 0-7-7zm0 9.5A2.5 2.5 0 1 1 14.5 9 2.5 2.5 0 0 1 12 11.5z"/></svg>
+            </span>
+            <span data-bind="club.address">21 Rte du Stade, 81290 Saint-Affrique-les-Montagnes</span>
+          </p>
+          <div class="venue__actions">
+            <a class="btn btn--primary" id="venue-directions" href="#" target="_blank" rel="noopener noreferrer">
+              <svg viewBox="0 0 24 24" aria-hidden="true"><path d="m21.7 11.3-9-9a1 1 0 0 0-1.4 0l-9 9a1 1 0 0 0 0 1.4l9 9a1 1 0 0 0 1.4 0l9-9a1 1 0 0 0 0-1.4zM13 15v-2.5h-3V15H8v-3.5a1 1 0 0 1 1-1h4V8l3.5 3.5L13 15z"/></svg>
+              Itin&eacute;raire
+            </a>
+            <button class="btn btn--ghost" id="venue-copy" type="button">
+              <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M16 1H4a2 2 0 0 0-2 2v14h2V3h12V1zm3 4H8a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h11a2 2 0 0 0 2-2V7a2 2 0 0 0-2-2zm0 16H8V7h11v14z"/></svg>
+              Copier l&rsquo;adresse
+            </button>
+          </div>
+        </div>
+
+        <div class="venue__map" id="venue-map">
+          <!-- injecté par app.js : la carte ne se charge qu'à la demande -->
+        </div>
+      </div>
+    </div>
+  </section>
+
   <!-- ════════════════════════════════════════ CONTACT ══ -->
   <section class="section section--light" id="contact">
     <div class="shell">
@@ -287,7 +337,7 @@
             </li>
             <li>
               <span class="contact__ico"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 2a7 7 0 0 0-7 7c0 5.2 7 13 7 13s7-7.8 7-13a7 7 0 0 0-7-7zm0 9.5A2.5 2.5 0 1 1 14.5 9 2.5 2.5 0 0 1 12 11.5z"/></svg></span>
-              <span><small>Terrain</small><b data-bind="club.address">Saint-Affrique</b></span>
+              <span><small>Terrain</small><b data-bind="club.address">21 Rte du Stade, 81290 Saint-Affrique-les-Montagnes</b></span>
             </li>
           </ul>
 
@@ -376,6 +426,7 @@
         <li><a href="/effectif">Effectif</a></li>
         <li><a href="/compo">Compo</a></li>
         <li><a href="/galerie">Galerie</a></li>
+        <li><a href="#stade">Notre stade</a></li>
         <li><a href="#calendrier">Calendrier &amp; Résultats</a></li>
         <li><a href="#stats">Stats Saison</a></li>
       </ul>
