@@ -237,6 +237,27 @@ Rendez-vous sur `/admin/` et connectez-vous avec `ADMIN_PASSWORD`.
 - La **galerie** a sa propre page (`/galerie`), et l'accueil en montre les
   **six premières photos** avec un lien vers la page complète. L'ordre est celui
   de l'onglet Galerie : mettez en tête ce que vous voulez voir sur l'accueil.
+
+### Composer une équipe (`/compo`)
+
+Rien à administrer : la page se sert de l'effectif tel qu'il est saisi.
+
+- Trois dispositifs de foot à 7 : **1-2-3-1**, **1-3-2-1**, **1-3-3**.
+  Chacun aligne 7 titulaires, plus 4 remplaçants et 1 coach sur le banc.
+- On clique un emplacement, puis un joueur. Les joueurs **au poste attendu**
+  remontent en tête de liste, et l'emplacement libre suivant s'ouvre tout seul
+  pour enchaîner. Un joueur déjà placé ailleurs **déménage** au lieu d'être
+  dupliqué.
+- **Composer pour moi** remplit les trous avec les meilleures notes disponibles,
+  sans jamais déloger un joueur déjà posé.
+- **Changer de dispositif garde les joueurs** : les postes se correspondent, et
+  celui qui n'a plus de place équivalente glisse sur le banc.
+- La **note d'équipe** est la moyenne des notes générales des titulaires en
+  place — ni le banc ni le coach n'y entrent. Une compo incomplète affiche la
+  moyenne de ce qui est déjà posé, et le nombre de places restantes.
+- La compo vit **dans l'URL** : « Copier le lien » l'envoie telle quelle. Elle
+  est aussi gardée sur l'appareil, et un lien qui pointe sur un joueur supprimé
+  depuis laisse simplement la place ouverte.
 - La **note générale** se calcule seule — moyenne des six notes — tant que le
   champ « Note générale » reste vide ; la moyenne du moment y sert de valeur
   fantôme. Y saisir un nombre de 1 à 99 l'impose : c'est cette note-là qui

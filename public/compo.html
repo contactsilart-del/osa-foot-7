@@ -3,15 +3,15 @@
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
-  <title>Effectif — OSA FOOT 7</title>
-  <meta name="description" content="L'effectif complet de l'OSA FOOT 7 : fiche, poste, statistiques et parcours de chaque joueur du club.">
+  <title>Composer l’équipe — OSA FOOT 7</title>
+  <meta name="description" content="Composez votre équipe de l'OSA FOOT 7 : dispositif, titulaires, remplaçants et note moyenne.">
   <meta name="theme-color" content="#071227">
-  <link rel="canonical" href="https://osa-foot-7.pages.dev/effectif">
+  <link rel="canonical" href="https://osa-foot-7.pages.dev/compo">
 
   <meta property="og:type" content="website">
   <meta property="og:site_name" content="OSA FOOT 7">
-  <meta property="og:title" content="Effectif — OSA FOOT 7">
-  <meta property="og:description" content="Fiche, poste et statistiques de chaque joueur de l'OSA FOOT 7.">
+  <meta property="og:title" content="Composer l’équipe — OSA FOOT 7">
+  <meta property="og:description" content="Composez votre équipe de l'OSA FOOT 7 : dispositif, titulaires, remplaçants et note moyenne.">
   <meta property="og:image" content="/img/osa.png">
   <meta property="og:locale" content="fr_FR">
 
@@ -20,7 +20,7 @@
   <link rel="apple-touch-icon" href="/img/apple-touch-icon.png">
   <link rel="stylesheet" href="/assets/css/style.css">
 </head>
-<body data-page="squad">
+<body data-page="compo">
 
 <a class="skip-link" href="#main">Aller au contenu principal</a>
 
@@ -41,8 +41,8 @@
       <ul class="nav__list">
         <li><a class="nav__link" href="/">Accueil</a></li>
         <li><a class="nav__link" href="/#actus">Actus</a></li>
-        <li><a class="nav__link is-active" href="/effectif" aria-current="page">Effectif</a></li>
-        <li><a class="nav__link" href="/compo">Compo</a></li>
+        <li><a class="nav__link" href="/effectif">Effectif</a></li>
+        <li><a class="nav__link is-active" href="/compo" aria-current="page">Compo</a></li>
         <li><a class="nav__link" href="/galerie">Galerie</a></li>
         <li><a class="nav__link" href="/#calendrier">Calendrier</a></li>
         <li><a class="nav__link" href="/#classement">Classement</a></li>
@@ -78,34 +78,74 @@
     </div>
     <div class="shell">
       <p class="eyebrow eyebrow--light">Saison <span data-bind="stats.season">2025 / 2026</span></p>
-      <h1 class="page-hero__title" data-bind="squad.title">L'effectif</h1>
-      <p class="section__lead" data-bind="squad.subtitle">Les joueurs qui font vivre l'OSA cette saison.</p>
-      <p class="page-hero__count" id="squad-count" hidden></p>
-      <div class="squad-cta squad-cta--hero">
-        <a class="btn btn--primary" href="/compo">Composer mon &eacute;quipe
-          <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M13 2 4 14h6l-1 8 9-12h-6l1-8z"/></svg>
-        </a>
+      <h1 class="page-hero__title">Composer l&rsquo;&eacute;quipe</h1>
+      <p class="section__lead">Sept titulaires, quatre rempla&ccedil;ants, un coach. Choisissez un dispositif,
+        posez vos joueurs, et partagez la compo par un simple lien.</p>
+
+      <div class="compo-score" data-reveal>
+        <span class="compo-score__value" id="compo-average">&mdash;</span>
+        <span class="compo-score__meta">
+          <b>Note d&rsquo;&eacute;quipe</b>
+          <small id="compo-average-note">aucun titulaire plac&eacute;</small>
+        </span>
+        <span class="compo-score__filled" id="compo-filled">0/7</span>
       </div>
     </div>
   </section>
 
-  <section class="section section--dark" id="effectif">
+  <section class="section section--dark" id="compo">
     <div class="section__bg" aria-hidden="true"><span class="hero__glow hero__glow--c"></span></div>
     <div class="shell">
-      <div class="squad-toolbar" id="squad-toolbar" hidden>
+
+      <div class="compo-toolbar">
         <label class="squad-sort">
-          <span class="squad-sort__label">Trier par</span>
-          <select id="squad-sort"></select>
+          <span class="squad-sort__label">Dispositif</span>
+          <select id="compo-formation"></select>
         </label>
-        <button class="squad-dir" id="squad-dir" type="button" aria-pressed="false">
-          <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M7 4l4 5H8v11H6V9H3l4-5zm10 16l-4-5h3V4h2v11h3l-4 5z"/></svg>
-          <span class="squad-dir__label">Croissant</span>
-        </button>
+        <div class="compo-toolbar__actions">
+          <button class="btn btn--ghost btn--sm" id="compo-auto" type="button">
+            <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M13 2 4 14h6l-1 8 9-12h-6l1-8z"/></svg>
+            Composer pour moi
+          </button>
+          <button class="btn btn--ghost btn--sm" id="compo-clear" type="button">Vider</button>
+          <button class="btn btn--primary btn--sm" id="compo-share" type="button">
+            <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M18 16a3 3 0 0 0-2.2 1l-6-3.4a3 3 0 0 0 0-1.2l6-3.4a3 3 0 1 0-1-1.7l-6 3.4a3 3 0 1 0 0 4.6l6 3.4A3 3 0 1 0 18 16z"/></svg>
+            Copier le lien
+          </button>
+        </div>
       </div>
 
-      <div class="squad-grid" id="squad-grid">
-        <!-- injecté par app.js -->
+      <div class="compo-layout" id="compo-board">
+        <div class="compo-main">
+          <div class="compo-pitch">
+            <span class="compo-pitch__markings" aria-hidden="true"></span>
+            <span class="compo-pitch__box compo-pitch__box--top" aria-hidden="true"></span>
+            <span class="compo-pitch__box compo-pitch__box--bottom" aria-hidden="true"></span>
+            <div class="compo-pitch__spots" id="compo-pitch">
+              <!-- injecté par compo.js -->
+            </div>
+          </div>
+
+          <div class="compo-bench" id="compo-bench">
+            <!-- injecté par compo.js -->
+          </div>
+        </div>
+
+        <aside class="compo-picker" id="compo-picker" aria-labelledby="compo-picker-title">
+          <header class="compo-picker__head">
+            <h2 class="compo-picker__title" id="compo-picker-title">Joueurs disponibles</h2>
+            <p class="compo-picker__hint" id="compo-picker-hint">Cliquez sur un emplacement du terrain, puis sur un joueur.</p>
+            <label class="compo-search">
+              <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M10 2a8 8 0 1 0 4.9 14.3l5.4 5.4 1.4-1.4-5.4-5.4A8 8 0 0 0 10 2zm0 2a6 6 0 1 1 0 12 6 6 0 0 1 0-12z"/></svg>
+              <input type="search" id="compo-search" placeholder="Rechercher un joueur…" aria-label="Rechercher un joueur">
+            </label>
+          </header>
+          <ul class="compo-picker__list" id="compo-list">
+            <!-- injecté par compo.js -->
+          </ul>
+        </aside>
       </div>
+
     </div>
   </section>
 </main>
@@ -187,8 +227,7 @@
 
 <noscript>
   <div class="noscript">
-    <p><strong>JavaScript est désactivé.</strong> Les fiches des joueurs ne peuvent pas s'afficher.
-    Contactez-nous à <a href="mailto:contact@osafoot7.fr">contact@osafoot7.fr</a>.</p>
+    <p><strong>JavaScript est d&eacute;sactiv&eacute;.</strong> Le composeur d&rsquo;&eacute;quipe ne peut pas fonctionner. Contactez-nous &agrave; <a href="mailto:contact@osafoot7.fr">contact@osafoot7.fr</a>.</p>
   </div>
 </noscript>
 

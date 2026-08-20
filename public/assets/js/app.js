@@ -8,6 +8,7 @@
 
 import { DEFAULT_CONTENT, cloneContent, deepMerge, migrateContent } from './content.js';
 import { playerCardHTML, playerProfileHTML, sortPlayers, SORTS, fullName } from './squad.js';
+import { initCompo, renderCompo } from './compo.js';
 
 /* ═══════════════════════════════════════════ Utilitaires ══ */
 
@@ -956,6 +957,7 @@ function render(content) {
   refreshOpenPlayer();
   IMAGE_SECTIONS.forEach((section) => renderImageSection(content, section));
   renderStats(content);
+  renderCompo(content);
   startCountdown(content.nextMatch?.kickoff);
 }
 
@@ -978,6 +980,7 @@ async function boot() {
   initReveal();
 
   initSquadSort();
+  initCompo();
   window.addEventListener('hashchange', syncPlayerFromHash);
 
   render(cloneContent(DEFAULT_CONTENT));

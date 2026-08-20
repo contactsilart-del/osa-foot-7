@@ -1319,6 +1319,343 @@ ul, ol { list-style: none; padding: 0; }
 .site-footer__bottom a { text-decoration: underline; }
 .site-footer__bottom a:hover { color: #fff; }
 
+/* ──────────────────────────────────────────── 11b. Compo ── */
+
+.compo-toolbar {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: .8rem;
+  margin-bottom: clamp(1.2rem, 3vw, 1.8rem);
+}
+.compo-toolbar__actions { display: flex; flex-wrap: wrap; gap: .5rem; }
+.compo-toolbar .btn svg { width: 16px; height: 16px; }
+
+.compo-layout {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) 340px;
+  gap: clamp(1rem, 3vw, 2rem);
+  align-items: start;
+}
+.compo-main { display: grid; gap: clamp(1rem, 2.5vw, 1.6rem); min-width: 0; }
+
+/* ── Terrain ── */
+
+.compo-pitch {
+  position: relative;
+  aspect-ratio: 72 / 100;
+  max-width: 620px;
+  margin-inline: auto;
+  width: 100%;
+  border-radius: var(--radius-lg);
+  overflow: hidden;
+  background:
+    repeating-linear-gradient(180deg, rgba(255, 255, 255, .035) 0 7.6%, transparent 7.6% 15.2%),
+    linear-gradient(170deg, #15603A, #0B3A22 60%, #0A3320);
+  border: 1px solid var(--dark-line);
+  box-shadow: inset 0 0 80px rgba(0, 0, 0, .35);
+}
+
+/* Lignes du terrain : touches, rond central, ligne médiane. */
+.compo-pitch__markings {
+  position: absolute;
+  inset: 3.5%;
+  border: 2px solid rgba(255, 255, 255, .22);
+  border-radius: 4px;
+  pointer-events: none;
+}
+.compo-pitch__markings::before {
+  content: "";
+  position: absolute;
+  left: 50%; top: 50%;
+  width: 30%;
+  aspect-ratio: 1;
+  transform: translate(-50%, -50%);
+  border: 2px solid rgba(255, 255, 255, .22);
+  border-radius: 50%;
+}
+.compo-pitch__markings::after {
+  content: "";
+  position: absolute;
+  left: 0; right: 0; top: 50%;
+  height: 2px;
+  background: rgba(255, 255, 255, .22);
+}
+.compo-pitch__box {
+  position: absolute;
+  left: 50%;
+  width: 46%;
+  height: 13%;
+  transform: translateX(-50%);
+  border: 2px solid rgba(255, 255, 255, .22);
+  pointer-events: none;
+}
+.compo-pitch__box--top { top: 3.5%; border-top: 0; }
+.compo-pitch__box--bottom { bottom: 3.5%; border-bottom: 0; }
+
+.compo-pitch__spots { position: absolute; inset: 0; }
+.compo-pitch__spot {
+  position: absolute;
+  transform: translate(-50%, -50%);
+  width: clamp(74px, 17%, 104px);
+}
+
+/* ── Emplacement ── */
+
+.compo-slot { --slot-accent: var(--brand-400); position: relative; }
+.compo-slot__btn {
+  display: grid;
+  justify-items: center;
+  gap: .3rem;
+  width: 100%;
+  padding: .25rem;
+  color: var(--dark-ink);
+  text-align: center;
+  transition: transform var(--t-fast);
+}
+.compo-slot__btn:hover { transform: translateY(-3px); }
+.compo-slot__btn:focus-visible { outline: 2px solid #fff; outline-offset: 3px; border-radius: var(--radius); }
+
+.compo-avatar {
+  position: relative;
+  display: grid;
+  place-items: center;
+  border-radius: 50%;
+  overflow: hidden;
+  background: rgba(8, 22, 45, .72);
+  border: 2px dashed rgba(255, 255, 255, .35);
+  transition: border-color var(--t-fast), box-shadow var(--t-fast);
+}
+.compo-avatar img { width: 100%; height: 100%; object-fit: cover; }
+.compo-avatar--slot { width: clamp(46px, 9vw, 62px); aspect-ratio: 1; }
+.compo-avatar--pick { width: 42px; aspect-ratio: 1; border-style: solid; }
+.compo-avatar__initials { font-family: var(--font-display); font-weight: 900; color: rgba(255, 255, 255, .85); }
+.compo-avatar__initials--sm { font-size: .85rem; }
+
+.compo-slot.is-filled .compo-avatar {
+  border-style: solid;
+  border-color: var(--slot-accent);
+  box-shadow: 0 8px 22px -12px var(--slot-accent);
+}
+.compo-slot__plus svg { width: 22px; height: 22px; fill: rgba(255, 255, 255, .6); }
+
+.compo-slot__label {
+  max-width: 100%;
+  font-size: .72rem;
+  font-weight: 800;
+  line-height: 1.15;
+  color: rgba(255, 255, 255, .78);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.compo-slot.is-filled .compo-slot__label { color: #fff; }
+
+.compo-slot__note {
+  position: absolute;
+  top: -2px;
+  right: 6px;
+  min-width: 24px;
+  padding: .05rem .25rem;
+  border-radius: 999px;
+  background: #061024;
+  border: 1px solid var(--note-color, var(--brand-400));
+  color: var(--note-color, var(--brand-400));
+  font-family: var(--font-display);
+  font-size: .74rem;
+  font-weight: 900;
+  font-variant-numeric: tabular-nums;
+}
+
+.compo-slot__remove {
+  position: absolute;
+  top: -6px;
+  left: 4px;
+  display: grid;
+  place-items: center;
+  width: 20px; height: 20px;
+  border-radius: 50%;
+  background: var(--loss);
+  opacity: 0;
+  transition: opacity var(--t-fast);
+}
+.compo-slot__remove svg { width: 11px; height: 11px; fill: #fff; }
+.compo-slot:hover .compo-slot__remove,
+.compo-slot:focus-within .compo-slot__remove { opacity: 1; }
+
+/* L'emplacement en attente de joueur se signale sans ambiguïté. */
+.compo-slot.is-target .compo-avatar {
+  border-color: #fff;
+  box-shadow: 0 0 0 4px rgba(255, 255, 255, .22);
+  animation: compo-pulse 1.6s ease-in-out infinite;
+}
+@keyframes compo-pulse {
+  50% { box-shadow: 0 0 0 9px rgba(255, 255, 255, .06); }
+}
+@media (prefers-reduced-motion: reduce) {
+  .compo-slot.is-target .compo-avatar { animation: none; }
+}
+
+/* ── Banc et coach ── */
+
+.compo-bench {
+  display: grid;
+  grid-template-columns: 1fr auto;
+  gap: clamp(.8rem, 2vw, 1.4rem);
+  padding: clamp(.9rem, 2vw, 1.2rem);
+  border-radius: var(--radius-lg);
+  background: var(--dark-surface);
+  border: 1px solid var(--dark-line);
+}
+.compo-bench__group { min-width: 0; }
+.compo-bench__group--coach { border-left: 1px solid var(--dark-line); padding-left: clamp(.8rem, 2vw, 1.4rem); }
+.compo-bench__title {
+  display: flex;
+  align-items: baseline;
+  gap: .4rem;
+  margin: 0 0 .6rem;
+  font-size: .7rem;
+  font-weight: 900;
+  letter-spacing: .12em;
+  text-transform: uppercase;
+  color: var(--dark-muted);
+}
+.compo-bench__title span { color: var(--brand-400); font-variant-numeric: tabular-nums; }
+.compo-bench__row { display: flex; flex-wrap: wrap; gap: .5rem; }
+.compo-bench__row .compo-slot { width: clamp(72px, 20vw, 88px); }
+
+/* ── Panneau de choix ── */
+
+.compo-picker {
+  position: sticky;
+  top: 92px;
+  display: flex;
+  flex-direction: column;
+  max-height: calc(100vh - 120px);
+  border-radius: var(--radius-lg);
+  background: var(--dark-surface);
+  border: 1px solid var(--dark-line);
+  overflow: hidden;
+  transition: border-color var(--t-fast);
+}
+.compo-picker.is-active { border-color: var(--brand-400); }
+.compo-picker__head { padding: 1rem 1rem .8rem; border-bottom: 1px solid var(--dark-line); }
+.compo-picker__title { margin: 0; font-size: 1rem; }
+.compo-picker__hint { margin: .25rem 0 .7rem; font-size: .78rem; color: var(--dark-muted); }
+
+.compo-search { position: relative; display: block; }
+.compo-search svg {
+  position: absolute;
+  left: .6rem; top: 50%;
+  width: 16px; height: 16px;
+  transform: translateY(-50%);
+  fill: var(--dark-muted);
+  pointer-events: none;
+}
+.compo-search input {
+  width: 100%;
+  padding: .55rem .7rem .55rem 2rem;
+  border-radius: 999px;
+  border: 1px solid var(--dark-line);
+  background: rgba(255, 255, 255, .06);
+  color: var(--dark-ink);
+  font: inherit;
+  font-size: .88rem;
+}
+.compo-search input:focus-visible { outline: 2px solid var(--brand-400); outline-offset: 1px; }
+
+.compo-picker__list {
+  flex: 1;
+  min-height: 120px;
+  margin: 0;
+  padding: .5rem;
+  list-style: none;
+  overflow-y: auto;
+  display: grid;
+  gap: .35rem;
+  align-content: start;
+}
+
+.compo-pick {
+  --slot-accent: var(--brand-400);
+  display: grid;
+  grid-template-columns: auto 1fr auto;
+  align-items: center;
+  gap: .7rem;
+  width: 100%;
+  padding: .45rem .6rem;
+  border-radius: var(--radius);
+  border: 1px solid transparent;
+  color: var(--dark-ink);
+  text-align: left;
+  transition: background var(--t-fast), border-color var(--t-fast);
+}
+.compo-pick:hover { background: rgba(255, 255, 255, .07); border-color: var(--slot-accent); }
+.compo-pick:focus-visible { outline: 2px solid var(--brand-400); outline-offset: 1px; }
+.compo-pick .compo-avatar { border-color: color-mix(in srgb, var(--slot-accent) 60%, transparent); }
+.compo-pick__body { display: grid; gap: .1rem; min-width: 0; }
+.compo-pick__name {
+  font-weight: 800;
+  font-size: .92rem;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.compo-pick__pos { font-size: .7rem; color: var(--dark-muted); }
+.compo-pick.is-suggested .compo-pick__pos { color: var(--slot-accent); font-weight: 700; }
+.compo-pick__note {
+  font-family: var(--font-display);
+  font-size: 1.05rem;
+  font-weight: 900;
+  color: var(--note-color, var(--brand-400));
+  font-variant-numeric: tabular-nums;
+}
+.compo-empty { padding: 1.2rem .8rem; font-size: .86rem; color: var(--dark-muted); text-align: center; }
+
+/* ── Note d'équipe ── */
+
+.compo-score {
+  display: inline-flex;
+  align-items: center;
+  gap: .9rem;
+  margin-top: clamp(1.1rem, 3vw, 1.6rem);
+  padding: .7rem 1.1rem;
+  border-radius: 999px;
+  background: rgba(255, 255, 255, .06);
+  border: 1px solid var(--dark-line);
+}
+.compo-score__value {
+  font-family: var(--font-display);
+  font-size: clamp(2rem, 6vw, 2.7rem);
+  font-weight: 900;
+  line-height: 1;
+  color: var(--note-color, var(--dark-muted));
+  font-variant-numeric: tabular-nums;
+}
+.compo-score__meta { display: grid; gap: .1rem; text-align: left; }
+.compo-score__meta b { font-size: .82rem; }
+.compo-score__meta small { font-size: .74rem; color: var(--dark-muted); }
+.compo-score__filled {
+  padding: .25rem .6rem;
+  border-radius: 999px;
+  background: rgba(255, 255, 255, .08);
+  font-size: .78rem;
+  font-weight: 800;
+  font-variant-numeric: tabular-nums;
+}
+
+.squad-cta--hero { justify-content: flex-start; margin-top: 1.4rem; }
+.squad-cta { flex-wrap: wrap; gap: .7rem; }
+
+@media (max-width: 900px) {
+  .compo-layout { grid-template-columns: 1fr; }
+  .compo-picker { position: static; max-height: none; }
+  .compo-picker__list { max-height: 46vh; }
+  .compo-bench { grid-template-columns: 1fr; }
+  .compo-bench__group--coach { border-left: 0; border-top: 1px solid var(--dark-line); padding-left: 0; padding-top: .9rem; }
+}
+
 /* ────────────────────────────────────────── 12. Effectif ── */
 
 /* Carte de joueur — inspirée des cartes de jeu, sans en copier la maquette :
