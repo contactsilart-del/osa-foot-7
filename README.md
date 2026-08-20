@@ -100,7 +100,8 @@ OSA/
    | Build output directory | `public` |
    | Root directory | `/` |
 
-4. **Save and Deploy**. Le site est en ligne sur `https://osa-foot-7.pages.dev`.
+4. **Save and Deploy**. Le site est en ligne sur `https://osa-foot-7.pages.dev`,
+   et sur le domaine du club : **https://osafoot7.fr**.
 
 ### Option B — en ligne de commande
 
@@ -396,9 +397,14 @@ Si le domaine est déjà géré par Cloudflare, tout est automatique. Sinon, ajo
 l'enregistrement `CNAME` indiqué chez votre registrar. Le certificat HTTPS est
 émis et renouvelé gratuitement.
 
-Pensez ensuite à remplacer `osa-foot-7.pages.dev` dans :
-`public/sitemap.xml`, `public/robots.txt` et la balise `<link rel="canonical">`
-de `public/index.html`.
+Le domaine du club est en service : **osafoot7.fr**, avec `www` en second
+domaine. Les DNS sont gérés par Cloudflare (les serveurs OVH ont été remplacés
+par `dean` et `teresa.ns.cloudflare.com`), ce qui permet à l'apex de pointer sur
+Pages — un `CNAME` est interdit à la racine d'un domaine.
+
+Les URL canoniques, les balises Open Graph et les données structurées pointent
+sur `https://osafoot7.fr`. L'adresse `osa-foot-7.pages.dev` reste valable et sert
+de porte de service.
 
 ---
 
@@ -472,9 +478,7 @@ Une pastille **!** reste affichée sur l'onglet *Mentions légales* tant que les
 informations obligatoires manquent, et un encadré d'avertissement s'affiche sur
 la page publique. Les deux disparaissent automatiquement une fois complété.
 
-Seul élément restant dans le code : l'**URL canonique** `osa-foot-7.pages.dev`,
-à remplacer dans `public/sitemap.xml`, `public/robots.txt` et la balise
-`<link rel="canonical">` de `public/index.html` si vous prenez un domaine (§6).
+Les URL canoniques pointent sur le domaine du club, `https://osafoot7.fr` (§6).
 
 ---
 
