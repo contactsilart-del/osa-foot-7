@@ -261,7 +261,11 @@ export const DEFAULT_CONTENT = {
       { id: 'owngoals',  title: 'Contre son camp',      unit: 'CSC',         accent: 'red',   icon: 'oops',  values: {} },
       { id: 'penalties', title: 'Penaltys concédés',    unit: 'penaltys',    accent: 'red',   icon: 'card',  values: {} },
       { id: 'caps',      title: 'Matchs joués',         unit: 'matchs',      accent: 'blue',  icon: 'shirt', values: {} },
-      { id: 'training',  title: "Présence à l'entraînement", unit: 'séances', accent: 'green', icon: 'check', values: {} }
+      { id: 'training',  title: "Présence à l'entraînement", unit: 'séances', accent: 'green', icon: 'check', values: {} },
+      { id: 'freekicks', title: 'Buts sur coup franc',   unit: 'buts',     accent: 'gold',  icon: 'ball',  values: {} },
+      { id: 'penaltygoals', title: 'Buts sur penalty',   unit: 'buts',     accent: 'gold',  icon: 'ball',  values: {} },
+      // Le seul classement réservé à un poste : les arrêts ne concernent que le but.
+      { id: 'saves',     title: 'Arrêts',                unit: 'arrêts',   accent: 'blue',  icon: 'glove', values: {}, only: 'GB' }
     ]
   }
 };
@@ -270,25 +274,50 @@ export const DEFAULT_CONTENT = {
  * Version du modèle de contenu. Le serveur l'estampille à chaque
  * enregistrement ; un document plus ancien passe par `migrateContent`.
  */
-export const SCHEMA_VERSION = 2;
+export const SCHEMA_VERSION = 3;
 
 /**
- * Met à niveau un document enregistré avant la version courante.
- *
  * v1 → v2 : les classements listaient des noms libres, sans lien avec
- * l'effectif. Ils comptent désormais les joueurs par identifiant. Les anciens
- * compteurs ne sont pas repris — ils repartent de zéro, comme demandé — et les
- * classements manquants (penaltys, matchs joués, entraînement) sont ajoutés.
+ * l'effectif. Ils comptent désormais les joueurs par identifiant, et les
+ * anciens compteurs repartent de zéro — c'est ce qui a été demandé.
+ */
+function toV2(content) {
+  content.stats = {
+    ...content.stats,
+    groups: cloneContent(DEFAULT_CONTENT.stats.groups)
+  };
+  return content;
+}
+
+/**
+ * v2 → v3 : trois classements s'ajoutent (coup franc, penalty, arrêts). Cette
+ * fois les compteurs déjà saisis sont conservés : on complète la liste au lieu
+ * de la remplacer, et un classement supprimé exprès ne revient pas.
+ */
+function toV3(content) {
+  const groups = Array.isArray(content.stats?.groups) ? content.stats.groups : [];
+  const connus = new Set(groups.map((group) => group?.id));
+  const ajouts = DEFAULT_CONTENT.stats.groups.filter(
+    (group) => ['freekicks', 'penaltygoals', 'saves'].includes(group.id) && !connus.has(group.id)
+  );
+  content.stats = { ...content.stats, groups: [...groups, ...cloneContent(ajouts)] };
+  return content;
+}
+
+/**
+ * Met à niveau un document enregistré avant la version courante. Les étapes
+ * s'enchaînent : un document v1 passe par toutes.
  */
 export function migrateContent(stored) {
   if (!stored || typeof stored !== 'object') return stored;
-  if (Number(stored.version) >= SCHEMA_VERSION) return stored;
+  const version = Number(stored.version) || 1;
+  if (version >= SCHEMA_VERSION) return stored;
 
-  const migrated = cloneContent(stored);
-  migrated.stats = {
-    ...migrated.stats,
-    groups: cloneContent(DEFAULT_CONTENT.stats.groups)
-  };
+  let migrated = cloneContent(stored);
+  if (version < 2) migrated = toV2(migrated);
+  if (version < 3) migrated = toV3(migrated);
+  // Estampiller évite de rejouer la migration à chaque rendu de la page.
+  migrated.version = SCHEMA_VERSION;
   return migrated;
 }
 

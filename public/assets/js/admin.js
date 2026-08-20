@@ -458,6 +458,11 @@ function playerEditor(player, index) {
           })}
         </div>
 
+        ${field('Compagne', `${path}.partner`, {
+          placeholder: 'Prénom',
+          hint: "Affichée sur la fiche détaillée, à côté de l'âge et de la valeur marchande. Vide = ligne masquée."
+        })}
+
         ${field('Descriptif', `${path}.description`, { type: 'textarea', hint: 'Une ligne vide crée un nouveau paragraphe.' })}
       </div>
     </article>`;
@@ -550,7 +555,9 @@ function renderStats() {
  */
 function statGroup(group, index) {
   const path = `stats.groups.${index}`;
-  const players = state.draft.squad?.players || [];
+  const effectif = state.draft.squad?.players || [];
+  // Un classement peut ne concerner qu'un poste : les arrêts, par exemple.
+  const players = group.only ? effectif.filter((player) => player.position === group.only) : effectif;
   const values = group.values || {};
   const comptes = players.filter((player) => Number(values[player.id]) > 0).length;
   const ouverte = state.openEditor === index;
@@ -570,14 +577,22 @@ function statGroup(group, index) {
             ]
           })}
         </div>
-        ${field('Icône', `${path}.icon`, {
-          type: 'select',
-          options: [
-            { value: 'ball', label: 'Ballon' }, { value: 'boot', label: 'Crampon' },
-            { value: 'oops', label: 'Alerte (CSC)' }, { value: 'card', label: 'Carton (penalty)' },
-            { value: 'shirt', label: 'Maillot (matchs joués)' }, { value: 'check', label: 'Coche (présence)' }
-          ]
-        })}
+        <div class="a-grid a-grid--2">
+          ${field('Icône', `${path}.icon`, {
+            type: 'select',
+            options: [
+              { value: 'ball', label: 'Ballon' }, { value: 'boot', label: 'Crampon' },
+              { value: 'oops', label: 'Alerte (CSC)' }, { value: 'card', label: 'Carton (penalty)' },
+              { value: 'shirt', label: 'Maillot (matchs joués)' }, { value: 'check', label: 'Coche (présence)' },
+              { value: 'glove', label: 'Gant (arrêts)' }
+            ]
+          })}
+          ${field('Poste concerné', `${path}.only`, {
+            type: 'select',
+            options: [{ value: '', label: "Tout l'effectif" }, ...POSITION_OPTIONS],
+            hint: 'Restreint le classement à un seul poste. Les arrêts ne concernent que les gardiens.'
+          })}
+        </div>
 
         <div class="a-field">
           <span class="a-field__label">Compteurs de l'effectif</span>
@@ -586,6 +601,7 @@ function statGroup(group, index) {
             s'y répercute tout seul. Un compteur laissé vide vaut zéro — le joueur
             apparaît quand même dans le classement.
             ${players.length ? ` ${comptes} joueur${comptes > 1 ? 's' : ''} sur ${players.length} au-dessus de zéro.` : ''}
+            ${group.only ? ` Classement réservé au poste : ${POSITION_OPTIONS.find((o) => o.value === group.only)?.label || group.only}.` : ''}
           </p>
           ${players.length ? `
             <div class="counters">
@@ -597,7 +613,9 @@ function statGroup(group, index) {
                          value="${Number(values[player.id]) > 0 ? Number(values[player.id]) : ''}">
                 </label>`).join('')}
             </div>`
-            : '<p class="empty-state">Aucun joueur dans l&rsquo;effectif : commencez par l&rsquo;onglet Effectif.</p>'}
+            : `<p class="empty-state">${group.only
+                ? 'Aucun joueur \u00e0 ce poste dans l&rsquo;effectif : changez le poste concern\u00e9, ou ajoutez un joueur.'
+                : 'Aucun joueur dans l&rsquo;effectif : commencez par l&rsquo;onglet Effectif.'}</p>`}
         </div>
       </div>
     </article>`;
@@ -864,6 +882,13 @@ function onFieldChange(event) {
     if (label) label.textContent = value || '—';
   }
 
+  // Le poste concerné par un classement change la liste des compteurs affichés.
+  if (/^stats\.groups\.\d+\.only$/.test(path)) {
+    refreshDirtyState();
+    renderTab();
+    return;
+  }
+
   // Changer de poste change les six notes proposées : il faut redessiner.
   if (/^squad\.players\.\d+\.position$/.test(path)) {
     refreshDirtyState();
@@ -899,7 +924,7 @@ const BLANK = {
     age: 0, nationality: 'France', position: 'MIL', since: new Date().getFullYear(),
     weakFoot: 3, skillMoves: 3,
     ratings: Object.fromEntries([...RATINGS_OUTFIELD, ...RATINGS_GK].map(([key]) => [key, 50])),
-    overall: 0, description: '', marketValue: ''
+    overall: 0, partner: '', description: '', marketValue: ''
   }),
   statGroup: () => ({ id: '', title: 'Nouveau classement', unit: 'buts', accent: 'blue', icon: 'ball', values: {} })
 };

@@ -585,6 +585,7 @@ const STAT_ICONS = {
   boot: '<path d="M3 6h6.3l2.2 3.4L15 7.8l1 1.8 2.6-.7A3.4 3.4 0 0 1 21 12.2V16H3V6zm0 11.5h18V20H3v-2.5z"/>',
   oops: '<path d="M12 2 1 21h22L12 2zm0 5.6 6.9 11.9H5.1L12 7.6zM11 10v5h2v-5h-2zm0 6v2h2v-2h-2z"/>',
   card: '<path d="M7.5 2h9A1.5 1.5 0 0 1 18 3.5v17a1.5 1.5 0 0 1-1.5 1.5h-9A1.5 1.5 0 0 1 6 20.5v-17A1.5 1.5 0 0 1 7.5 2z"/>',
+  glove: '<path d="M6 9V4.5a1.5 1.5 0 0 1 3 0V8h.5V3.5a1.5 1.5 0 0 1 3 0V8h.5V4.5a1.5 1.5 0 0 1 3 0V9l1.6-1.1a1.6 1.6 0 0 1 2.2 2.3l-3.1 4.3V22H6.5v-7.6l-2-3.2A1.6 1.6 0 0 1 6 9z"/>',
   shirt: '<path d="m9 2 3 1.7L15 2l6 3.4-2.2 4.2-2.3-1.2V22H7.5V8.4L5.2 9.6 3 5.4 9 2z"/>',
   check: '<path d="M9.6 18.6 3.2 12.2l1.8-1.8 4.6 4.6L19 5.6l1.8 1.8z"/>'
 };
@@ -787,7 +788,9 @@ function renderStats(content) {
     // Tout l'effectif figure dans chaque classement : les compteurs à zéro
     // aussi. Du meilleur au moins bon, à égalité dans l'ordre de l'effectif.
     const values = group.values && typeof group.values === 'object' ? group.values : {};
-    const players = squad
+    // Un classement peut être réservé à un poste : les arrêts, par exemple.
+    const concernes = group.only ? squad.filter((player) => player.position === group.only) : squad;
+    const players = concernes
       .map((player) => ({ player, value: Number(values[player.id]) || 0 }))
       .sort((a, b) => b.value - a.value);
     const leader = players.reduce((max, entry) => Math.max(max, entry.value), 0) || 1;
@@ -818,7 +821,9 @@ function renderStats(content) {
               <span class="podium__more-label">Voir les ${rest.length} suivants</span>
               <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 15.4 5.6 9 7 7.6l5 5 5-5L18.4 9z"/></svg>
             </button>` : ''}
-        ` : '<p class="stat-card__empty">Aucun joueur dans l&rsquo;effectif pour le moment.</p>'}
+        ` : `<p class="stat-card__empty">${group.only
+              ? 'Aucun joueur \u00e0 ce poste dans l&rsquo;effectif.'
+              : 'Aucun joueur dans l&rsquo;effectif pour le moment.'}</p>`}
       </article>`;
   }).join('');
 

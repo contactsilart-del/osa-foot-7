@@ -326,6 +326,7 @@ export function playerProfileHTML(player) {
     player.nationality ? ['Nationalité', player.nationality] : null,
     ['Poste', position.label],
     Number(player.since) ? ['Au club depuis', `${player.since} · ${seasons} saison${seasons > 1 ? 's' : ''}`] : null,
+    player.partner ? ['Compagne', player.partner] : null,
     player.marketValue ? ['Valeur marchande', player.marketValue] : null
   ].filter(Boolean);
 
