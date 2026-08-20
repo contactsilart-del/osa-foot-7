@@ -44,9 +44,9 @@
         <li><a class="nav__link" href="/#actus">Actus</a></li>
         <li><a class="nav__link is-active" href="/effectif" aria-current="page">Effectif</a></li>
         <li><a class="nav__link" href="/compo">Compo</a></li>
+        <li><a class="nav__link" href="/resultats">Résultats</a></li>
+        <li><a class="nav__link" href="/palmares">Palmarès</a></li>
         <li><a class="nav__link" href="/galerie">Galerie</a></li>
-        <li><a class="nav__link" href="/#calendrier">Calendrier</a></li>
-        <li><a class="nav__link" href="/#classement">Classement</a></li>
         <li><a class="nav__link" href="/#stats">Stats</a></li>
         <li><a class="nav__link" href="/#contact">Contact</a></li>
       </ul>
@@ -94,6 +94,19 @@
     </div>
   </section>
 
+  <!-- Masquée par app.js tant qu'aucun joueur n'est mis en avant. -->
+  <section class="section section--soft" id="en-forme" data-spotlights hidden>
+    <div class="shell">
+      <header class="section__head" data-reveal>
+        <p class="eyebrow">&Agrave; suivre</p>
+        <h2 class="section__title">Le moment de ces joueurs-l&agrave;</h2>
+        <p class="section__lead">En forme, &agrave; surveiller, de retour de blessure : ceux dont on parle en ce moment.</p>
+      </header>
+
+      <div class="spotlights" id="squad-spotlights"><!-- injecté par app.js --></div>
+    </div>
+  </section>
+
   <section class="section section--dark" id="effectif">
     <div class="section__bg" aria-hidden="true"><span class="hero__glow hero__glow--c"></span></div>
     <div class="shell">
@@ -135,7 +148,9 @@
         <li><a href="/compo">Compo</a></li>
         <li><a href="/galerie">Galerie</a></li>
         <li><a href="/#stade">Notre stade</a></li>
-        <li><a href="/#calendrier">Calendrier &amp; Résultats</a></li>
+        <li><a href="/resultats">Résultats &amp; classement</a></li>
+        <li><a href="/resultats#pronos">Pronostics</a></li>
+        <li><a href="/palmares">Palmarès</a></li>
         <li><a href="/#stats">Stats Saison</a></li>
       </ul>
     </nav>

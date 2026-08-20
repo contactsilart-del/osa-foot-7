@@ -3,16 +3,16 @@
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
-  <title>Galerie — OSA FOOT 7</title>
-  <meta name="description" content="Les photos de l'OSA FOOT 7 : matchs, coupe et vie du club.">
+  <title>R&eacute;sultats &amp; classement &mdash; OSA FOOT 7</title>
+  <meta name="description" content="Le classement de la poule de l'OSA FOOT 7, tous les résultats journée par journée, et les pronostics qui rapportent des packs.">
   <meta name="theme-color" content="#071227">
-  <link rel="canonical" href="https://osafoot7.fr/galerie">
+  <link rel="canonical" href="https://osafoot7.fr/resultats">
 
   <meta property="og:type" content="website">
-  <meta property="og:url" content="https://osafoot7.fr/galerie">
+  <meta property="og:url" content="https://osafoot7.fr/resultats">
   <meta property="og:site_name" content="OSA FOOT 7">
-  <meta property="og:title" content="Galerie — OSA FOOT 7">
-  <meta property="og:description" content="Les photos de l'OSA FOOT 7 : matchs, coupe et vie du club.">
+  <meta property="og:title" content="Résultats &amp; classement — OSA FOOT 7">
+  <meta property="og:description" content="Le classement de la poule, tous les résultats journée par journée et les pronostics de l'OSA FOOT 7.">
   <meta property="og:image" content="/img/osa.png">
   <meta property="og:locale" content="fr_FR">
 
@@ -21,7 +21,7 @@
   <link rel="apple-touch-icon" href="/img/apple-touch-icon.png">
   <link rel="stylesheet" href="/assets/css/style.css">
 </head>
-<body data-page="gallery">
+<body data-page="results">
 
 <a class="skip-link" href="#main">Aller au contenu principal</a>
 
@@ -44,9 +44,9 @@
         <li><a class="nav__link" href="/#actus">Actus</a></li>
         <li><a class="nav__link" href="/effectif">Effectif</a></li>
         <li><a class="nav__link" href="/compo">Compo</a></li>
-        <li><a class="nav__link" href="/resultats">Résultats</a></li>
+        <li><a class="nav__link is-active" href="/resultats" aria-current="page">Résultats</a></li>
         <li><a class="nav__link" href="/palmares">Palmarès</a></li>
-        <li><a class="nav__link is-active" href="/galerie" aria-current="page">Galerie</a></li>
+        <li><a class="nav__link" href="/galerie">Galerie</a></li>
         <li><a class="nav__link" href="/#stats">Stats</a></li>
         <li><a class="nav__link" href="/#contact">Contact</a></li>
       </ul>
@@ -82,21 +82,90 @@
       <span class="hero__lines"></span>
     </div>
     <div class="shell">
-      <p class="eyebrow eyebrow--light">Saison <span data-bind="stats.season">2025 / 2026</span></p>
-      <h1 class="page-hero__title" data-bind="gallery.title">Galerie</h1>
-      <p class="section__lead" data-bind="gallery.subtitle">Les moments du club, match apr&egrave;s match. Cliquez sur une photo pour l&rsquo;agrandir.</p>
-      <p class="page-hero__count" id="gallery-count" hidden></p>
+      <p class="eyebrow eyebrow--light">Saison <span data-bind="championship.season">2025 / 2026</span></p>
+      <h1 class="page-hero__title">R&eacute;sultats &amp; classement</h1>
+      <p class="section__lead" data-bind="championship.subtitle">Le classement de la poule, recalcul&eacute; &agrave; chaque r&eacute;sultat saisi.</p>
     </div>
   </section>
 
-  <section class="section section--dark" id="galerie">
+  <!-- ══════════════════════════════════════ CLASSEMENT ══ -->
+  <section class="section section--light" id="classement">
+    <div class="shell">
+      <header class="section__head" data-reveal>
+        <p class="eyebrow">Poule</p>
+        <h2 class="section__title">Le classement</h2>
+        <p class="section__lead">
+          Aucune ligne n&rsquo;est recopi&eacute;e &agrave; la main : tout se d&eacute;duit des scores saisis.
+          <abbr title="Matchs jou&eacute;s">J</abbr>, <abbr title="Gagn&eacute;s">G</abbr>,
+          <abbr title="Nuls">N</abbr>, <abbr title="Perdus">D</abbr>,
+          buts marqu&eacute;s et encaiss&eacute;s, diff&eacute;rence, points.
+        </p>
+      </header>
+
+      <div id="ladder-full"><!-- injecté par app.js --></div>
+    </div>
+  </section>
+
+  <!-- ═══════════════════════════════════════ PRONOSTICS ══ -->
+  <section class="section section--dark" id="pronos">
     <div class="section__bg" aria-hidden="true"><span class="hero__glow hero__glow--c"></span></div>
     <div class="shell">
-      <div class="image-grid image-grid--gallery" id="gallery-grid">
-        <!-- injecté par app.js -->
+      <header class="section__head" data-reveal>
+        <p class="eyebrow eyebrow--light">Pronostics</p>
+        <h2 class="section__title">Devine le score, gagne des packs</h2>
+        <p class="section__lead">
+          Les pronostics ferment au coup d&rsquo;envoi et se r&egrave;glent tout seuls d&egrave;s que
+          le r&eacute;sultat est publi&eacute;.
+        </p>
+      </header>
+
+      <ul class="rewards" data-reveal>
+        <li class="rewards__item rewards__item--exact"><b>15</b><span>packs<br>score exact</span></li>
+        <li class="rewards__item rewards__item--result"><b>3</b><span>packs<br>bon r&eacute;sultat</span></li>
+        <li class="rewards__item rewards__item--played"><b>1</b><span>pack<br>pour avoir jou&eacute;</span></li>
+      </ul>
+
+      <p class="pronos__account" id="pronos-account"></p>
+      <p class="form__status form__status--error" id="pronos-error" role="alert" hidden></p>
+
+      <div class="pronos" id="pronos-list"><!-- injecté par pronos.js --></div>
+
+      <div class="pronos__panel" data-pronos-history hidden>
+        <div id="pronos-history"></div>
+      </div>
+
+      <div class="pronos__panel" data-pronos-board hidden>
+        <div id="pronos-board"></div>
       </div>
     </div>
   </section>
+
+  <!-- ═══════════════════════════════════════ RÉSULTATS ══ -->
+  <section class="section section--soft" id="resultats">
+    <div class="shell">
+      <header class="section__head" data-reveal>
+        <p class="eyebrow">Saison</p>
+        <h2 class="section__title">Journ&eacute;e par journ&eacute;e</h2>
+        <p class="section__lead">Toutes les rencontres de la poule, y compris celles qui restent &agrave; jouer.</p>
+      </header>
+
+      <div class="results" id="results-list"><!-- injecté par app.js --></div>
+    </div>
+  </section>
+
+  <!-- ═══════════════════════════════════════ CALENDRIER ══ -->
+  <section class="section section--light" id="calendrier">
+    <div class="shell">
+      <header class="section__head" data-reveal>
+        <p class="eyebrow">Documents</p>
+        <h2 class="section__title" data-bind="calendar.title">Calendrier officiel</h2>
+        <p class="section__lead" data-bind="calendar.subtitle">Le calendrier tel qu&rsquo;il a &eacute;t&eacute; publi&eacute;. Cliquez pour agrandir.</p>
+      </header>
+
+      <div class="image-grid" id="calendar-grid"><!-- injecté par app.js --></div>
+    </div>
+  </section>
+
 </main>
 
 <footer class="site-footer">
@@ -179,7 +248,7 @@
 
 <noscript>
   <div class="noscript">
-    <p><strong>JavaScript est d&eacute;sactiv&eacute;.</strong> Les photos de la galerie ne peuvent pas s&rsquo;afficher. Contactez-nous &agrave; <a href="mailto:contact@osafoot7.fr">contact@osafoot7.fr</a>.</p>
+    <p><strong>JavaScript est d&eacute;sactiv&eacute;.</strong> Les r&eacute;sultats et le classement ne peuvent pas s&rsquo;afficher. Contactez-nous &agrave; <a href="mailto:contact@osafoot7.fr">contact@osafoot7.fr</a>.</p>
   </div>
 </noscript>
 

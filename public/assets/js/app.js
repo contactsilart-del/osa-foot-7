@@ -8,8 +8,13 @@
 
 import { DEFAULT_CONTENT, cloneContent, deepMerge, migrateContent } from './content.js';
 import { playerCardHTML, playerProfileHTML, sortPlayers, SORTS, fullName } from './squad.js';
+import {
+  computeStandings, formOf, homeTeamId, involves, isPlayed, matchesByDay, matchesOf,
+  nextMatchFor, outcomeFor, sortByDate, teamLogo, teamName, teamShort, OUTCOME_LABEL
+} from './league.js';
 import { initCompo, renderCompo } from './compo.js';
 import { initPacks, renderPacks } from './packs.js';
+import { initPronos, renderPronos } from './pronos.js';
 
 /* ═══════════════════════════════════════════ Utilitaires ══ */
 
@@ -18,6 +23,8 @@ const $$ = (sel, root = document) => Array.from(root.querySelectorAll(sel));
 
 /** Contenu courant du site. Rempli par `render()`, lu par les gestionnaires d'événements. */
 const state = {
+  /** Matchs porteurs d'un récit, dans l'ordre où « Lire la suite » les indexe. */
+  articles: [],
   content: null,
   /** Fiche ouverte, pour la rafraîchir quand le contenu distant arrive. */
   openPlayerId: null,
@@ -334,7 +341,11 @@ function startCountdown(kickoffISO) {
 
 /** Applique les liaisons simples déclarées en HTML via data-bind*. */
 function applyBindings(content) {
-  const kickoff = parseDate(content.nextMatch?.kickoff);
+  // Les liaisons `nextMatch.*` du HTML décrivent l'affiche calculée, pas le
+  // bloc enregistré : c'est le championnat qui commande dès qu'il est rempli.
+  const affiche = nextFixture(content);
+  const vue = { ...content, nextMatch: affiche };
+  const kickoff = parseDate(affiche.kickoff);
 
   const computed = {
     'nextMatch.dateFull': kickoff ? capitalize(DATE_FULL.format(kickoff)) : 'Date à venir',
@@ -345,7 +356,7 @@ function applyBindings(content) {
 
   $$('[data-bind]').forEach((el) => {
     const path = el.dataset.bind;
-    const value = path in computed ? computed[path] : get(content, path);
+    const value = path in computed ? computed[path] : get(vue, path);
     if (value === undefined || value === null || value === '') return;
     if (el.tagName === 'IMG') el.src = value;
     else el.textContent = value;
@@ -383,60 +394,166 @@ function applyBindings(content) {
 
 }
 
-/** Résultat d'un match : 'win' | 'draw' | 'loss' | null */
-function outcomeOf(item) {
-  const score = item?.score;
-  if (!score || typeof score.osa !== 'number' || typeof score.opponent !== 'number') return null;
-  if (score.osa > score.opponent) return 'win';
-  if (score.osa < score.opponent) return 'loss';
-  return 'draw';
+/* ═══════════════════════════════════════ Championnat ══ */
+
+const DATE_DAY = new Intl.DateTimeFormat('fr-FR', { weekday: 'short', day: 'numeric', month: 'short' });
+const DATE_LONG = new Intl.DateTimeFormat('fr-FR', { dateStyle: 'long' });
+const HEURE = new Intl.DateTimeFormat('fr-FR', { hour: '2-digit', minute: '2-digit' });
+
+/** Lettre affichée dans le carré de forme, pour qui ne distingue pas les couleurs. */
+const FORM_LETTER = { win: 'V', draw: 'N', loss: 'D' };
+
+function champOf(content) {
+  return content?.championship || {};
 }
 
-const OUTCOME_LABEL = { win: 'Victoire', draw: 'Match nul', loss: 'Défaite' };
-
-function scoreLine(item) {
-  const score = item?.score;
-  if (!score || typeof score.osa !== 'number' || typeof score.opponent !== 'number') return '';
-  return item.venue === 'home'
-    ? `${score.osa} – ${score.opponent}`
-    : `${score.opponent} – ${score.osa}`;
+/** L'identifiant de notre équipe dans le tableau du championnat. */
+function usId(content) {
+  return homeTeamId(champOf(content));
 }
 
-function matchTitle(item) {
-  const opponent = item.opponent || 'Adversaire';
-  return item.venue === 'home' ? `OSA — ${opponent}` : `${opponent} — OSA`;
+/** Écusson d'un club : son logo, ou son initiale si aucun n'a été téléversé. */
+function crestHTML(content, teamId, size = 96) {
+  const logo = teamLogo(champOf(content), teamId);
+  const nom = teamShort(champOf(content), teamId);
+  return logo
+    ? `<img src="${esc(logo)}" alt="" width="${size}" height="${size}" loading="lazy" decoding="async">`
+    : `<span class="crest__initial" aria-hidden="true">${esc(nom.charAt(0) || '?')}</span>`;
+}
+
+function matchSummary(champ, match) {
+  const score = isPlayed(match) ? `${match.homeScore} – ${match.awayScore}` : 'à venir';
+  return `${teamShort(champ, match.homeId)} ${score} ${teamShort(champ, match.awayId)}`;
+}
+
+/** Libellé de date d'un match : « ven. 5 sept. · 20:30 ». */
+function matchWhen(match) {
+  const date = parseDate(match?.date);
+  if (!date) return '';
+  return `${capitalize(DATE_DAY.format(date))} · ${HEURE.format(date)}`;
+}
+
+/**
+ * L'affiche du prochain match. Elle vient du championnat dès qu'une rencontre y
+ * est programmée ; à défaut, du bloc « Prochain match » saisi à la main, qui
+ * reste le filet de sécurité d'avant-saison.
+ */
+function nextFixture(content) {
+  const champ = champOf(content);
+  const match = nextMatchFor(champ);
+  if (!match) {
+    const secours = content?.nextMatch || {};
+    return { ...secours, matchId: '', homeId: '', awayId: '' };
+  }
+
+  const aDomicile = match.homeId === usId(content);
+  return {
+    matchId: match.id,
+    competition: match.competition || content?.nextMatch?.competition || '',
+    home: { name: teamShort(champ, match.homeId), logo: teamLogo(champ, match.homeId) },
+    away: { name: teamShort(champ, match.awayId), logo: teamLogo(champ, match.awayId) },
+    kickoff: match.date,
+    venue: match.venue
+      || (aDomicile ? (content?.venue?.name || '') : `Chez ${teamName(champ, match.homeId)}`),
+    homeId: match.homeId,
+    awayId: match.awayId
+  };
+}
+
+/**
+ * La forme du moment : cinq carrés, du plus ancien au plus récent. Chacun porte
+ * sa lettre — un daltonien ne distingue pas le vert du rouge, et la couleur
+ * seule ne suffirait donc pas à lire la série.
+ */
+function formStripHTML(champ, teamId) {
+  const suite = formOf(champ, teamId);
+  if (!suite.length) return '';
+
+  const resume = suite.map(({ outcome }) => OUTCOME_LABEL[outcome] || '—').join(', ');
+  return `
+    <span class="form-strip" role="img"
+          aria-label="Forme du moment, du plus ancien au plus récent : ${esc(resume)}">
+      ${suite.map(({ outcome, match }) => `
+        <i class="form-strip__box form-strip__box--${outcome}" title="${esc(matchSummary(champ, match))}">
+          ${FORM_LETTER[outcome] || ''}
+        </i>`).join('')}
+    </span>`;
+}
+
+/** L'affiche de la page d'accueil, écussons et forme des deux équipes. */
+function renderFixture(content) {
+  const zone = $('#fixture');
+  if (!zone) return;
+
+  const affiche = nextFixture(content);
+  const champ = champOf(content);
+  const kickoff = parseDate(affiche.kickoff);
+
+  const cote = (teamId, equipe, eager) => `
+    <div class="fixture__side">
+      <div class="fixture__crest">${
+        equipe?.logo
+          ? `<img src="${esc(equipe.logo)}" alt="" width="120" height="120" loading="${eager ? 'eager' : 'lazy'}">`
+          : `<span class="crest__initial" aria-hidden="true">${esc(String(equipe?.name || '?').charAt(0))}</span>`
+      }</div>
+      <span class="fixture__team">${esc(equipe?.name || '—')}</span>
+      ${formStripHTML(champ, teamId)}
+    </div>`;
+
+  zone.innerHTML = `
+    ${cote(affiche.homeId, affiche.home, true)}
+    <div class="fixture__center">
+      <span class="fixture__vs">VS</span>
+      <span class="fixture__when">${esc(kickoff ? capitalize(DATE_SHORT.format(kickoff)) : 'À venir')}</span>
+    </div>
+    ${cote(affiche.awayId, affiche.away, true)}`;
+}
+
+/* ════════════════════════════════════════ Actualités ══ */
+
+/** Les matchs porteurs d'un récit, du plus récent au plus ancien. */
+function articleMatches(content) {
+  return sortByDate(matchesOf(champOf(content)).filter((match) => match.title), -1);
 }
 
 function renderNews(content) {
+  // La liste sert aussi de table d'index à la page Résultats : on la calcule
+  // même quand la grille d'actualités n'est pas sur la page.
+  state.articles = articleMatches(content);
+
   const grid = $('#news-grid');
   if (!grid) return;
 
-  const items = Array.isArray(content.news) ? content.news : [];
+  const champ = champOf(content);
+  const nous = usId(content);
+  // L'accueil n'en montre que six ; la page Résultats renvoie vers le récit.
+  const items = state.articles.slice(0, 6);
+
   if (!items.length) {
-    grid.innerHTML = '<p class="empty">Aucune actualité pour le moment.</p>';
+    grid.innerHTML = '<p class="empty">Aucun récit de match pour le moment.</p>';
     return;
   }
 
-  grid.innerHTML = items.map((item, index) => {
-    const outcome = outcomeOf(item);
-    const score = scoreLine(item);
-    const dateLabel = item.date ? capitalize(new Intl.DateTimeFormat('fr-FR', { day: 'numeric', month: 'long', year: 'numeric' }).format(new Date(item.date))) : '';
+  grid.innerHTML = items.map((match, index) => {
+    const outcome = outcomeFor(match, nous);
+    const score = isPlayed(match) ? `${match.homeScore} – ${match.awayScore}` : '';
+    const date = parseDate(match.date);
 
     return `
       <article class="news-card" data-reveal style="--delay:${index * 70}ms">
         <div class="news-card__media">
-          <img src="${esc(item.image || '/img/osa.png')}" alt="Affiche du match ${esc(matchTitle(item))}" loading="lazy" decoding="async" width="600" height="600">
+          <img src="${esc(match.image || '/img/osa.png')}" alt="Affiche du match ${esc(matchSummary(champ, match))}" loading="lazy" decoding="async" width="600" height="600">
           ${outcome ? `<span class="badge badge--${outcome}">${OUTCOME_LABEL[outcome]}</span>` : ''}
           ${score ? `<span class="news-card__score">${esc(score)}</span>` : ''}
         </div>
         <div class="news-card__body">
           <p class="news-card__meta">
-            ${item.competition ? `<span class="chip">${esc(item.competition)}</span>` : ''}
-            ${item.venue ? `<span class="chip chip--soft">${item.venue === 'home' ? 'Domicile' : 'Extérieur'}</span>` : ''}
-            ${dateLabel ? `<span class="news-card__date">${esc(dateLabel)}</span>` : ''}
+            ${match.competition ? `<span class="chip">${esc(match.competition)}</span>` : ''}
+            ${involves(match, nous) ? `<span class="chip chip--soft">${match.homeId === nous ? 'Domicile' : 'Extérieur'}</span>` : ''}
+            ${date ? `<span class="news-card__date">${esc(capitalize(DATE_LONG.format(date)))}</span>` : ''}
           </p>
-          <h3 class="news-card__title">${esc(item.title)}</h3>
-          <p class="news-card__excerpt">${esc(item.excerpt)}</p>
+          <h3 class="news-card__title">${esc(match.title)}</h3>
+          <p class="news-card__excerpt">${esc(match.excerpt)}</p>
           <button class="link-btn" type="button" data-news="${index}">
             Lire la suite
             <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M13 5l7 7-7 7v-4H4v-6h9V5z"/></svg>
@@ -448,36 +565,216 @@ function renderNews(content) {
   initReveal(grid);
 }
 
-function openNewsModal(item) {
-  if (!item) return;
-  const outcome = outcomeOf(item);
-  const score = scoreLine(item);
-  const dateLabel = item.date
-    ? capitalize(new Intl.DateTimeFormat('fr-FR', { dateStyle: 'long' }).format(new Date(item.date)))
-    : '';
+function openNewsModal(match) {
+  if (!match) return;
+  const content = state.content || {};
+  const champ = champOf(content);
+  const nous = usId(content);
+  const outcome = outcomeFor(match, nous);
+  const score = isPlayed(match) ? `${match.homeScore} – ${match.awayScore}` : '';
+  const date = parseDate(match.date);
 
   modal.open(`
     <figure class="modal__figure">
-      <img src="${esc(item.image || '/img/osa.png')}" alt="Affiche du match ${esc(matchTitle(item))}" loading="lazy" decoding="async">
+      <img src="${esc(match.image || '/img/osa.png')}" alt="Affiche du match ${esc(matchSummary(champ, match))}" loading="lazy" decoding="async">
     </figure>
     <div class="modal__content">
       <p class="modal__meta">
         ${outcome ? `<span class="badge badge--${outcome}">${OUTCOME_LABEL[outcome]}</span>` : ''}
-        ${item.competition ? `<span class="chip">${esc(item.competition)}</span>` : ''}
-        ${item.venue ? `<span class="chip chip--soft">${item.venue === 'home' ? 'À domicile' : 'À l\'extérieur'}</span>` : ''}
-        ${dateLabel ? `<span class="news-card__date">${esc(dateLabel)}</span>` : ''}
+        ${match.competition ? `<span class="chip">${esc(match.competition)}</span>` : ''}
+        ${involves(match, nous) ? `<span class="chip chip--soft">${match.homeId === nous ? 'À domicile' : "À l'extérieur"}</span>` : ''}
+        ${date ? `<span class="news-card__date">${esc(capitalize(DATE_LONG.format(date)))}</span>` : ''}
       </p>
-      <h2 class="modal__title" id="modal-title">${esc(item.title)}</h2>
-      ${score ? `<p class="modal__score"><span>${esc(matchTitle(item))}</span><strong>${esc(score)}</strong></p>` : ''}
-      <div class="modal__text">${toParagraphs(item.body || item.excerpt)}</div>
-      ${Array.isArray(item.scorers) && item.scorers.length ? `
+      <h2 class="modal__title" id="modal-title">${esc(match.title)}</h2>
+      ${score ? `<p class="modal__score"><span>${esc(teamName(champ, match.homeId))} — ${esc(teamName(champ, match.awayId))}</span><strong>${esc(score)}</strong></p>` : ''}
+      <div class="modal__text">${toParagraphs(match.body || match.excerpt)}</div>
+      ${Array.isArray(match.scorers) && match.scorers.length ? `
         <div class="modal__scorers">
           <h3>Buteurs OSA</h3>
-          <ul>${item.scorers.map((s) => `<li><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 2a10 10 0 1 0 10 10A10 10 0 0 0 12 2zm0 3.2 3.4 2.5-1.3 4H9.9l-1.3-4zM4.6 12.6l1.3-1 3.3 2.4-.6 4.1a8 8 0 0 1-4-5.5zm10.8 5.5-.6-4.1 3.3-2.4 1.3 1a8 8 0 0 1-4 5.5z"/></svg>${esc(s)}</li>`).join('')}</ul>
+          <ul>${match.scorers.map((s) => `<li><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 2a10 10 0 1 0 10 10A10 10 0 0 0 12 2zm0 3.2 3.4 2.5-1.3 4H9.9l-1.3-4zM4.6 12.6l1.3-1 3.3 2.4-.6 4.1a8 8 0 0 1-4-5.5zm10.8 5.5-.6-4.1 3.3-2.4 1.3 1a8 8 0 0 1-4 5.5z"/></svg>${esc(s)}</li>`).join('')}</ul>
         </div>` : ''}
     </div>
   `);
 }
+
+/* ═════════════════════════════════════════ Classement ══ */
+
+/**
+ * Le tableau du championnat. Il n'est jamais saisi : chaque ligne se déduit des
+ * scores entrés dans l'administration, ce qui interdit à la somme des colonnes
+ * de contredire les résultats affichés juste à côté.
+ */
+function ladderHTML(content) {
+  const champ = champOf(content);
+  const rows = computeStandings(champ);
+  if (!rows.length) {
+    return soonState('Classement à venir',
+      "Les clubs de la poule s'ajoutent depuis l'onglet « Championnat » de l'administration.");
+  }
+
+  const nous = usId(content);
+  const entete = [
+    ['J', 'Matchs joués'], ['G', 'Gagnés'], ['N', 'Nuls'], ['D', 'Perdus'],
+    ['+/−', 'Buts marqués et encaissés'], ['DB', 'Différence de buts']
+  ];
+
+  return `
+    <div class="table-scroll">
+      <table class="ladder">
+        <caption class="ladder__caption">
+          ${esc(champ.title || 'Classement')}${champ.season ? ` — saison ${esc(champ.season)}` : ''}
+        </caption>
+        <thead>
+          <tr>
+            <th scope="col" class="ladder__rank">#</th>
+            <th scope="col" class="ladder__club">Club</th>
+            ${entete.map(([court, long]) => `<th scope="col"><abbr title="${esc(long)}">${court}</abbr></th>`).join('')}
+            <th scope="col" class="ladder__pts">PTS</th>
+          </tr>
+        </thead>
+        <tbody>
+          ${rows.map((row) => `
+            <tr${row.id === nous ? ' class="is-us"' : ''}>
+              <td class="ladder__rank">${row.rank}</td>
+              <th scope="row" class="ladder__club">
+                <span class="ladder__crest">${crestHTML(content, row.id, 48)}</span>
+                <span class="ladder__name">${esc(row.team.name)}</span>
+                ${row.penalty ? `<span class="ladder__penalty" title="Points de pénalité">−${row.penalty}</span>` : ''}
+              </th>
+              <td>${row.played}</td>
+              <td>${row.won}</td>
+              <td>${row.drawn}</td>
+              <td>${row.lost}</td>
+              <td class="ladder__goals">${row.goalsFor}<i aria-hidden="true">:</i>${row.goalsAgainst}</td>
+              <td class="ladder__diff">${row.diff > 0 ? '+' : ''}${row.diff}</td>
+              <td class="ladder__pts">${row.points}</td>
+            </tr>`).join('')}
+        </tbody>
+      </table>
+    </div>`;
+}
+
+function renderStandings(content) {
+  const zones = ['#standings-grid', '#ladder-full'].map((sel) => $(sel)).filter(Boolean);
+  if (!zones.length) return;
+  const html = ladderHTML(content);
+  zones.forEach((zone) => {
+    zone.innerHTML = html;
+    initReveal(zone);
+  });
+}
+
+/* ══════════════════════════════════════════ Résultats ══ */
+
+function resultRowHTML(content, match) {
+  const champ = champOf(content);
+  const nous = usId(content);
+  const joue = isPlayed(match);
+  const outcome = outcomeFor(match, nous);
+  const recit = state.articles.indexOf(match);
+  const quand = matchWhen(match);
+
+  return `
+    <li class="result${involves(match, nous) ? ' result--ours' : ''}${outcome ? ` result--${outcome}` : ''}">
+      <span class="result__team result__team--home">
+        <span class="result__name">${esc(teamName(champ, match.homeId))}</span>
+        <span class="result__crest">${crestHTML(content, match.homeId, 48)}</span>
+      </span>
+
+      <span class="result__score">
+        ${joue
+          ? `<b>${match.homeScore}</b><i aria-hidden="true">–</i><b>${match.awayScore}</b>`
+          : '<span class="result__soon">à venir</span>'}
+      </span>
+
+      <span class="result__team result__team--away">
+        <span class="result__crest">${crestHTML(content, match.awayId, 48)}</span>
+        <span class="result__name">${esc(teamName(champ, match.awayId))}</span>
+      </span>
+
+      <span class="result__meta">
+        ${match.competition ? `<span class="chip chip--soft">${esc(match.competition)}</span>` : ''}
+        ${quand ? `<span class="result__when">${esc(quand)}</span>` : ''}
+        ${match.title && recit >= 0
+          ? `<button class="link-btn" type="button" data-news="${recit}">Le récit</button>`
+          : ''}
+      </span>
+    </li>`;
+}
+
+function renderResults(content) {
+  const zone = $('#results-list');
+  if (!zone) return;
+
+  const groupes = matchesByDay(champOf(content));
+  if (!groupes.length) {
+    zone.innerHTML = soonState('Saison à venir',
+      "Les rencontres s'ajoutent depuis l'onglet « Championnat » de l'administration.");
+    return;
+  }
+
+  zone.innerHTML = groupes.map((groupe, index) => `
+    <section class="matchday" data-reveal style="--delay:${index * 60}ms">
+      <h3 class="matchday__title">${esc(groupe.label)}</h3>
+      <ul class="matchday__list">
+        ${groupe.matches.map((match) => resultRowHTML(content, match)).join('')}
+      </ul>
+    </section>`).join('');
+
+  initReveal(zone);
+}
+
+/* ═══════════════════════════════════════════ Palmarès ══ */
+
+const TROPHY = '<path d="M6 3h12v2h3v3a5 5 0 0 1-4.6 5A6 6 0 0 1 13 16.9V19h4v2H7v-2h4v-2.1a6 6 0 0 1-3.4-3.9A5 5 0 0 1 3 8V5h3V3zm0 4H5v1a3 3 0 0 0 1.2 2.4A8 8 0 0 1 6 8.5V7zm12 0v1.5a8 8 0 0 1-.2 1.9A3 3 0 0 0 19 8V7h-1z"/>';
+const MEDAL = '<path d="M7 2h3l2.5 6.5L15 2h3l-3 7.4A6.5 6.5 0 1 1 9.9 9.3L7 2zm5 9a4 4 0 1 0 0 8 4 4 0 0 0 0-8z"/>';
+
+function renderPalmares(content) {
+  const zone = $('#palmares-list');
+  if (!zone) return;
+
+  const entries = Array.isArray(content.palmares?.entries) ? content.palmares.entries : [];
+  zone.innerHTML = entries.length
+    ? entries.map((entry, index) => `
+        <article class="palmares-card${entry.highlight ? ' palmares-card--top' : ''}" data-reveal style="--delay:${index * 70}ms">
+          <span class="palmares-card__icon" aria-hidden="true">
+            <svg viewBox="0 0 24 24">${entry.highlight ? TROPHY : MEDAL}</svg>
+          </span>
+          <div class="palmares-card__body">
+            ${entry.year ? `<p class="palmares-card__year">${esc(entry.year)}</p>` : ''}
+            <h3 class="palmares-card__title">${esc(entry.title)}</h3>
+            ${entry.competition || entry.rank ? `
+              <p class="palmares-card__meta">
+                ${entry.competition ? `<span class="chip">${esc(entry.competition)}</span>` : ''}
+                ${entry.rank ? `<span class="chip chip--soft">${esc(entry.rank)}</span>` : ''}
+              </p>` : ''}
+            ${entry.description ? `<p class="palmares-card__text">${esc(entry.description)}</p>` : ''}
+          </div>
+          ${entry.image ? `<img class="palmares-card__photo" src="${esc(entry.image)}" alt="" loading="lazy" decoding="async">` : ''}
+        </article>`).join('')
+    : soonState('Palmarès à venir',
+        "Les titres et les places du club s'ajoutent depuis l'onglet « Palmarès » de l'administration.");
+
+  initReveal(zone);
+}
+
+/* ═════════════════════════════════════════ Chant du club ══ */
+
+/** Sans paroles saisies, la section entière disparaît de la page. */
+function renderAnthem(content) {
+  const zone = $('#anthem-lyrics');
+  if (!zone) return;
+
+  const paroles = String(content.anthem?.lyrics || '').trim();
+  const section = zone.closest('section');
+  if (section) section.hidden = !paroles;
+
+  zone.innerHTML = paroles
+    ? paroles.split(/\n{2,}/).map((bloc) => bloc.trim()).filter(Boolean)
+        .map((bloc) => `<p>${esc(bloc).replace(/\n/g, '<br>')}</p>`).join('')
+    : '';
+}
+
 
 /** Métadonnées des deux sections faites d'images téléversées. */
 const IMAGE_SECTIONS = [
@@ -487,13 +784,6 @@ const IMAGE_SECTIONS = [
     fallbackAlt: 'Calendrier de la saison',
     emptyTitle: 'Bientôt disponible',
     emptyText: "Le calendrier de la saison n'est pas encore paru. Il sera publié ici dès réception."
-  },
-  {
-    key: 'standings',
-    grid: '#standings-grid',
-    fallbackAlt: 'Classement de la poule',
-    emptyTitle: 'Bientôt disponible',
-    emptyText: 'Le classement sera publié ici dès les premières journées disputées.'
   },
   {
     key: 'gallery',
@@ -573,10 +863,13 @@ function openImageModal(image, fallbackAlt) {
  * régénérées à chaque rendu, mais leurs conteneurs ne changent jamais.
  */
 function initGridDelegates() {
-  $('#news-grid')?.addEventListener('click', (event) => {
-    const button = event.target.closest('[data-news]');
-    if (!button) return;
-    openNewsModal(state.content?.news?.[Number(button.dataset.news)]);
+  // Le récit d'un match s'ouvre depuis l'accueil comme depuis les résultats.
+  ['#news-grid', '#results-list'].forEach((selecteur) => {
+    $(selecteur)?.addEventListener('click', (event) => {
+      const button = event.target.closest('[data-news]');
+      if (!button) return;
+      openNewsModal(state.articles[Number(button.dataset.news)]);
+    });
   });
 
   IMAGE_SECTIONS.forEach((section) => {
@@ -588,9 +881,11 @@ function initGridDelegates() {
     });
   });
 
-  $('#squad-grid')?.addEventListener('click', (event) => {
-    const button = event.target.closest('[data-player]');
-    if (button) openPlayer(button.dataset.player);
+  ['#squad-grid', '#squad-spotlights'].forEach((selecteur) => {
+    $(selecteur)?.addEventListener('click', (event) => {
+      const button = event.target.closest('[data-player]');
+      if (button) openPlayer(button.dataset.player);
+    });
   });
 
   // Déroulé du classement complet, au-delà du podium.
@@ -737,6 +1032,36 @@ function playerById(id) {
   return state.content?.squad?.players?.find((player) => player.id === id) || null;
 }
 
+/**
+ * Les joueurs mis en avant, appariés à leur fiche. Une mise en avant qui
+ * désigne un joueur disparu de l'effectif est simplement ignorée.
+ */
+function spotlightEntries(content) {
+  const spots = Array.isArray(content.squad?.spotlights) ? content.squad.spotlights : [];
+  const players = Array.isArray(content.squad?.players) ? content.squad.players : [];
+  return spots
+    .map((spot) => ({ spot, player: players.find((joueur) => joueur.id === spot.playerId) }))
+    .filter((entry) => entry.player);
+}
+
+/** Bandeau « en forme / à surveiller », en tête de la page Effectif. */
+function renderSpotlights(content) {
+  const zone = $('#squad-spotlights');
+  if (!zone) return;
+
+  const entries = spotlightEntries(content);
+  const bloc = zone.closest('[data-spotlights]') || zone;
+  bloc.hidden = !entries.length;
+
+  zone.innerHTML = entries.map(({ spot, player }, index) => `
+    <article class="spotlight" data-reveal style="--delay:${index * 80}ms">
+      ${playerCardHTML(player, { index, spotlight: spot })}
+      ${spot.reason ? `<p class="spotlight__reason">${esc(spot.reason)}</p>` : ''}
+    </article>`).join('');
+
+  initReveal(zone);
+}
+
 /** Grille complète, page /effectif. */
 function renderSquadGrid(content) {
   const grid = $('#squad-grid');
@@ -745,9 +1070,12 @@ function renderSquadGrid(content) {
   const players = Array.isArray(content.squad?.players) ? content.squad.players : [];
   const { key, direction } = state.squadSort;
   const ordered = sortPlayers(players, key, direction);
+  // Le fanion suit le joueur jusque dans la grille : on le retrouve au tri.
+  const enAvant = new Map(spotlightEntries(content).map(({ spot, player }) => [player.id, spot]));
 
   grid.innerHTML = ordered.length
-    ? ordered.map((player, index) => playerCardHTML(player, { index })).join('')
+    ? ordered.map((player, index) =>
+        playerCardHTML(player, { index, spotlight: enAvant.get(player.id) || null })).join('')
     : soonState('Effectif à venir', "Les fiches des joueurs seront publiées ici prochainement.");
 
   // Le tri n'a pas de sens en dessous de deux fiches.
@@ -1032,8 +1360,15 @@ function initContactForm() {
 function render(content) {
   state.content = content;
   applyBindings(content);
+  renderFixture(content);
+  // Doit précéder les résultats : c'est lui qui indexe les récits.
   renderNews(content);
+  renderStandings(content);
+  renderResults(content);
+  renderPalmares(content);
+  renderAnthem(content);
   renderSquadGrid(content);
+  renderSpotlights(content);
   renderSquadStrip(content);
   refreshOpenPlayer();
   IMAGE_SECTIONS.forEach((section) => renderImageSection(content, section));
@@ -1041,7 +1376,8 @@ function render(content) {
   renderVenue(content);
   renderCompo(content);
   renderPacks(content);
-  startCountdown(content.nextMatch?.kickoff);
+  renderPronos(content);
+  startCountdown(nextFixture(content).kickoff);
 }
 
 async function loadRemoteContent() {
@@ -1066,6 +1402,7 @@ async function boot() {
   initVenue();
   initCompo();
   initPacks();
+  initPronos();
   window.addEventListener('hashchange', syncPlayerFromHash);
 
   render(cloneContent(DEFAULT_CONTENT));

@@ -235,6 +235,7 @@ const POSITION_ORDER = { GB: 0, DEF: 1, MIL: 2, ATT: 3, COACH: 4 };
 export const SORTS = {
   default:  { label: "Ordre de l'effectif", direction: null },
   position: { label: 'Poste', direction: 'asc' },
+  number:   { label: 'Numéro de maillot', direction: 'asc' },
   overall:  { label: 'Note générale', direction: 'desc' },
   value:    { label: 'Valeur marchande', direction: 'desc' },
   age:      { label: 'Âge', direction: 'asc' },
@@ -244,6 +245,8 @@ export const SORTS = {
 function sortValue(player, key) {
   switch (key) {
     case 'position': return POSITION_ORDER[player.position] ?? 9;
+    // Un numéro à 0 n'est pas attribué : la fiche part en fin de liste.
+    case 'number': return Number(player.number) || null;
     // Une note à 0, c'est une fiche sans notes (un coach, souvent) : elle n'a
     // pas sa place en tête du classement croissant.
     case 'overall': return overallOf(player) || null;
@@ -289,9 +292,11 @@ export function sortPlayers(players, key = 'default', direction = 'asc') {
  *   lecteurs d'écran et hors du parcours de tabulation.
  */
 export function playerCardHTML(player, options = {}) {
-  const { index = 0, href, compact = false, clone = false } = options;
+  const { index = 0, href, compact = false, clone = false, spotlight = null } = options;
   const position = POSITIONS[player.position] || POSITIONS.MIL;
   const overall = overallOf(player);
+  // 0 = numéro non attribué : la pastille disparaît plutôt que d'afficher « 0 ».
+  const numero = Number(player.number) || 0;
   const tag = href ? 'a' : 'button';
   const attrs = href
     ? `href="${esc(href)}"`
@@ -316,9 +321,16 @@ export function playerCardHTML(player, options = {}) {
     <${tag} class="player-card${compact ? ' player-card--compact' : ''}" ${attrs}${hidden}
             style="--position-accent:${position.accent}; --overall-color:${ratingColor(overall)}; --delay:${index * 60}ms"
             ${compact ? '' : 'data-reveal'}>
+      ${spotlight ? `
+        <span class="player-card__flag">
+          <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M13 2 4.5 13H11l-1 9 8.5-11H12z"/></svg>
+          ${esc(spotlight.label || 'En forme')}
+        </span>` : ''}
+
       <span class="player-card__top">
         ${overall ? `<span class="player-card__overall" aria-label="Note générale ${overall} sur ${RATING_MAX}">${overall}</span>` : ''}
         <span class="player-card__position">${esc(position.label)}</span>
+        ${numero ? `<span class="player-card__number" aria-label="Numéro ${numero}">${numero}</span>` : ''}
       </span>
 
       <span class="player-avatar player-avatar--card">${avatarHTML(player, 220)}</span>
@@ -360,6 +372,7 @@ export function playerProfileHTML(player) {
   const seasons = seasonsAtClub(player);
 
   const facts = [
+    Number(player.number) ? ['Numéro', `N° ${player.number}`] : null,
     Number(player.age) ? ['Âge', `${player.age} ans`] : null,
     player.nationality ? ['Nationalité', player.nationality] : null,
     ['Poste', position.label],

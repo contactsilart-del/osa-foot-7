@@ -325,6 +325,13 @@ code, pre { font-family: var(--a-mono); font-size: .86em; }
 
 .a-hint { font-size: .8rem; color: var(--a-muted); }
 
+/* Intertitre a l'interieur d'un editeur : separe deux natures de champs. */
+.a-hint--section {
+  margin-top: .4rem;
+  padding-top: .9rem;
+  border-top: 1px dashed var(--a-line, rgba(255, 255, 255, .14));
+}
+
 /* ────────────────────────────────────── Champs ── */
 .a-field { display: grid; gap: .35rem; min-width: 0; }
 .a-field > span, .a-field__label {

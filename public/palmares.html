@@ -3,16 +3,16 @@
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
-  <title>Galerie — OSA FOOT 7</title>
-  <meta name="description" content="Les photos de l'OSA FOOT 7 : matchs, coupe et vie du club.">
+  <title>Palmar&egrave;s &mdash; OSA FOOT 7</title>
+  <meta name="description" content="Le palmarès de l'OSA FOOT 7 : les titres, les places et les saisons qui ont marqué le club.">
   <meta name="theme-color" content="#071227">
-  <link rel="canonical" href="https://osafoot7.fr/galerie">
+  <link rel="canonical" href="https://osafoot7.fr/palmares">
 
   <meta property="og:type" content="website">
-  <meta property="og:url" content="https://osafoot7.fr/galerie">
+  <meta property="og:url" content="https://osafoot7.fr/palmares">
   <meta property="og:site_name" content="OSA FOOT 7">
-  <meta property="og:title" content="Galerie — OSA FOOT 7">
-  <meta property="og:description" content="Les photos de l'OSA FOOT 7 : matchs, coupe et vie du club.">
+  <meta property="og:title" content="Palmarès — OSA FOOT 7">
+  <meta property="og:description" content="Les titres, les places et les saisons qui ont marqué l'OSA FOOT 7.">
   <meta property="og:image" content="/img/osa.png">
   <meta property="og:locale" content="fr_FR">
 
@@ -21,7 +21,7 @@
   <link rel="apple-touch-icon" href="/img/apple-touch-icon.png">
   <link rel="stylesheet" href="/assets/css/style.css">
 </head>
-<body data-page="gallery">
+<body data-page="palmares">
 
 <a class="skip-link" href="#main">Aller au contenu principal</a>
 
@@ -45,8 +45,8 @@
         <li><a class="nav__link" href="/effectif">Effectif</a></li>
         <li><a class="nav__link" href="/compo">Compo</a></li>
         <li><a class="nav__link" href="/resultats">Résultats</a></li>
-        <li><a class="nav__link" href="/palmares">Palmarès</a></li>
-        <li><a class="nav__link is-active" href="/galerie" aria-current="page">Galerie</a></li>
+        <li><a class="nav__link is-active" href="/palmares" aria-current="page">Palmarès</a></li>
+        <li><a class="nav__link" href="/galerie">Galerie</a></li>
         <li><a class="nav__link" href="/#stats">Stats</a></li>
         <li><a class="nav__link" href="/#contact">Contact</a></li>
       </ul>
@@ -82,21 +82,37 @@
       <span class="hero__lines"></span>
     </div>
     <div class="shell">
-      <p class="eyebrow eyebrow--light">Saison <span data-bind="stats.season">2025 / 2026</span></p>
-      <h1 class="page-hero__title" data-bind="gallery.title">Galerie</h1>
-      <p class="section__lead" data-bind="gallery.subtitle">Les moments du club, match apr&egrave;s match. Cliquez sur une photo pour l&rsquo;agrandir.</p>
-      <p class="page-hero__count" id="gallery-count" hidden></p>
+      <p class="eyebrow eyebrow--light">Depuis les d&eacute;buts</p>
+      <h1 class="page-hero__title" data-bind="palmares.title">Palmar&egrave;s du club</h1>
+      <p class="section__lead" data-bind="palmares.subtitle">Les saisons qui ont marqu&eacute; le club.</p>
     </div>
   </section>
 
-  <section class="section section--dark" id="galerie">
+  <section class="section section--light" id="palmares">
+    <div class="shell">
+      <div class="palmares" id="palmares-list"><!-- injecté par app.js --></div>
+    </div>
+  </section>
+
+  <!-- Le chant du club ferme la page : c'est l'autre part de l'identité. -->
+  <section class="section section--dark" id="chant" hidden>
     <div class="section__bg" aria-hidden="true"><span class="hero__glow hero__glow--c"></span></div>
     <div class="shell">
-      <div class="image-grid image-grid--gallery" id="gallery-grid">
-        <!-- injecté par app.js -->
+      <header class="section__head" data-reveal>
+        <p class="eyebrow eyebrow--light">Tradition</p>
+        <h2 class="section__title" data-bind="anthem.title">Le chant du club</h2>
+        <p class="section__lead" data-bind="anthem.subtitle">&Agrave; reprendre en ch&oelig;ur.</p>
+      </header>
+
+      <div class="anthem" data-reveal>
+        <span class="anthem__mark" aria-hidden="true">
+          <svg viewBox="0 0 24 24"><path d="M12 3v10.6A4 4 0 1 0 14 17V7h5V3h-7z"/></svg>
+        </span>
+        <div class="anthem__lyrics" id="anthem-lyrics"><!-- injecté par app.js --></div>
       </div>
     </div>
   </section>
+
 </main>
 
 <footer class="site-footer">
@@ -179,7 +195,7 @@
 
 <noscript>
   <div class="noscript">
-    <p><strong>JavaScript est d&eacute;sactiv&eacute;.</strong> Les photos de la galerie ne peuvent pas s&rsquo;afficher. Contactez-nous &agrave; <a href="mailto:contact@osafoot7.fr">contact@osafoot7.fr</a>.</p>
+    <p><strong>JavaScript est d&eacute;sactiv&eacute;.</strong> Le palmar&egrave;s ne peut pas s&rsquo;afficher. Contactez-nous &agrave; <a href="mailto:contact@osafoot7.fr">contact@osafoot7.fr</a>.</p>
   </div>
 </noscript>
 

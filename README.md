@@ -34,6 +34,9 @@ OSA/
 ├─ public/                     ← tout ce qui est publié (build output)
 │  ├─ index.html               ← la page d'accueil
 │  ├─ effectif.html            ← fiches des joueurs
+│  ├─ resultats.html           ← classement, résultats, pronostics
+│  ├─ palmares.html            ← titres et distinctions du club
+│  ├─ galerie.html · compo.html · packs.html
 │  ├─ mentions-legales.html
 │  ├─ robots.txt · sitemap.xml
 │  ├─ _headers                 ← en-têtes HTTP + CSP + cache
@@ -44,7 +47,9 @@ OSA/
 │  │  ├─ css/admin.css         ← administration
 │  │  └─ js/
 │  │     ├─ content.js         ← contenu par défaut (source de vérité initiale)
+│  │     ├─ league.js          ← classement, forme du moment, matchs (pur calcul)
 │  │     ├─ squad.js           ← cartes et fiches de l'effectif
+│  │     ├─ compo.js · packs.js · pronos.js
 │  │     ├─ app.js             ← logique du site public
 │  │     └─ admin.js           ← logique de l'administration
 │  └─ img/                     ← photos, logos, calendriers (optimisés)
@@ -56,10 +61,16 @@ OSA/
 │  ├─ messages/index.js        ← GET                  → boîte de réception
 │  ├─ messages/[id].js         ← PATCH / DELETE       → un message
 │  ├─ media/index.js           ← GET / POST           → médiathèque
-│  └─ media/[key].js           ← GET / DELETE         → un fichier
+│  ├─ media/[key].js           ← GET / DELETE         → un fichier
+│  ├─ club/session.js          ← comptes supporters
+│  ├─ club/packs.js            ← ouverture d'un pack
+│  ├─ club/predictions.js      ← pronostics et versement des gains
+│  └─ club/reset.js            ← remise à zéro des collections
 │
 ├─ lib/                        ← code partagé par les Functions
-│  ├─ http.js  · auth.js  · store.js  · validate.js
+│  ├─ http.js · auth.js · store.js · validate.js
+│  ├─ players.js               ← comptes, raretés, tirage des packs
+│  └─ predictions.js           ← règlement des pronostics
 │
 ├─ schema.sql                  ← schéma D1 (optionnel : auto-créé)
 ├─ wrangler.toml               ← configuration Cloudflare
@@ -199,13 +210,14 @@ Rendez-vous sur `/admin/` et connectez-vous avec `ADMIN_PASSWORD`.
 
 | Onglet | Ce qu'on y fait |
 |---|---|
-| **Prochain match** | Équipes, logos, date/heure du coup d'envoi (alimente le compte à rebours), lieu, compétition |
-| **Actualités** | Ajouter / réordonner / supprimer les matchs : titre, score, buteurs, accroche, texte complet, photo |
-| **Effectif** | Fiches de joueurs repliées en accordéon : photo, identité, âge, nationalité, poste (gardien, défenseur, milieu, attaquant, coach), année d'arrivée, étoiles mauvais pied et gestes techniques, 6 notes sur 99 (jeu de notes propre aux gardiens, aucune pour le staff), note générale, compagne, descriptif, valeur marchande |
-| **Calendrier** | Images du calendrier, légendes, textes alternatifs |
-| **Classement** | Captures du classement de la poule, téléversées et légendées |
-| **Galerie** | Photos du club : téléversement, légende, texte alternatif, réordonnancement. Jusqu'à 200 photos |
+| **Championnat** | Les clubs de la poule (nom, abréviation, écusson, points de pénalité), le barème de points, et **tous les matchs de la saison** : journée, compétition, coup d'envoi, équipes, score, et un récit facultatif (titre, buteurs, accroche, texte, photo) |
+| **Effectif** | Joueurs mis en avant (« en forme », « à surveiller »…), puis les fiches repliées en accordéon : photo, identité, numéro de maillot, âge, nationalité, poste (gardien, défenseur, milieu, attaquant, coach), année d'arrivée, étoiles mauvais pied et gestes techniques, 6 notes sur 99 (jeu de notes propre aux gardiens, aucune pour le staff), note générale, compagne, descriptif, valeur marchande |
 | **Stats saison** | Neuf classements (buteurs, passeurs, CSC, penaltys concédés, matchs joués, présence à l'entraînement, buts sur coup franc, buts sur penalty, arrêts) : un compteur par joueur de l'effectif, plus le titre, l'unité, la couleur, l'icône et le poste concerné de chaque colonne. Les 3 premiers forment le podium, le reste se déroule à la demande |
+| **Palmarès** | Titres et distinctions : année, intitulé, compétition, place obtenue, précisions, photo, et une case « mettre en avant » qui passe la médaille en trophée |
+| **Chant du club** | Titre, sous-titre et paroles. Sans paroles, la section n'apparaît nulle part |
+| **Galerie** | Photos du club : téléversement, légende, texte alternatif, réordonnancement. Jusqu'à 200 photos |
+| **Calendrier** | Images du calendrier officiel, légendes, textes alternatifs |
+| **Affiche de secours** | L'affiche de la page d'accueil, utilisée **seulement** si aucun match n'est programmé au championnat |
 | **Club & réseaux** | Nom, logo, e-mail public, adresse du stade, Facebook, Instagram, année du copyright, et la section « Notre stade » (titre, nom du stade, accroche, carte Google Maps) |
 | **Mentions légales** | Dénomination, statut, siège social, RNA/SIREN, directeur de la publication, e-mail légal, crédits de réalisation |
 | **Médiathèque** | Téléverser des images (glisser-déposer), copier leur chemin, supprimer |
@@ -219,7 +231,9 @@ Rendez-vous sur `/admin/` et connectez-vous avec `ADMIN_PASSWORD`.
 - **Réinitialiser** efface le contenu en base : le site repart des valeurs
   d'origine de `public/assets/js/content.js`.
 - Laisser les **deux** champs de score vides marque un match comme non joué :
-  la pastille Victoire / Nul / Défaite disparaît.
+  il reste au calendrier, ouvert aux pronostics, et la pastille
+  Victoire / Nul / Défaite disparaît. Un champ vide vaut « pas encore joué »,
+  jamais « zéro ».
 - Les classements **suivent l'effectif** : chaque joueur de l'onglet Effectif y
   reçoit un compteur, et tout l'effectif apparaît dans chaque colonne, compteurs
   à zéro compris. Ajouter, renommer, changer la photo ou supprimer une fiche se
@@ -233,11 +247,68 @@ Rendez-vous sur `/admin/` et connectez-vous avec `ADMIN_PASSWORD`.
 - Un classement peut être **réservé à un poste** (champ « Poste concerné ») :
   c'est le cas des **arrêts**, réservés aux gardiens. Seuls les joueurs de ce
   poste y reçoivent un compteur et y apparaissent.
-- Une section d'images laissée vide (calendrier, classement, galerie) affiche
+- Une section d'images laissée vide (calendrier, galerie) affiche
   « Bientôt disponible » plutôt qu'un trou dans la page.
+- Une page d'administration restée ouverte pendant une mise à jour du site est
+  **refusée à l'enregistrement** (message invitant à recharger) : son document
+  ignorerait les sections ajoutées entre-temps et les effacerait.
 - La **galerie** a sa propre page (`/galerie`), et l'accueil en montre les
   **six premières photos** avec un lien vers la page complète. L'ordre est celui
   de l'onglet Galerie : mettez en tête ce que vous voulez voir sur l'accueil.
+
+### Championnat, classement et résultats (`/resultats`)
+
+**Le classement ne se recopie jamais.** Chaque ligne — J, G, N, D, buts
+marqués/encaissés, différence, points — se calcule à partir des scores saisis
+dans l'onglet Championnat. Les colonnes ne peuvent donc pas contredire les
+résultats affichés juste à côté.
+
+Une seule saisie alimente cinq endroits du site :
+
+| Ce que vous saisissez | Ce qui se met à jour |
+|---|---|
+| Un score | Le classement, la forme du moment, la page Résultats |
+| Un match sans score | L'affiche de la page d'accueil, les pronostics ouverts |
+| Un récit sur un match | Les actualités de l'accueil, le lien « Le récit » des résultats |
+
+Points d'attention :
+
+- **Saisissez aussi les matchs entre les autres clubs**, sinon leur classement
+  reste à zéro et le tableau ne veut plus rien dire.
+- Un match de **coupe ou d'amical** : décochez « Compte pour le classement ».
+  Il nourrit alors la forme du moment sans peser sur le tableau.
+- La **forme du moment** (cinq carrés vert / gris / rouge sous les écussons de
+  l'accueil) reprend les cinq derniers matchs joués, coupe comprise, du plus
+  ancien au plus récent.
+- Le **barème de points** est réglable : toutes les poules ne jouent pas en
+  3-1-0.
+- Les **points de pénalité** d'un club se saisissent sur sa fiche et sont
+  retirés de son total.
+- Un club supprimé du tableau ne détruit pas ses matchs : le remettre les
+  restaure. En attendant, ils sont simplement ignorés du calcul.
+
+### Pronostics (`/resultats#pronos`)
+
+Les supporters connectés devinent le score des matchs à venir et gagnent des
+packs. **Vous n'avez rien à déclencher** : les gains tombent tout seuls dès que
+vous saisissez le score du match.
+
+| Résultat du pronostic | Gain |
+|---|---|
+| Score exact | **15 packs** |
+| Bon résultat (bon vainqueur, ou nul annoncé) | **3 packs** |
+| Avoir joué | **1 pack** |
+
+Les trois paliers s'excluent : un score exact rapporte 15 packs, pas 15 + 3 + 1.
+
+- Un match n'est ouvert aux pronostics que s'il a **une date** et que le coup
+  d'envoi n'est pas passé. Sans date, impossible de fermer les paris à temps :
+  on préfère ne pas les ouvrir.
+- Chacun n'a **qu'un pronostic par match**, modifiable jusqu'au coup d'envoi.
+- Un match **reporté ou supprimé** laisse le pronostic ouvert, sans rien
+  rapporter. Redonnez-lui une date, il repart.
+- Le versement est verrouillé en base (`settled_at`) : un pronostic ne peut pas
+  rapporter deux fois, même si deux onglets appellent l'API en même temps.
 
 ### Packs & collection (`/packs`)
 
@@ -467,12 +538,16 @@ si `SESSION_SECRET` n'est pas défini (il sert alors de clé de signature).
 
 | À renseigner | Où, dans l'admin |
 |---|---|
-| Date, heure, adversaire et lieu du prochain match | *Prochain match* |
-| Dates des 6 matchs (le champ est vide : rien ne s'affiche tant qu'il l'est) | *Actualités* → champ **Date** |
+| Les clubs réels de la poule, et leurs écussons | *Championnat* → **Clubs de la poule** |
+| Les matchs de la saison, **y compris entre les autres clubs** — sans quoi le classement est faux | *Championnat* → **Matchs** |
+| Le coup d'envoi de chaque match à venir : sans date, pas de pronostics | *Championnat* → champ **Coup d'envoi** |
+| Les dates des matchs déjà joués (vides à l'origine) | *Championnat* → champ **Coup d'envoi** |
+| Les numéros de maillot | *Effectif* → champ **Numéro** |
 | E-mail réel du club (`contact@osafoot7.fr` est un exemple) | *Club & réseaux* |
 | Vraies URLs Facebook / Instagram (vide = lien masqué) | *Club & réseaux* |
 | Siège social, RNA/SIREN, directeur de la publication | *Mentions légales* |
 | Classements de la saison (buteurs, passeurs, CSC, penaltys, matchs joués, entraînement) | *Stats saison* |
+| Le palmarès et les paroles du chant, s'il y en a | *Palmarès*, *Chant du club* |
 
 Une pastille **!** reste affichée sur l'onglet *Mentions légales* tant que les
 informations obligatoires manquent, et un encadré d'avertissement s'affiche sur

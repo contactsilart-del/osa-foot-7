@@ -91,7 +91,7 @@ const BUILTIN_IMAGES = [
 const state = {
   draft: null,
   savedJson: '',
-  tab: 'match',
+  tab: 'championship',
   media: [],
   messages: [],
   storage: { content: false, media: false },
@@ -262,26 +262,271 @@ function repeatHead(listPath, index, label, { collapsible = false } = {}) {
 /* ══════════════════════════════════════════ Onglets ══ */
 
 const TABS = {
-  match:    { title: 'Prochain match', render: renderMatch },
-  news:     { title: 'Actualités', render: renderNews },
+  championship: { title: 'Championnat', render: renderChampionship },
   squad:    { title: 'Effectif', render: renderSquad },
-  calendar: { title: 'Calendrier', render: () => renderImageSection('calendar') },
-  standings: { title: 'Classement', render: () => renderImageSection('standings') },
-  gallery:  { title: 'Galerie', render: () => renderImageSection('gallery') },
   stats:    { title: 'Stats saison', render: renderStats },
+  palmares: { title: 'Palmarès', render: renderPalmares },
+  anthem:   { title: 'Chant du club', render: renderAnthem },
+  gallery:  { title: 'Galerie', render: () => renderImageSection('gallery') },
+  calendar: { title: 'Calendrier', render: () => renderImageSection('calendar') },
+  match:    { title: 'Affiche de secours', render: renderMatch },
   club:     { title: 'Club & réseaux', render: renderClub },
   legal:    { title: 'Mentions légales', render: renderLegal },
   media:    { title: 'Médiathèque', render: renderMedia },
   messages: { title: 'Messages reçus', render: renderMessages }
 };
 
+/* ─────────────────────────────────────── Championnat ── */
+
+function teamOptions(teams) {
+  return [
+    { value: '', label: '— à choisir —' },
+    ...teams.map((team) => ({ value: team.id, label: team.name || team.id }))
+  ];
+}
+
+function teamLabel(teams, id) {
+  return teams.find((team) => team.id === id)?.name || '—';
+}
+
+/** Résumé affiché dans l'en-tête replié d'un match. */
+function matchSummary(match) {
+  const joue = Number.isFinite(match.homeScore) && Number.isFinite(match.awayScore);
+  return joue ? `${match.homeScore} – ${match.awayScore}` : 'à venir';
+}
+
+function renderChampionship() {
+  const champ = state.draft.championship || {};
+  const teams = champ.teams || [];
+  const matches = champ.matches || [];
+
+  return `
+    <section class="a-card">
+      <header class="a-card__head">
+        <div>
+          <h2>Le championnat</h2>
+          <p>Une seule saisie pour tout : classement, forme du moment, résultats, actualités et pronostics.</p>
+        </div>
+        <a class="a-btn a-btn--sm" href="/resultats" target="_blank" rel="noopener">Voir la page ↗</a>
+      </header>
+      <div class="a-card__body">
+        <p class="a-hint">
+          Le tableau du classement n'est <b>jamais recopié</b> : il se calcule à partir des scores
+          saisis plus bas. Ajoutez d'abord les clubs de la poule, puis les matchs — y compris ceux
+          qui ne concernent pas l'OSA, sans quoi le classement des autres serait faux.
+        </p>
+        <div class="a-grid a-grid--2">
+          ${field('Titre de la section', 'championship.title', { placeholder: 'Championnat' })}
+          ${field('Saison', 'championship.season', { placeholder: '2025 / 2026' })}
+        </div>
+        ${field('Sous-titre', 'championship.subtitle', { type: 'textarea' })}
+        ${field('Notre club', 'championship.homeTeamId', {
+          type: 'select',
+          options: teamOptions(teams),
+          hint: 'Sa ligne est mise en valeur, et sa forme du moment s\'affiche sur l\'accueil.'
+        })}
+        <div class="a-grid a-grid--3">
+          ${field('Points par victoire', 'championship.points.win', { type: 'number' })}
+          ${field('Points par match nul', 'championship.points.draw', { type: 'number' })}
+          ${field('Points par défaite', 'championship.points.loss', { type: 'number', hint: 'En principe 0.' })}
+        </div>
+      </div>
+    </section>
+
+    <section class="a-card">
+      <header class="a-card__head">
+        <div><h2>Clubs de la poule</h2><p>${teams.length} club${teams.length > 1 ? 's' : ''} au tableau.</p></div>
+        <button class="a-btn a-btn--primary a-btn--sm" type="button" data-add="team">+ Ajouter un club</button>
+      </header>
+      <div class="a-card__body">
+        ${teams.length
+          ? `<div class="repeat">${teams.map(teamEditor).join('')}</div>`
+          : '<p class="empty-state">Aucun club. Commencez par ajouter les équipes de la poule.</p>'}
+      </div>
+    </section>
+
+    <section class="a-card">
+      <header class="a-card__head">
+        <div><h2>Matchs</h2><p>${matches.length} rencontre${matches.length > 1 ? 's' : ''} enregistrée${matches.length > 1 ? 's' : ''}.</p></div>
+        <button class="a-btn a-btn--primary a-btn--sm" type="button" data-add="match" ${teams.length < 2 ? 'disabled' : ''}>+ Ajouter un match</button>
+      </header>
+      <div class="a-card__body">
+        ${teams.length < 2
+          ? '<p class="empty-state">Ajoutez au moins deux clubs avant de saisir un match.</p>'
+          : matches.length
+            ? `<div class="repeat">${matches.map(matchEditor).join('')}</div>`
+            : '<p class="empty-state">Aucun match. Cliquez sur « Ajouter un match ».</p>'}
+      </div>
+    </section>`;
+}
+
+function teamEditor(team, index) {
+  const path = `championship.teams.${index}`;
+  return `
+    <article class="repeat__item">
+      ${repeatHead('championship.teams', index, team.name || 'Nouveau club')}
+      <div class="repeat__body">
+        <div class="a-grid a-grid--3">
+          ${field('Nom', `${path}.name`, { placeholder: 'Carlus' })}
+          ${field('Abréviation', `${path}.short`, { placeholder: 'Carlus', hint: 'Utilisée là où la place manque.' })}
+          ${field('Points de pénalité', `${path}.penalty`, { type: 'number', hint: 'Retirés du total. 0 dans presque tous les cas.' })}
+        </div>
+        ${imageField('Écusson', `${path}.logo`)}
+      </div>
+    </article>`;
+}
+
+function matchEditor(match, index) {
+  const path = `championship.matches.${index}`;
+  const teams = state.draft.championship?.teams || [];
+  const options = teamOptions(teams);
+  const ouverte = state.openEditor === index;
+  const titre = `${teamLabel(teams, match.homeId)} — ${teamLabel(teams, match.awayId)} · ${matchSummary(match)}`;
+
+  return `
+    <article class="repeat__item${ouverte ? '' : ' is-collapsed'}">
+      ${repeatHead('championship.matches', index, titre, { collapsible: true })}
+      <div class="repeat__body">
+        <div class="a-grid a-grid--3">
+          ${field('Journée', `${path}.day`, { type: 'number', hint: '0 pour une coupe ou un amical.' })}
+          ${field('Compétition', `${path}.competition`, { placeholder: '6e journée' })}
+          ${field('Coup d\'envoi', `${path}.date`, { type: 'datetime', hint: 'Indispensable pour ouvrir les pronostics.' })}
+        </div>
+
+        <div class="a-grid a-grid--2">
+          ${field('Équipe à domicile', `${path}.homeId`, { type: 'select', options })}
+          ${field('Équipe à l\'extérieur', `${path}.awayId`, { type: 'select', options })}
+        </div>
+
+        <div class="a-grid a-grid--3">
+          <label class="a-field">
+            <span>Buts à domicile</span>
+            <input type="number" min="0" max="99" data-score="${index}" data-role="home" value="${match.homeScore ?? ''}">
+          </label>
+          <label class="a-field">
+            <span>Buts à l'extérieur</span>
+            <input type="number" min="0" max="99" data-score="${index}" data-role="away" value="${match.awayScore ?? ''}">
+          </label>
+          <div class="a-field">
+            <span class="a-field__label">Astuce</span>
+            <small class="a-hint">
+              Laissez les deux vides tant que le match n'est pas joué : il reste au calendrier
+              et ouvert aux pronostics. Dès que vous saisissez le score, les packs sont versés.
+            </small>
+          </div>
+        </div>
+
+        ${field('Compte pour le classement', `${path}.ranked`, {
+          type: 'checkbox',
+          hint: 'Décochez pour une coupe ou un amical : le match nourrit la forme du moment sans peser au tableau.'
+        })}
+        ${field('Lieu', `${path}.venue`, { placeholder: 'Stade de Saint-Affrique-les-Montagnes', hint: 'Facultatif.' })}
+
+        <p class="a-hint a-hint--section">
+          <b>Récit du match — facultatif.</b> Renseigné, il devient une actualité sur la page
+          d'accueil et un lien « Le récit » sur la page Résultats. Laissé vide, le match ne
+          figure qu'aux résultats.
+        </p>
+        ${field('Titre du récit', `${path}.title`, { placeholder: 'Victoire éclatante !' })}
+        ${listField('Buteurs OSA', `${path}.scorers`, 'Séparés par des virgules.')}
+        ${field('Accroche (affichée sur la carte)', `${path}.excerpt`, { type: 'textarea' })}
+        ${field('Texte complet', `${path}.body`, { type: 'textarea', hint: 'Une ligne vide crée un nouveau paragraphe.' })}
+        ${imageField('Photo du match', `${path}.image`)}
+      </div>
+    </article>`;
+}
+
+/* ───────────────────────────────────────── Palmarès ── */
+
+function renderPalmares() {
+  const entries = state.draft.palmares?.entries || [];
+  return `
+    <section class="a-card">
+      <header class="a-card__head">
+        <div><h2>Page Palmarès</h2><p>Titre et sous-titre de la page /palmares.</p></div>
+        <a class="a-btn a-btn--sm" href="/palmares" target="_blank" rel="noopener">Voir la page ↗</a>
+      </header>
+      <div class="a-card__body">
+        ${field('Titre', 'palmares.title')}
+        ${field('Sous-titre', 'palmares.subtitle', { type: 'textarea' })}
+      </div>
+    </section>
+
+    <section class="a-card">
+      <header class="a-card__head">
+        <div><h2>Titres et distinctions</h2><p>${entries.length} ligne${entries.length > 1 ? 's' : ''}.</p></div>
+        <button class="a-btn a-btn--primary a-btn--sm" type="button" data-add="palmares">+ Ajouter une ligne</button>
+      </header>
+      <div class="a-card__body">
+        ${entries.length
+          ? `<div class="repeat">${entries.map(palmaresEditor).join('')}</div>`
+          : '<p class="empty-state">Aucune ligne. Ajoutez les titres, les montées et les belles places du club.</p>'}
+      </div>
+    </section>`;
+}
+
+function palmaresEditor(entry, index) {
+  const path = `palmares.entries.${index}`;
+  return `
+    <article class="repeat__item">
+      ${repeatHead('palmares.entries', index, [entry.year, entry.title].filter(Boolean).join(' · ') || 'Nouvelle ligne')}
+      <div class="repeat__body">
+        <div class="a-grid a-grid--2">
+          ${field('Année ou saison', `${path}.year`, { placeholder: '2024 / 2025' })}
+          ${field('Intitulé', `${path}.title`, { placeholder: 'Champion de la poule B' })}
+        </div>
+        <div class="a-grid a-grid--2">
+          ${field('Compétition', `${path}.competition`, { placeholder: 'Championnat UFOLEP' })}
+          ${field('Place obtenue', `${path}.rank`, { placeholder: '1er sur 10' })}
+        </div>
+        ${field('Précisions', `${path}.description`, { type: 'textarea' })}
+        ${field('Mettre en avant', `${path}.highlight`, {
+          type: 'checkbox',
+          hint: 'Trophée doré plutôt que médaille : à réserver aux titres.'
+        })}
+        ${imageField('Photo', `${path}.image`)}
+      </div>
+    </article>`;
+}
+
+/* ──────────────────────────────────── Chant du club ── */
+
+function renderAnthem() {
+  const paroles = String(state.draft.anthem?.lyrics || '').trim();
+  return `
+    <section class="a-card">
+      <header class="a-card__head">
+        <div><h2>Le chant du club</h2><p>Affiché sur la page d'accueil et sur la page Palmarès.</p></div>
+        <a class="a-btn a-btn--sm" href="/#chant" target="_blank" rel="noopener">Voir la section ↗</a>
+      </header>
+      <div class="a-card__body">
+        <p class="a-hint">
+          ${paroles
+            ? 'La section est visible sur le site.'
+            : '<b>Tant que les paroles sont vides, la section n\'apparaît nulle part.</b> Rien à masquer : il suffit d\'écrire.'}
+        </p>
+        ${field('Titre', 'anthem.title', { placeholder: 'Le chant du club' })}
+        ${field('Sous-titre', 'anthem.subtitle', { type: 'textarea' })}
+        ${field('Paroles', 'anthem.lyrics', {
+          type: 'textarea',
+          hint: 'Une ligne vide sépare deux couplets. Les retours à la ligne simples sont conservés.'
+        })}
+      </div>
+    </section>`;
+}
+
 function renderMatch() {
   return `
     <section class="a-card">
       <header class="a-card__head">
-        <div><h2>Affiche du prochain match</h2><p>Alimente le compte à rebours de la page d'accueil.</p></div>
+        <div><h2>Affiche du prochain match</h2><p>Utilisée seulement à défaut de match programmé au championnat.</p></div>
       </header>
       <div class="a-card__body">
+        <p class="a-hint">
+          L'accueil affiche <b>le prochain match du championnat</b> dès qu'une rencontre y est
+          programmée sans score — c'est aussi celle que les supporters pronostiquent. Cette
+          affiche-ci ne sert que s'il n'y en a aucune, typiquement avant le début de saison.
+        </p>
         ${field('Compétition', 'nextMatch.competition', { placeholder: 'Championnat UFOLEP — Foot à 7' })}
         <div class="a-grid a-grid--2">
           <div class="a-field">
@@ -301,62 +546,6 @@ function renderMatch() {
         </div>
       </div>
     </section>`;
-}
-
-function renderNews() {
-  const items = state.draft.news || [];
-  return `
-    <section class="a-card">
-      <header class="a-card__head">
-        <div><h2>Actualités</h2><p>${items.length} article${items.length > 1 ? 's' : ''} publié${items.length > 1 ? 's' : ''}.</p></div>
-        <button class="a-btn a-btn--primary a-btn--sm" type="button" data-add="news">+ Ajouter un match</button>
-      </header>
-      <div class="a-card__body">
-        ${items.length ? `<div class="repeat">${items.map(newsItem).join('')}</div>`
-          : '<p class="empty-state">Aucune actualité. Cliquez sur « Ajouter un match ».</p>'}
-      </div>
-    </section>`;
-}
-
-function newsItem(item, index) {
-  const path = `news.${index}`;
-  const score = item.score || {};
-  return `
-    <article class="repeat__item">
-      ${repeatHead('news', index, item.title || 'Sans titre')}
-      <div class="repeat__body">
-        <div class="a-grid a-grid--2">
-          ${field('Titre', `${path}.title`, { placeholder: 'Victoire éclatante !' })}
-          ${field('Adversaire', `${path}.opponent`, { placeholder: 'Carlus' })}
-        </div>
-        <div class="a-grid a-grid--3">
-          ${field('Compétition', `${path}.competition`, { placeholder: '5e journée' })}
-          ${field('Lieu', `${path}.venue`, {
-            type: 'select',
-            options: [{ value: 'home', label: 'À domicile' }, { value: 'away', label: "À l'extérieur" }]
-          })}
-          ${field('Date', `${path}.date`, { type: 'date', hint: 'Optionnelle.' })}
-        </div>
-        <div class="a-grid a-grid--3">
-          <label class="a-field">
-            <span>Buts OSA</span>
-            <input type="number" min="0" max="99" data-score="${index}" data-role="osa" value="${score.osa ?? ''}">
-          </label>
-          <label class="a-field">
-            <span>Buts adversaire</span>
-            <input type="number" min="0" max="99" data-score="${index}" data-role="opponent" value="${score.opponent ?? ''}">
-          </label>
-          <div class="a-field">
-            <span class="a-field__label">Astuce</span>
-            <small class="a-hint">Laissez les deux scores vides pour un match non joué : la pastille Victoire / Nul / Défaite disparaîtra.</small>
-          </div>
-        </div>
-        ${listField('Buteurs OSA', `${path}.scorers`, 'Séparés par des virgules.')}
-        ${field('Accroche (affichée sur la carte)', `${path}.excerpt`, { type: 'textarea', placeholder: 'Un match compliqué à Carlus…' })}
-        ${field('Texte complet (fenêtre « Lire la suite »)', `${path}.body`, { type: 'textarea', hint: 'Une ligne vide crée un nouveau paragraphe.' })}
-        ${imageField('Image du match', `${path}.image`)}
-      </div>
-    </article>`;
 }
 
 const POSITION_OPTIONS = [
@@ -386,6 +575,8 @@ function renderSquad() {
         ${field('Sous-titre', 'squad.subtitle', { type: 'textarea' })}
       </div>
     </section>
+
+    ${renderSpotlightsCard()}
 
     <section class="a-card">
       <header class="a-card__head">
@@ -420,6 +611,54 @@ function renderSquad() {
     </section>`;
 }
 
+/**
+ * Joueurs mis en avant. Le libellé est libre : « En forme », « À surveiller »,
+ * « De retour »… C'est un choix éditorial, rien ne se calcule tout seul.
+ */
+function renderSpotlightsCard() {
+  const spots = state.draft.squad?.spotlights || [];
+  const players = state.draft.squad?.players || [];
+  const enregistres = players.filter((player) => player.id);
+  const options = [
+    { value: '', label: '— choisir un joueur —' },
+    ...enregistres.map((player) => ({
+      value: player.id,
+      label: [player.firstName, player.lastName].filter(Boolean).join(' ') || player.id
+    }))
+  ];
+
+  return `
+    <section class="a-card">
+      <header class="a-card__head">
+        <div><h2>Joueurs mis en avant</h2><p>Bandeau « À suivre », en tête de la page Effectif.</p></div>
+        <button class="a-btn a-btn--primary a-btn--sm" type="button" data-add="spotlight"
+                ${enregistres.length ? '' : 'disabled'}>+ Mettre un joueur en avant</button>
+      </header>
+      <div class="a-card__body">
+        ${enregistres.length ? '' : `
+          <p class="a-hint">
+            Enregistrez d'abord vos fiches de joueurs : une fiche encore jamais enregistrée
+            n'a pas d'identifiant, et ne peut donc pas être désignée ici.
+          </p>`}
+        ${spots.length ? `<div class="repeat">${spots.map((spot, index) => `
+          <article class="repeat__item">
+            ${repeatHead('squad.spotlights', index, spot.label || 'Mise en avant')}
+            <div class="repeat__body">
+              <div class="a-grid a-grid--2">
+                ${field('Joueur', `squad.spotlights.${index}.playerId`, { type: 'select', options })}
+                ${field('Libellé', `squad.spotlights.${index}.label`, { placeholder: 'En forme' })}
+              </div>
+              ${field('Motif', `squad.spotlights.${index}.reason`, {
+                type: 'textarea',
+                placeholder: '4 buts sur les 2 derniers matchs'
+              })}
+            </div>
+          </article>`).join('')}</div>`
+          : '<p class="empty-state">Personne n\'est mis en avant : le bandeau reste masqué sur le site.</p>'}
+      </div>
+    </section>`;
+}
+
 function playerEditor(player, index) {
   const path = `squad.players.${index}`;
   const name = [player.firstName, player.lastName].filter(Boolean).join(' ') || 'Nouveau joueur';
@@ -432,9 +671,10 @@ function playerEditor(player, index) {
     <article class="repeat__item${ouverte ? '' : ' is-collapsed'}">
       ${repeatHead('squad.players', index, `${name}${position ? ' · ' + position : ''}`, { collapsible: true })}
       <div class="repeat__body">
-        <div class="a-grid a-grid--2">
+        <div class="a-grid a-grid--3">
           ${field('Prénom', `${path}.firstName`, { placeholder: 'Silas' })}
           ${field('Nom', `${path}.lastName`, { placeholder: 'Clamens Albert', hint: 'Facultatif.' })}
+          ${field('Numéro', `${path}.number`, { type: 'number', hint: '0 = pas de numéro sur la carte.' })}
         </div>
 
         ${imageField('Photo', `${path}.photo`)}
@@ -526,14 +766,6 @@ const IMAGE_SECTIONS = {
     captionExample: 'Coupe — 8es de finale',
     empty: "Aucune photo. La page Galerie affiche un message d'attente. Téléversez vos photos depuis l'onglet Médiathèque, puis ajoutez-les ici."
   },
-  standings: {
-    label: 'classement',
-    heading: 'Section classement',
-    listTitle: 'Images du classement',
-    addLabel: '+ Ajouter une capture',
-    captionExample: 'Poule B — 6e journée',
-    empty: "Aucune image. Le site affiche « Bientôt disponible » à la place. Téléversez une capture du classement depuis l'onglet Médiathèque, puis ajoutez-la ici."
-  }
 };
 
 function renderImageSection(key) {
@@ -897,10 +1129,10 @@ function renderTab(tab = state.tab) {
 function refreshCounts() {
   const unread = state.messages.filter((m) => !m.is_read).length;
   const counts = {
-    news: (state.draft?.news || []).length,
+    championship: (state.draft?.championship?.matches || []).length,
     squad: (state.draft?.squad?.players || []).length,
+    palmares: (state.draft?.palmares?.entries || []).length,
     calendar: (state.draft?.calendar?.images || []).length,
-    standings: (state.draft?.standings?.images || []).length,
     gallery: (state.draft?.gallery?.images || []).length,
     media: state.media.length,
     messages: state.messages.length
@@ -920,14 +1152,22 @@ function refreshCounts() {
 function onFieldChange(event) {
   const input = event.target;
 
-  /* Score : les deux champs d'un même match sont solidaires. */
+  /*
+   * Score d'un match. Un champ vide vaut `null`, pas zéro : c'est ce qui
+   * distingue un match à venir d'un match perdu 0-0.
+   */
   if (input.dataset.score !== undefined) {
     const index = Number(input.dataset.score);
     const item = input.closest('.repeat__item');
-    const osa = $('[data-role="osa"]', item).value.trim();
-    const opponent = $('[data-role="opponent"]', item).value.trim();
-    state.draft.news[index].score =
-      osa !== '' && opponent !== '' ? { osa: Number(osa), opponent: Number(opponent) } : null;
+    const lire = (role) => {
+      const brut = $(`[data-role="${role}"]`, item)?.value.trim() ?? '';
+      return brut === '' ? null : Number(brut);
+    };
+    const match = state.draft.championship?.matches?.[index];
+    if (match) {
+      match.homeScore = lire('home');
+      match.awayScore = lire('away');
+    }
     refreshDirtyState();
     return;
   }
@@ -951,6 +1191,18 @@ function onFieldChange(event) {
   if (/\.(title|name|caption)$/.test(path)) {
     const label = input.closest('.repeat__item')?.querySelector('.repeat__label');
     if (label) label.textContent = value || '—';
+  }
+
+  // Changer une équipe met à jour l'en-tête replié du match.
+  if (/^championship\.matches\.\d+\.(homeId|awayId)$/.test(path)) {
+    refreshDirtyState();
+    return renderTab();
+  }
+
+  // Renommer un club se répercute sur toutes les listes déroulantes.
+  if (/^championship\.teams\.\d+\.name$/.test(path)) {
+    refreshDirtyState();
+    return renderTab();
   }
 
   // Le poste concerné par un classement change la liste des compteurs affichés.
@@ -984,11 +1236,28 @@ function updatePreview(path, value) {
   if (preview) preview.innerHTML = value ? `<img src="${esc(value)}" alt="">` : 'vide';
 }
 
+/**
+ * Identifiant interne, attribué dès la création. Les clubs et les matchs sont
+ * désignés par cet identifiant ailleurs dans le document (un match cite deux
+ * clubs, un pronostic cite un match) : il doit donc exister avant même le
+ * premier enregistrement, et ne plus jamais changer ensuite.
+ */
+function newId(prefixe) {
+  return `${prefixe}-${Date.now().toString(36)}${Math.random().toString(36).slice(2, 6)}`;
+}
+
 const BLANK = {
-  news: () => ({
-    id: '', title: 'Nouveau match', excerpt: '', body: '', image: '',
-    competition: '', opponent: '', venue: 'home', score: null, scorers: [], date: ''
+  team: () => ({ id: newId('club'), name: 'Nouveau club', short: '', logo: '', penalty: 0 }),
+  match: () => ({
+    id: newId('match'), day: 0, competition: '', ranked: true, date: '', venue: '',
+    homeId: '', awayId: '', homeScore: null, awayScore: null,
+    title: '', excerpt: '', body: '', image: '', scorers: []
   }),
+  palmares: () => ({
+    id: '', year: '', title: 'Nouvelle ligne', competition: '', rank: '',
+    description: '', image: '', highlight: false
+  }),
+  spotlight: () => ({ playerId: '', label: 'En forme', reason: '' }),
   image: () => ({ src: '', alt: '', caption: '' }),
   playerCard: () => ({
     id: '', firstName: '', lastName: 'Nouveau joueur', photo: '',
@@ -1013,8 +1282,27 @@ function onPanelClick(event) {
   }
 
   /* — Ajouts — */
-  if (target.dataset.add === 'news') {
-    state.draft.news.unshift(BLANK.news());
+  if (target.dataset.add === 'team') {
+    ((state.draft.championship ||= {}).teams ||= []).push(BLANK.team());
+    return renderTab();
+  }
+  if (target.dataset.add === 'match') {
+    const champ = (state.draft.championship ||= {});
+    const equipes = champ.teams || [];
+    const nouveau = BLANK.match();
+    // Deux clubs pré-remplis : on ne s'ouvre pas sur un formulaire vide.
+    nouveau.homeId = champ.homeTeamId || equipes[0]?.id || '';
+    nouveau.awayId = (equipes.find((team) => team.id !== nouveau.homeId) || {}).id || '';
+    (champ.matches ||= []).unshift(nouveau);
+    state.openEditor = 0;
+    return renderTab();
+  }
+  if (target.dataset.add === 'palmares') {
+    ((state.draft.palmares ||= {}).entries ||= []).push(BLANK.palmares());
+    return renderTab();
+  }
+  if (target.dataset.add === 'spotlight') {
+    ((state.draft.squad ||= {}).spotlights ||= []).push(BLANK.spotlight());
     return renderTab();
   }
   if (target.dataset.add === 'images') {
@@ -1324,7 +1612,7 @@ async function enterApp() {
   await loadContent();
   showStorageBanner();
   await Promise.all([loadMedia(), loadMessages()]);
-  renderTab('match');
+  renderTab('championship');
 }
 
 async function boot() {

@@ -67,6 +67,28 @@ export async function onRequest(context) {
       return fail(error.message || 'Contenu invalide.', 422);
     }
 
+    /**
+     * Garde-fou contre l'onglet resté ouvert sur une version antérieure du
+     * panel : son document ignore les sections ajoutées depuis, et
+     * l'enregistrer les effacerait. Le numéro de modèle sert d'arbitre — il
+     * n'est jamais estampillé par le serveur, donc il dit bien d'où vient le
+     * document, pas quand il a été reçu.
+     */
+    try {
+      const actuel = Number((await readContent(env.DB))?.content?.version) || 0;
+      if (actuel && Number(content.version) < actuel) {
+        return fail(
+          "Cette page d'administration date d'avant la dernière mise à jour du site. "
+          + "Rechargez-la (Ctrl+F5) avant d’enregistrer, sinon des sections seraient perdues.",
+          409
+        );
+      }
+    } catch (error) {
+      // Base illisible : l'écriture qui suit échouera de toute façon, avec un
+      // message plus précis. On ne bloque pas l'enregistrement pour autant.
+      console.error('[content:version]', error);
+    }
+
     try {
       const updatedAt = await writeContent(env.DB, content);
       return json({ ok: true, updatedAt, content });

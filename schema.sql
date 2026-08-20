@@ -61,3 +61,24 @@ CREATE TABLE IF NOT EXISTS user_cards (
   first_at  TEXT NOT NULL,
   PRIMARY KEY (user_id, player_id)
 );
+
+-- ── Pronostics ─────────────────────────────────────────────
+-- Un pronostic par supporter et par match, corrigeable tant qu'il
+-- n'est pas réglé. La contrainte d'unicité est ce qui rend la
+-- correction possible sans jamais dédoubler la mise ; la colonne
+-- `settled_at` est ce qui empêche un même pronostic de rapporter
+-- ses packs deux fois.
+CREATE TABLE IF NOT EXISTS predictions (
+  id         INTEGER PRIMARY KEY AUTOINCREMENT,
+  user_id    INTEGER NOT NULL,
+  match_id   TEXT NOT NULL,           -- identifiant du match dans le contenu
+  home       INTEGER NOT NULL,
+  away       INTEGER NOT NULL,
+  created_at TEXT NOT NULL,
+  settled_at TEXT,                    -- NULL tant que le match n'est pas joué
+  outcome    TEXT NOT NULL DEFAULT '', -- exact | result | played
+  awarded    INTEGER NOT NULL DEFAULT 0,
+  UNIQUE (user_id, match_id)
+);
+
+CREATE INDEX IF NOT EXISTS idx_predictions_match ON predictions (match_id);

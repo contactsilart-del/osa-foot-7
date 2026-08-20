@@ -21,6 +21,7 @@ import {
   validateCredentials, usernameKey, newSalt, hashPassword, applyDailyGrant, parisDay,
   SIGNUP_PACKS, STOCK_ADJUSTMENT, buildCollection
 } from '../../../lib/players.js';
+import { settleUserPredictions } from '../../../lib/predictions.js';
 import { DEFAULT_CONTENT, migrateContent } from '../../../public/assets/js/content.js';
 
 /** Inscriptions autorisées depuis une même adresse en 24 h. */
@@ -35,17 +36,35 @@ function clientIp(request) {
   return request.headers.get('CF-Connecting-IP') || request.headers.get('X-Forwarded-For') || '';
 }
 
-/** L'effectif tel que le site l'affiche : c'est lui qui définit les cartes. */
-async function squadOf(env) {
+/** Le document du site, migré : c'est lui qui définit cartes et matchs. */
+async function siteContent(env) {
   const stored = await readContent(env.DB);
   const content = stored?.content ? migrateContent(stored.content) : null;
+  return content || DEFAULT_CONTENT;
+}
+
+/** L'effectif tel que le site l'affiche : c'est lui qui définit les cartes. */
+function squadFrom(content) {
   const players = content?.squad?.players;
   return Array.isArray(players) && players.length ? players : DEFAULT_CONTENT.squad.players;
 }
 
+/**
+ * Règle les pronostics arrivés à échéance et renvoie le compte remis à jour.
+ * Les packs gagnés doivent apparaître ici aussi : un supporter qui ne va que
+ * sur la page des packs verrait sinon un stock en retard sur ses gains.
+ */
+async function collectWinnings(env, user, content) {
+  const gains = await settleUserPredictions(env.DB, user.id, content.championship);
+  if (!gains.packs) return gains;
+  const frais = await findUserById(env.DB, user.id);
+  if (frais) user.packs = frais.packs;
+  return gains;
+}
+
 /** Profil renvoyé au navigateur. Jamais de hachage ni de sel. */
-async function profile(env, user, { granted = 0 } = {}) {
-  const players = await squadOf(env);
+async function profile(env, user, { granted = 0, content = null } = {}) {
+  const players = squadFrom(content || await siteContent(env));
   const cartes = await listCards(env.DB, user.id);
   return {
     username: user.username,
@@ -103,7 +122,14 @@ async function handleGet(request, env) {
     user.last_grant_day = credit.day;
   }
 
-  return json({ ok: true, user: await profile(env, user, { granted: credit.granted }) });
+  const doc = await siteContent(env);
+  const gains = await collectWinnings(env, user, doc);
+
+  return json({
+    ok: true,
+    user: await profile(env, user, { granted: credit.granted, content: doc }),
+    winnings: gains.packs ? gains : null
+  });
 }
 
 async function handlePost(request, env) {
@@ -134,8 +160,8 @@ async function handlePost(request, env) {
       usernameKey: key,
       passwordHash: await hashPassword(verifie.password, salt),
       salt,
-      // Les quinze packs de bienvenue, et le crédit du jour déjà consommé :
-      // s'inscrire ne doit pas rapporter vingt packs d'un coup.
+      // Les packs de bienvenue, et le crédit du jour déjà consommé :
+      // s'inscrire ne doit pas rapporter le cumul des deux d'un coup.
       packs: SIGNUP_PACKS,
       day: parisDay(),
       ip
@@ -166,8 +192,15 @@ async function handlePost(request, env) {
     existant.packs = credit.packs;
   }
 
+  const doc = await siteContent(env);
+  const gains = await collectWinnings(env, existant, doc);
+
   return json(
-    { ok: true, user: await profile(env, existant, { granted: credit.granted }) },
+    {
+      ok: true,
+      user: await profile(env, existant, { granted: credit.granted, content: doc }),
+      winnings: gains.packs ? gains : null
+    },
     { headers: { 'Set-Cookie': playerCookie(await createPlayerToken(env, existant.id)) } }
   );
 }
