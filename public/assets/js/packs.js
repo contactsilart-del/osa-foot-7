@@ -268,7 +268,8 @@ function setMode(mode) {
   $('#club-password').setAttribute('autocomplete', state.mode === 'register' ? 'new-password' : 'current-password');
 }
 
-const SIGNUP_PACKS_LABEL = 15;
+/** Doit rester aligne sur `SIGNUP_PACKS` de lib/players.js. */
+const SIGNUP_PACKS_LABEL = 5;
 
 /* ═══════════════════════════════════════════ Câblage ══ */
 
@@ -293,7 +294,7 @@ export function initPacks() {
       state.user = payload.user;
       renderAccount();
       if (payload.user?.granted) {
-        toast(`+${payload.user.granted} packs pour aujourd'hui !`);
+        toast(`+${payload.user.granted} pack${payload.user.granted > 1 ? 's' : ''} pour aujourd'hui !`);
       }
     })
     .catch(() => {

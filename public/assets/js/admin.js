@@ -11,7 +11,7 @@ import { DEFAULT_CONTENT, cloneContent, deepMerge, migrateContent } from './cont
 import { RATINGS_OUTFIELD, RATINGS_GK, ratingsFor, averageOf, isStaff, fullName } from './squad.js';
 
 /** Doit rester aligné sur `SIGNUP_PACKS` de lib/players.js. */
-const SIGNUP_PACKS = 15;
+const SIGNUP_PACKS = 5;
 
 /* ═════════════════════════════════════════ Utilitaires ══ */
 

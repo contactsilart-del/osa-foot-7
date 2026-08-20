@@ -246,9 +246,16 @@ site : l'administration garde sa propre session, sur un cookie distinct.
 - **Inscription** : un pseudo (3 à 20 caractères) et un mot de passe (8 minimum).
   Aucune adresse e-mail n'est demandée. Le mot de passe est haché en PBKDF2-SHA256
   avec un sel propre à chaque compte ; il n'est jamais stocké en clair.
-- **15 packs offerts** à l'inscription, puis **5 de plus** au premier passage de
+- **5 packs offerts** à l'inscription, puis **1 de plus** au premier passage de
   chaque journée — minuit se lit à l'heure de Paris, pas en UTC. Le stock est
-  **cumulable** : les packs non ouverts se gardent.
+  **cumulable** : les packs non ouverts se gardent, sans plafond.
+- Après un changement de rythme, les stocks constitués sous l'ancien restent en
+  place. Un **rattrapage ponctuel** les ramène à la limite d'inscription, tout
+  seul, au premier passage sur le service des comptes — il ne retire que
+  l'excédent, ne touche pas aux collections, et **ne se joue qu'une fois**
+  (sa trace est gardée en base, sous la clé `flag:` correspondante). Pour le
+  relancer après un futur rééquilibrage, il suffit de changer la valeur de
+  `STOCK_ADJUSTMENT` dans `lib/players.js`.
 - **3 cartes par pack**, sans doublon à l'intérieur d'un même pack.
 - **Cinq paliers de rareté.** Quatre suivent la note générale, le cinquième se
   décide à la main :

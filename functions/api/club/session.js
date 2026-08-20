@@ -14,11 +14,12 @@ import {
   checkOrigin, createPlayerToken, playerCookie, clearedPlayerCookie, currentUserId, safeEqual
 } from '../../../lib/auth.js';
 import {
-  findUserByKey, findUserById, createUser, countSignups, setUserPacks, listCards, readContent
+  findUserByKey, findUserById, createUser, countSignups, setUserPacks, listCards, readContent,
+  runOnce, trimPacks
 } from '../../../lib/store.js';
 import {
-  validateCredentials, usernameKey, newSalt, hashPassword,
-  applyDailyGrant, parisDay, SIGNUP_PACKS, buildCollection
+  validateCredentials, usernameKey, newSalt, hashPassword, applyDailyGrant, parisDay,
+  SIGNUP_PACKS, STOCK_ADJUSTMENT, buildCollection
 } from '../../../lib/players.js';
 import { DEFAULT_CONTENT, migrateContent } from '../../../public/assets/js/content.js';
 
@@ -55,10 +56,26 @@ async function profile(env, user, { granted = 0 } = {}) {
   };
 }
 
+/**
+ * Le passage à 5 packs à l'inscription et 1 par jour laisse derrière lui des
+ * stocks constitués sous l'ancien rythme. L'excédent est retiré une fois pour
+ * toutes, dès le premier passage — pas de plafond permanent, juste un rattrapage.
+ */
+async function adjustStocksOnce(env) {
+  try {
+    await runOnce(env.DB, STOCK_ADJUSTMENT, () => trimPacks(env.DB, SIGNUP_PACKS));
+  } catch (error) {
+    // Un rattrapage qui échoue ne doit pas empêcher quiconque de se connecter.
+    console.error('[club:stocks]', error);
+  }
+}
+
 export async function onRequest({ request, env }) {
   if (!env.DB) {
     return fail("Les comptes ne sont pas disponibles : la base de données n'est pas configurée.", 503);
   }
+
+  await adjustStocksOnce(env);
 
   if (isMethod(request, 'GET')) return handleGet(request, env);
   if (isMethod(request, 'POST')) return handlePost(request, env);
