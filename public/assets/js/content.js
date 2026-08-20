@@ -293,7 +293,7 @@ export const DEFAULT_CONTENT = {
  * Version du modèle de contenu. Le serveur l'estampille à chaque
  * enregistrement ; un document plus ancien passe par `migrateContent`.
  */
-export const SCHEMA_VERSION = 4;
+export const SCHEMA_VERSION = 5;
 
 /**
  * v1 → v2 : les classements listaient des noms libres, sans lien avec
@@ -344,6 +344,25 @@ function toV4(content) {
 }
 
 /**
+ * v4 → v5 : le site annonçait Saint-Affrique (12400), en Aveyron, alors que le
+ * stade est à Saint-Affrique-les-Montagnes, dans le Tarn — cent kilomètres
+ * d'écart. La correction ne s'applique qu'aux valeurs restées telles quelles :
+ * une adresse déjà personnalisée n'est jamais écrasée.
+ */
+const ADRESSES_ERRONEES = ['', 'Saint-Affrique (12400)', 'Saint-Affrique'];
+const LIEUX_ERRONES = ['', 'Stade municipal — Saint-Affrique', 'Stade municipal - Saint-Affrique'];
+
+function toV5(content) {
+  if (ADRESSES_ERRONEES.includes(String(content.club?.address ?? '').trim())) {
+    content.club = { ...content.club, address: DEFAULT_CONTENT.club.address };
+  }
+  if (LIEUX_ERRONES.includes(String(content.nextMatch?.venue ?? '').trim())) {
+    content.nextMatch = { ...content.nextMatch, venue: DEFAULT_CONTENT.nextMatch.venue };
+  }
+  return content;
+}
+
+/**
  * Met à niveau un document enregistré avant la version courante. Les étapes
  * s'enchaînent : un document v1 passe par toutes.
  */
@@ -356,6 +375,7 @@ export function migrateContent(stored) {
   if (version < 2) migrated = toV2(migrated);
   if (version < 3) migrated = toV3(migrated);
   if (version < 4) migrated = toV4(migrated);
+  if (version < 5) migrated = toV5(migrated);
   // Estampiller évite de rejouer la migration à chaque rendu de la page.
   migrated.version = SCHEMA_VERSION;
   return migrated;

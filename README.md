@@ -343,12 +343,13 @@ Rien à administrer : la page se sert de l'effectif tel qu'il est saisi.
 - Le champ **Carte Google Maps** n'accepte que l'adresse `google.com/maps/embed`
   (pas le code de l'iframe entier), et la politique de sécurité du site
   n'autorise l'affichage d'aucun autre domaine dans un cadre.
-- Le document enregistré porte une **version de modèle** (`version`, actuellement 3).
+- Le document enregistré porte une **version de modèle** (`version`, actuellement 5).
   Un contenu plus ancien est migré à la volée au chargement, étape par étape :
   v1 → v2 remplace les anciens classements à noms libres par ceux liés à
   l'effectif (compteurs à zéro) ; v2 → v3 ajoute coup franc, penalty et arrêts
   **sans toucher aux compteurs déjà saisis**, et sans faire revenir un classement
-  supprimé exprès.
+  supprimé exprès ; v3 → v4 marque les cinq cartes légendaires ; v4 → v5 corrige
+  l'adresse du stade, **uniquement si elle était restée sur l'ancienne valeur**.
 
 ---
 
