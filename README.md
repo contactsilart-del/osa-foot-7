@@ -203,6 +203,7 @@ Rendez-vous sur `/admin/` et connectez-vous avec `ADMIN_PASSWORD`.
 | **Effectif** | Fiches de joueurs repliées en accordéon : photo, identité, âge, nationalité, poste (gardien, défenseur, milieu, attaquant, coach), année d'arrivée, étoiles mauvais pied et gestes techniques, 6 notes sur 99 (jeu de notes propre aux gardiens, aucune pour le staff), note générale, compagne, descriptif, valeur marchande |
 | **Calendrier** | Images du calendrier, légendes, textes alternatifs |
 | **Classement** | Captures du classement de la poule, téléversées et légendées |
+| **Galerie** | Photos du club : téléversement, légende, texte alternatif, réordonnancement. Jusqu'à 200 photos |
 | **Stats saison** | Neuf classements (buteurs, passeurs, CSC, penaltys concédés, matchs joués, présence à l'entraînement, buts sur coup franc, buts sur penalty, arrêts) : un compteur par joueur de l'effectif, plus le titre, l'unité, la couleur, l'icône et le poste concerné de chaque colonne. Les 3 premiers forment le podium, le reste se déroule à la demande |
 | **Club & réseaux** | Nom, logo, e-mail public, adresse, Facebook, Instagram, année du copyright |
 | **Mentions légales** | Dénomination, statut, siège social, RNA/SIREN, directeur de la publication, e-mail légal, crédits de réalisation |
@@ -231,8 +232,11 @@ Rendez-vous sur `/admin/` et connectez-vous avec `ADMIN_PASSWORD`.
 - Un classement peut être **réservé à un poste** (champ « Poste concerné ») :
   c'est le cas des **arrêts**, réservés aux gardiens. Seuls les joueurs de ce
   poste y reçoivent un compteur et y apparaissent.
-- Une section d'images laissée vide (calendrier, classement) affiche
+- Une section d'images laissée vide (calendrier, classement, galerie) affiche
   « Bientôt disponible » plutôt qu'un trou dans la page.
+- La **galerie** a sa propre page (`/galerie`), et l'accueil en montre les
+  **six premières photos** avec un lien vers la page complète. L'ordre est celui
+  de l'onglet Galerie : mettez en tête ce que vous voulez voir sur l'accueil.
 - La **note générale** se calcule seule — moyenne des six notes — tant que le
   champ « Note générale » reste vide ; la moyenne du moment y sert de valeur
   fantôme. Y saisir un nombre de 1 à 99 l'impose : c'est cette note-là qui

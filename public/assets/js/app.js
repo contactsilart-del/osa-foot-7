@@ -492,6 +492,25 @@ const IMAGE_SECTIONS = [
     fallbackAlt: 'Classement de la poule',
     emptyTitle: 'Bientôt disponible',
     emptyText: 'Le classement sera publié ici dès les premières journées disputées.'
+  },
+  {
+    key: 'gallery',
+    grid: '#gallery-grid',
+    count: '#gallery-count',
+    fallbackAlt: 'Photo du club',
+    emptyTitle: 'Galerie vide',
+    emptyText: "Les premières photos du club seront publiées ici. Elles s'ajoutent depuis l'administration."
+  },
+  {
+    // Aperçu de l'accueil : les six premières photos, dans l'ordre de la galerie.
+    // Les index restent alignés sur le tableau complet, donc la visionneuse
+    // ouvre bien la bonne photo.
+    key: 'gallery',
+    grid: '#gallery-preview',
+    limit: 6,
+    fallbackAlt: 'Photo du club',
+    emptyTitle: 'Galerie vide',
+    emptyText: 'Les premières photos du club seront publiées ici.'
   }
 ];
 
@@ -511,7 +530,8 @@ function renderImageSection(content, section) {
   const grid = $(section.grid);
   if (!grid) return;
 
-  const images = Array.isArray(content[section.key]?.images) ? content[section.key].images : [];
+  const toutes = Array.isArray(content[section.key]?.images) ? content[section.key].images : [];
+  const images = section.limit ? toutes.slice(0, section.limit) : toutes;
 
   grid.innerHTML = images.length
     ? images.map((image, index) => `
@@ -526,6 +546,12 @@ function renderImageSection(content, section) {
           ${image.caption ? `<figcaption>${esc(image.caption)}</figcaption>` : ''}
         </figure>`).join('')
     : soonState(section.emptyTitle, section.emptyText);
+
+  const count = section.count ? $(section.count) : null;
+  if (count) {
+    count.hidden = !toutes.length;
+    count.textContent = `${toutes.length} photo${toutes.length > 1 ? 's' : ''}`;
+  }
 
   initReveal(grid);
 }

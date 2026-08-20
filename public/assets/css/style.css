@@ -785,6 +785,16 @@ ul, ol { list-style: none; padding: 0; }
   margin-inline: auto;
 }
 
+/* La galerie affiche beaucoup plus de vignettes : elles peuvent être plus
+   petites, et la grille occupe toute la largeur disponible. */
+.image-grid--gallery {
+  grid-template-columns: repeat(auto-fill, minmax(min(100%, 240px), 1fr));
+  gap: clamp(.9rem, 2vw, 1.4rem);
+  max-width: none;
+}
+.image-grid--gallery .image-card { padding: .5rem; }
+.image-grid--gallery .image-card__zoom img { aspect-ratio: 4 / 3; object-fit: cover; }
+
 .image-card {
   display: grid;
   gap: .85rem;

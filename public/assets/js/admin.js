@@ -253,6 +253,7 @@ const TABS = {
   squad:    { title: 'Effectif', render: renderSquad },
   calendar: { title: 'Calendrier', render: () => renderImageSection('calendar') },
   standings: { title: 'Classement', render: () => renderImageSection('standings') },
+  gallery:  { title: 'Galerie', render: () => renderImageSection('gallery') },
   stats:    { title: 'Stats saison', render: renderStats },
   club:     { title: 'Club & réseaux', render: renderClub },
   legal:    { title: 'Mentions légales', render: renderLegal },
@@ -477,6 +478,14 @@ const IMAGE_SECTIONS = {
     addLabel: '+ Ajouter une image',
     captionExample: 'Phase aller',
     empty: "Aucune image. Le site affiche « Bientôt disponible » à la place — c'est volontaire tant que le calendrier n'est pas paru."
+  },
+  gallery: {
+    label: 'galerie',
+    heading: 'Galerie photo',
+    listTitle: 'Photos de la galerie',
+    addLabel: '+ Ajouter une photo',
+    captionExample: 'Coupe — 8es de finale',
+    empty: "Aucune photo. La page Galerie affiche un message d'attente. Téléversez vos photos depuis l'onglet Médiathèque, puis ajoutez-les ici."
   },
   standings: {
     label: 'classement',
@@ -832,6 +841,7 @@ function refreshCounts() {
     squad: (state.draft?.squad?.players || []).length,
     calendar: (state.draft?.calendar?.images || []).length,
     standings: (state.draft?.standings?.images || []).length,
+    gallery: (state.draft?.gallery?.images || []).length,
     media: state.media.length,
     messages: state.messages.length
   };

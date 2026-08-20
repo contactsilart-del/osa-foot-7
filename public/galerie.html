@@ -3,15 +3,15 @@
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
-  <title>Effectif — OSA FOOT 7</title>
-  <meta name="description" content="L'effectif complet de l'OSA FOOT 7 : fiche, poste, statistiques et parcours de chaque joueur du club.">
+  <title>Galerie — OSA FOOT 7</title>
+  <meta name="description" content="Les photos de l'OSA FOOT 7 : matchs, coupe et vie du club.">
   <meta name="theme-color" content="#071227">
-  <link rel="canonical" href="https://osa-foot-7.pages.dev/effectif">
+  <link rel="canonical" href="https://osa-foot-7.pages.dev/galerie">
 
   <meta property="og:type" content="website">
   <meta property="og:site_name" content="OSA FOOT 7">
-  <meta property="og:title" content="Effectif — OSA FOOT 7">
-  <meta property="og:description" content="Fiche, poste et statistiques de chaque joueur de l'OSA FOOT 7.">
+  <meta property="og:title" content="Galerie — OSA FOOT 7">
+  <meta property="og:description" content="Les photos de l'OSA FOOT 7 : matchs, coupe et vie du club.">
   <meta property="og:image" content="/img/osa.png">
   <meta property="og:locale" content="fr_FR">
 
@@ -20,7 +20,7 @@
   <link rel="apple-touch-icon" href="/img/apple-touch-icon.png">
   <link rel="stylesheet" href="/assets/css/style.css">
 </head>
-<body data-page="squad">
+<body data-page="gallery">
 
 <a class="skip-link" href="#main">Aller au contenu principal</a>
 
@@ -41,8 +41,8 @@
       <ul class="nav__list">
         <li><a class="nav__link" href="/">Accueil</a></li>
         <li><a class="nav__link" href="/#actus">Actus</a></li>
-        <li><a class="nav__link is-active" href="/effectif" aria-current="page">Effectif</a></li>
-        <li><a class="nav__link" href="/galerie">Galerie</a></li>
+        <li><a class="nav__link" href="/effectif">Effectif</a></li>
+        <li><a class="nav__link is-active" href="/galerie" aria-current="page">Galerie</a></li>
         <li><a class="nav__link" href="/#calendrier">Calendrier</a></li>
         <li><a class="nav__link" href="/#classement">Classement</a></li>
         <li><a class="nav__link" href="/#stats">Stats</a></li>
@@ -77,27 +77,16 @@
     </div>
     <div class="shell">
       <p class="eyebrow eyebrow--light">Saison <span data-bind="stats.season">2025 / 2026</span></p>
-      <h1 class="page-hero__title" data-bind="squad.title">L'effectif</h1>
-      <p class="section__lead" data-bind="squad.subtitle">Les joueurs qui font vivre l'OSA cette saison.</p>
-      <p class="page-hero__count" id="squad-count" hidden></p>
+      <h1 class="page-hero__title" data-bind="gallery.title">Galerie</h1>
+      <p class="section__lead" data-bind="gallery.subtitle">Les moments du club, match apr&egrave;s match. Cliquez sur une photo pour l&rsquo;agrandir.</p>
+      <p class="page-hero__count" id="gallery-count" hidden></p>
     </div>
   </section>
 
-  <section class="section section--dark" id="effectif">
+  <section class="section section--dark" id="galerie">
     <div class="section__bg" aria-hidden="true"><span class="hero__glow hero__glow--c"></span></div>
     <div class="shell">
-      <div class="squad-toolbar" id="squad-toolbar" hidden>
-        <label class="squad-sort">
-          <span class="squad-sort__label">Trier par</span>
-          <select id="squad-sort"></select>
-        </label>
-        <button class="squad-dir" id="squad-dir" type="button" aria-pressed="false">
-          <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M7 4l4 5H8v11H6V9H3l4-5zm10 16l-4-5h3V4h2v11h3l-4 5z"/></svg>
-          <span class="squad-dir__label">Croissant</span>
-        </button>
-      </div>
-
-      <div class="squad-grid" id="squad-grid">
+      <div class="image-grid image-grid--gallery" id="gallery-grid">
         <!-- injecté par app.js -->
       </div>
     </div>
@@ -180,8 +169,7 @@
 
 <noscript>
   <div class="noscript">
-    <p><strong>JavaScript est désactivé.</strong> Les fiches des joueurs ne peuvent pas s'afficher.
-    Contactez-nous à <a href="mailto:contact@osafoot7.fr">contact@osafoot7.fr</a>.</p>
+    <p><strong>JavaScript est d&eacute;sactiv&eacute;.</strong> Les photos de la galerie ne peuvent pas s&rsquo;afficher. Contactez-nous &agrave; <a href="mailto:contact@osafoot7.fr">contact@osafoot7.fr</a>.</p>
   </div>
 </noscript>
 

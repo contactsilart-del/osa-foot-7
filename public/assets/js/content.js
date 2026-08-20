@@ -248,6 +248,13 @@ export const DEFAULT_CONTENT = {
     images: []
   },
 
+  /** Galerie photo : alimentée depuis l'onglet « Galerie » de l'administration. */
+  gallery: {
+    title: 'Galerie',
+    subtitle: "Les moments du club, match après match. Cliquez sur une photo pour l'agrandir.",
+    images: []
+  },
+
   /**
    * Les classements ne listent plus de noms : ils comptent les joueurs de
    * l'effectif, par identifiant. Ajouter, renommer ou supprimer une fiche dans
