@@ -9,6 +9,7 @@
 import { DEFAULT_CONTENT, cloneContent, deepMerge, migrateContent } from './content.js';
 import { playerCardHTML, playerProfileHTML, sortPlayers, SORTS, fullName } from './squad.js';
 import { initCompo, renderCompo } from './compo.js';
+import { initPacks, renderPacks } from './packs.js';
 
 /* ═══════════════════════════════════════════ Utilitaires ══ */
 
@@ -958,6 +959,7 @@ function render(content) {
   IMAGE_SECTIONS.forEach((section) => renderImageSection(content, section));
   renderStats(content);
   renderCompo(content);
+  renderPacks(content);
   startCountdown(content.nextMatch?.kickoff);
 }
 
@@ -981,6 +983,7 @@ async function boot() {
 
   initSquadSort();
   initCompo();
+  initPacks();
   window.addEventListener('hashchange', syncPlayerFromHash);
 
   render(cloneContent(DEFAULT_CONTENT));

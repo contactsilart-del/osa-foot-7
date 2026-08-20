@@ -1319,6 +1319,306 @@ ul, ol { list-style: none; padding: 0; }
 .site-footer__bottom a { text-decoration: underline; }
 .site-footer__bottom a:hover { color: #fff; }
 
+/* ──────────────────────────────────────────── 11c. Packs ── */
+
+/* Bouton d'accès au jeu, dans l'en-tête. */
+.nav__account {
+  display: inline-flex;
+  align-items: center;
+  gap: .4rem;
+  padding: .42rem .8rem;
+  border-radius: 999px;
+  background: rgba(255, 255, 255, .08);
+  border: 1px solid var(--dark-line);
+  color: #fff;
+  font-size: .82rem;
+  font-weight: 800;
+  transition: background var(--t-fast), border-color var(--t-fast);
+}
+.nav__account svg { width: 16px; height: 16px; fill: var(--gold-500); }
+.nav__account:hover { background: rgba(255, 255, 255, .16); border-color: var(--gold-500); }
+.nav__account.is-active { border-color: var(--gold-500); }
+
+/* ── Écran d'accueil du jeu ── */
+
+.club-gate {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(0, 420px);
+  gap: clamp(1.4rem, 4vw, 3rem);
+  align-items: center;
+}
+.club-gate__pitch h2 { margin: 0 0 1rem; font-size: clamp(1.4rem, 3.5vw, 2rem); }
+.club-gate__list { display: grid; gap: .6rem; margin: 0 0 1.2rem; padding: 0; list-style: none; }
+.club-gate__list li {
+  display: flex;
+  gap: .6rem;
+  align-items: baseline;
+  padding-left: 1.4rem;
+  position: relative;
+  color: var(--dark-muted);
+}
+.club-gate__list li::before {
+  content: "";
+  position: absolute;
+  left: 0; top: .45em;
+  width: 8px; height: 8px;
+  border-radius: 50%;
+  background: var(--gold-500);
+}
+.club-gate__list b { color: var(--dark-ink); }
+.club-gate__note { font-size: .82rem; color: var(--dark-muted); }
+
+.club-card {
+  padding: clamp(1.2rem, 3vw, 1.8rem);
+  border-radius: var(--radius-lg);
+  background: var(--dark-surface);
+  border: 1px solid var(--dark-line);
+  box-shadow: var(--shadow-lg);
+}
+.club-tabs {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: .3rem;
+  padding: .3rem;
+  margin-bottom: 1.1rem;
+  border-radius: 999px;
+  background: rgba(255, 255, 255, .06);
+}
+.club-tab {
+  padding: .55rem .6rem;
+  border-radius: 999px;
+  color: var(--dark-muted);
+  font-size: .88rem;
+  font-weight: 800;
+  transition: background var(--t-fast), color var(--t-fast);
+}
+.club-tab.is-active { background: var(--brand-500); color: #fff; }
+.club-tab:focus-visible { outline: 2px solid var(--brand-400); outline-offset: 2px; }
+
+.club-form { display: grid; gap: .9rem; }
+.club-form__hint { margin: 0; font-size: .84rem; color: var(--dark-muted); }
+.club-field { display: grid; gap: .35rem; }
+.club-field > span { font-size: .78rem; font-weight: 800; letter-spacing: .06em; text-transform: uppercase; color: var(--dark-muted); }
+.club-field input {
+  padding: .7rem .9rem;
+  border-radius: var(--radius);
+  border: 1px solid var(--dark-line);
+  background: rgba(255, 255, 255, .06);
+  color: var(--dark-ink);
+  font: inherit;
+}
+.club-field input:focus-visible { outline: 2px solid var(--brand-400); outline-offset: 1px; }
+.club-error {
+  margin: 0;
+  padding: .6rem .8rem;
+  border-radius: var(--radius);
+  background: color-mix(in srgb, var(--loss) 18%, transparent);
+  border: 1px solid color-mix(in srgb, var(--loss) 45%, transparent);
+  color: #FFD9D9;
+  font-size: .86rem;
+}
+.btn--full { width: 100%; justify-content: center; }
+
+/* ── Barre du joueur connecté ── */
+
+.club-bar {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1rem;
+  padding: clamp(.9rem, 2.5vw, 1.3rem);
+  border-radius: var(--radius-lg);
+  background: var(--dark-surface);
+  border: 1px solid var(--dark-line);
+}
+.club-bar__who { display: flex; align-items: center; gap: .8rem; min-width: 0; }
+.club-bar__avatar {
+  display: grid;
+  place-items: center;
+  width: 44px; height: 44px;
+  border-radius: 50%;
+  background: rgba(255, 255, 255, .1);
+  border: 2px solid var(--brand-400);
+}
+.club-bar__avatar svg { width: 22px; height: 22px; fill: var(--brand-400); }
+.club-bar__meta { display: grid; gap: .1rem; min-width: 0; }
+.club-bar__meta b { font-size: 1.05rem; }
+.club-bar__meta small { font-size: .76rem; color: var(--dark-muted); }
+
+.club-bar__stock {
+  display: flex;
+  align-items: baseline;
+  gap: .45rem;
+  font-size: .8rem;
+  color: var(--dark-muted);
+}
+.club-bar__packs {
+  font-family: var(--font-display);
+  font-size: 2rem;
+  font-weight: 900;
+  line-height: 1;
+  color: var(--gold-500);
+  font-variant-numeric: tabular-nums;
+}
+.club-bar__actions { display: flex; flex-wrap: wrap; gap: .5rem; align-items: center; }
+.club-bar__actions .btn svg { width: 17px; height: 17px; }
+
+/* ── Révélation des cartes ── */
+
+.pack-reveal {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: clamp(.8rem, 2.5vw, 1.6rem);
+  margin-top: clamp(1.2rem, 3vw, 2rem);
+  padding: clamp(1.2rem, 3vw, 2rem) 1rem;
+  border-radius: var(--radius-lg);
+  background: radial-gradient(80% 90% at 50% 0%, rgba(255, 197, 49, .12), transparent 70%), var(--dark-surface);
+  border: 1px solid var(--dark-line);
+}
+.pack-reveal__card {
+  --rarity: var(--brand-400);
+  display: grid;
+  justify-items: center;
+  gap: .5rem;
+  animation: pack-in .5s cubic-bezier(.2, .9, .3, 1.2) backwards;
+  animation-delay: var(--delay, 0ms);
+}
+@keyframes pack-in {
+  from { opacity: 0; transform: translateY(18px) scale(.86) rotate(-3deg); }
+}
+@media (prefers-reduced-motion: reduce) {
+  .pack-reveal__card { animation: none; }
+}
+.pack-reveal__card .player-card {
+  border-color: color-mix(in srgb, var(--rarity) 65%, transparent);
+  box-shadow: 0 18px 40px -20px var(--rarity);
+}
+.pack-reveal__card--ultra .player-card {
+  box-shadow: 0 0 0 2px var(--rarity), 0 22px 50px -18px var(--rarity);
+}
+.pack-reveal__rarity {
+  padding: .2rem .7rem;
+  border-radius: 999px;
+  background: color-mix(in srgb, var(--rarity) 22%, transparent);
+  border: 1px solid var(--rarity);
+  color: var(--rarity);
+  font-size: .66rem;
+  font-weight: 900;
+  letter-spacing: .1em;
+  text-transform: uppercase;
+}
+.pack-reveal__tag { font-size: .74rem; font-weight: 700; color: var(--dark-muted); }
+.pack-reveal__tag.is-new { color: var(--win); }
+
+/* ── Collection ── */
+
+.collection { margin-top: clamp(1.6rem, 4vw, 2.6rem); }
+.collection__head { display: grid; gap: .8rem; margin-bottom: clamp(1rem, 3vw, 1.6rem); }
+.collection__head h2 { margin: 0; font-size: clamp(1.3rem, 3vw, 1.7rem); }
+
+.collection-progress { display: grid; gap: .45rem; }
+.collection-progress__bar {
+  display: block;
+  height: 10px;
+  border-radius: 999px;
+  background: rgba(255, 255, 255, .1);
+  overflow: hidden;
+}
+.collection-progress__bar i {
+  display: block;
+  width: var(--fill, 0%);
+  height: 100%;
+  border-radius: 999px;
+  background: linear-gradient(90deg, var(--brand-400), var(--gold-500));
+  transition: width var(--t);
+}
+.collection-progress__text { font-size: .84rem; color: var(--dark-muted); }
+.collection-progress__text b { color: var(--dark-ink); }
+
+.collection-rarities {
+  display: flex;
+  flex-wrap: wrap;
+  gap: .5rem;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+.collection-rarities li {
+  display: flex;
+  align-items: baseline;
+  gap: .4rem;
+  padding: .3rem .7rem;
+  border-radius: 999px;
+  background: color-mix(in srgb, var(--rarity) 14%, transparent);
+  border: 1px solid color-mix(in srgb, var(--rarity) 40%, transparent);
+  font-size: .76rem;
+  color: var(--dark-muted);
+}
+.collection-rarities b { color: var(--rarity); font-weight: 900; font-variant-numeric: tabular-nums; }
+
+.collection-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(min(100%, 168px), 1fr));
+  gap: clamp(.7rem, 2vw, 1.1rem);
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+.pack-slot { --rarity: var(--brand-400); position: relative; display: grid; }
+.pack-slot .player-card { width: 100%; }
+.pack-slot .player-card { border-color: color-mix(in srgb, var(--rarity) 45%, transparent); }
+.pack-slot__badge {
+  position: absolute;
+  top: .5rem; left: 50%;
+  transform: translateX(-50%);
+  padding: .1rem .5rem;
+  border-radius: 999px;
+  background: #061024;
+  border: 1px solid var(--rarity);
+  color: var(--rarity);
+  font-size: .58rem;
+  font-weight: 900;
+  letter-spacing: .08em;
+  text-transform: uppercase;
+  z-index: 1;
+}
+.pack-slot__count {
+  position: absolute;
+  right: .5rem; bottom: .5rem;
+  padding: .1rem .45rem;
+  border-radius: 999px;
+  background: var(--brand-500);
+  color: #fff;
+  font-size: .7rem;
+  font-weight: 900;
+  z-index: 1;
+}
+
+/* Carte non obtenue : présente, mais éteinte. */
+.pack-slot--locked .pack-slot__locked {
+  display: grid;
+  justify-items: center;
+  align-content: center;
+  gap: .4rem;
+  min-height: 100%;
+  padding: 1.4rem .8rem;
+  border-radius: var(--radius-lg);
+  background: rgba(255, 255, 255, .03);
+  border: 1px dashed color-mix(in srgb, var(--rarity) 35%, transparent);
+  text-align: center;
+}
+.pack-slot--locked svg { width: 26px; height: 26px; fill: color-mix(in srgb, var(--rarity) 55%, transparent); }
+.pack-slot__name { font-size: .85rem; font-weight: 800; color: var(--dark-muted); }
+.pack-slot__rarity { font-size: .62rem; font-weight: 800; letter-spacing: .08em; text-transform: uppercase; color: var(--rarity); }
+
+@media (max-width: 860px) {
+  .club-gate { grid-template-columns: 1fr; }
+  .club-bar { justify-content: center; text-align: center; }
+  .club-bar__actions { width: 100%; justify-content: center; }
+}
+
 /* ──────────────────────────────────────────── 11b. Compo ── */
 
 .compo-toolbar {

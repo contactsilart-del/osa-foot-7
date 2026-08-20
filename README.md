@@ -238,6 +238,33 @@ Rendez-vous sur `/admin/` et connectez-vous avec `ADMIN_PASSWORD`.
   **six premières photos** avec un lien vers la page complète. L'ordre est celui
   de l'onglet Galerie : mettez en tête ce que vous voulez voir sur l'accueil.
 
+### Packs & collection (`/packs`)
+
+Un jeu, rien de plus. Les comptes créés ici **n'ouvrent aucun accès** au reste du
+site : l'administration garde sa propre session, sur un cookie distinct.
+
+- **Inscription** : un pseudo (3 à 20 caractères) et un mot de passe (8 minimum).
+  Aucune adresse e-mail n'est demandée. Le mot de passe est haché en PBKDF2-SHA256
+  avec un sel propre à chaque compte ; il n'est jamais stocké en clair.
+- **15 packs offerts** à l'inscription, puis **5 de plus** au premier passage de
+  chaque journée — minuit se lit à l'heure de Paris, pas en UTC. Le stock est
+  **cumulable** : les packs non ouverts se gardent.
+- **3 cartes par pack**, sans doublon à l'intérieur d'un même pack.
+- **La rareté suit la note générale** : à partir de 85 « ultra rare », 80-84
+  « rare », 75-79 « peu commune », en dessous « commune ». Une ultra rare sort
+  environ trente fois moins souvent qu'une commune. Modifier la note d'un joueur
+  dans l'admin change donc sa rareté.
+- **Le tirage a lieu sur le serveur.** Le navigateur ne fait qu'afficher : on ne
+  peut pas s'offrir une carte depuis la console.
+- La collection couvre **l'effectif publié** : un joueur ajouté apparaît en carte
+  manquante, un joueur supprimé disparaît de la collection.
+- Deux garde-fous : **5 inscriptions par adresse IP et par jour**, et un délai de
+  600 ms après un mot de passe refusé.
+
+**Nouvelles tables D1** — `users` et `user_cards`. Elles se créent toutes seules
+à la première inscription, comme le reste du schéma ; `schema.sql` les décrit
+pour qui préfère provisionner à la main.
+
 ### Composer une équipe (`/compo`)
 
 Rien à administrer : la page se sert de l'effectif tel qu'il est saisi.

@@ -3,15 +3,15 @@
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
-  <title>Galerie — OSA FOOT 7</title>
-  <meta name="description" content="Les photos de l'OSA FOOT 7 : matchs, coupe et vie du club.">
+  <title>Packs & collection — OSA FOOT 7</title>
+  <meta name="description" content="Ouvrez des packs et collectionnez les cartes des joueurs de l'OSA FOOT 7.">
   <meta name="theme-color" content="#071227">
-  <link rel="canonical" href="https://osa-foot-7.pages.dev/galerie">
+  <link rel="canonical" href="https://osa-foot-7.pages.dev/packs">
 
   <meta property="og:type" content="website">
   <meta property="og:site_name" content="OSA FOOT 7">
-  <meta property="og:title" content="Galerie — OSA FOOT 7">
-  <meta property="og:description" content="Les photos de l'OSA FOOT 7 : matchs, coupe et vie du club.">
+  <meta property="og:title" content="Packs & collection — OSA FOOT 7">
+  <meta property="og:description" content="Ouvrez des packs et collectionnez les cartes des joueurs de l'OSA FOOT 7.">
   <meta property="og:image" content="/img/osa.png">
   <meta property="og:locale" content="fr_FR">
 
@@ -20,7 +20,7 @@
   <link rel="apple-touch-icon" href="/img/apple-touch-icon.png">
   <link rel="stylesheet" href="/assets/css/style.css">
 </head>
-<body data-page="gallery">
+<body data-page="packs">
 
 <a class="skip-link" href="#main">Aller au contenu principal</a>
 
@@ -43,14 +43,14 @@
         <li><a class="nav__link" href="/#actus">Actus</a></li>
         <li><a class="nav__link" href="/effectif">Effectif</a></li>
         <li><a class="nav__link" href="/compo">Compo</a></li>
-        <li><a class="nav__link is-active" href="/galerie" aria-current="page">Galerie</a></li>
+        <li><a class="nav__link" href="/galerie">Galerie</a></li>
         <li><a class="nav__link" href="/#calendrier">Calendrier</a></li>
         <li><a class="nav__link" href="/#classement">Classement</a></li>
         <li><a class="nav__link" href="/#stats">Stats</a></li>
         <li><a class="nav__link" href="/#contact">Contact</a></li>
       </ul>
       <div class="nav__socials">
-        <a class="nav__account" href="/packs">
+        <a class="nav__account is-active" href="/packs" aria-current="page">
           <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 7h16v13a1 1 0 0 1-1 1H5a1 1 0 0 1-1-1V7zm1.6-4h12.8l1.6 3H4L5.6 3zM10 11v2h4v-2h-4z"/></svg>
           <span>Packs</span>
         </a>
@@ -81,19 +81,101 @@
       <span class="hero__lines"></span>
     </div>
     <div class="shell">
-      <p class="eyebrow eyebrow--light">Saison <span data-bind="stats.season">2025 / 2026</span></p>
-      <h1 class="page-hero__title" data-bind="gallery.title">Galerie</h1>
-      <p class="section__lead" data-bind="gallery.subtitle">Les moments du club, match apr&egrave;s match. Cliquez sur une photo pour l&rsquo;agrandir.</p>
-      <p class="page-hero__count" id="gallery-count" hidden></p>
+      <p class="eyebrow eyebrow--light">Pour le fun</p>
+      <h1 class="page-hero__title">Packs &amp; collection</h1>
+      <p class="section__lead">Ouvrez des packs, collectionnez les cartes des joueurs du club.
+        Les meilleures notes sont les plus rares&nbsp;: bonne chance pour sortir une ultra rare.</p>
     </div>
   </section>
 
-  <section class="section section--dark" id="galerie">
+  <section class="section section--dark" id="packs">
     <div class="section__bg" aria-hidden="true"><span class="hero__glow hero__glow--c"></span></div>
     <div class="shell">
-      <div class="image-grid image-grid--gallery" id="gallery-grid">
-        <!-- injecté par app.js -->
+
+      <!-- ── Non connecté ── -->
+      <div class="club-gate" id="club-gate">
+        <div class="club-gate__pitch">
+          <h2>Cr&eacute;ez votre compte</h2>
+          <ul class="club-gate__list">
+            <li><b>15 packs</b> offerts &agrave; l&rsquo;inscription</li>
+            <li><b>5 packs</b> de plus chaque jour, remis &agrave; minuit</li>
+            <li><b>3 cartes</b> par pack, tir&eacute;es selon la raret&eacute;</li>
+            <li>Une collection &agrave; compl&eacute;ter, joueur par joueur</li>
+          </ul>
+          <p class="club-gate__note">Ce compte ne sert qu&rsquo;au jeu&nbsp;: il ne donne acc&egrave;s
+            &agrave; rien d&rsquo;autre sur le site, et aucune adresse e-mail n&rsquo;est demand&eacute;e.</p>
+        </div>
+
+        <div class="club-card">
+          <div class="club-tabs" role="tablist">
+            <button class="club-tab is-active" type="button" data-mode="login" role="tab" aria-selected="true">Se connecter</button>
+            <button class="club-tab" type="button" data-mode="register" role="tab" aria-selected="false">Cr&eacute;er un compte</button>
+          </div>
+
+          <form class="club-form" id="club-form" novalidate>
+            <p class="club-form__hint" id="club-hint">Content de vous revoir. Vos packs vous attendent.</p>
+
+            <label class="club-field">
+              <span>Pseudo</span>
+              <input type="text" id="club-username" name="username" required minlength="3" maxlength="20"
+                     autocomplete="username" placeholder="Votre pseudo">
+            </label>
+
+            <label class="club-field">
+              <span>Mot de passe</span>
+              <input type="password" id="club-password" name="password" required minlength="8"
+                     autocomplete="current-password" placeholder="8 caractères minimum">
+            </label>
+
+            <p class="club-error" id="club-error" hidden></p>
+            <button class="btn btn--primary btn--full" id="club-submit" type="submit">Se connecter</button>
+          </form>
+        </div>
       </div>
+
+      <!-- ── Connecté ── -->
+      <div class="club-app" id="club-app" hidden>
+        <div class="club-bar">
+          <div class="club-bar__who">
+            <span class="club-bar__avatar" aria-hidden="true">
+              <svg viewBox="0 0 24 24"><path d="M12 12a5 5 0 1 0-5-5 5 5 0 0 0 5 5zm0 2c-4 0-8 2-8 5v3h16v-3c0-3-4-5-8-5z"/></svg>
+            </span>
+            <span class="club-bar__meta">
+              <b id="club-name">&nbsp;</b>
+              <small><span id="club-opened">0</span> pack(s) ouvert(s)</small>
+            </span>
+          </div>
+
+          <div class="club-bar__stock">
+            <span class="club-bar__packs" id="club-packs">0</span>
+            <span>pack(s) en stock</span>
+          </div>
+
+          <div class="club-bar__actions">
+            <button class="btn btn--primary" id="club-open" type="button">
+              <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 7h16v13a1 1 0 0 1-1 1H5a1 1 0 0 1-1-1V7zm1.6-4h12.8l1.6 3H4L5.6 3zM10 11v2h4v-2h-4z"/></svg>
+              <span id="club-open-label">Ouvrir un pack</span>
+            </button>
+            <button class="btn btn--ghost btn--sm" id="club-logout" type="button">Se d&eacute;connecter</button>
+          </div>
+        </div>
+
+        <div class="pack-reveal" id="pack-reveal" hidden>
+          <!-- injecté par packs.js -->
+        </div>
+
+        <div class="collection">
+          <header class="collection__head">
+            <h2>Ma collection</h2>
+            <div class="collection-progress" id="collection-progress"></div>
+            <ul class="collection-rarities" id="collection-rarities"></ul>
+          </header>
+          <ul class="collection-grid" id="collection-grid">
+            <!-- injecté par packs.js -->
+          </ul>
+        </div>
+      </div>
+
     </div>
   </section>
 </main>
@@ -175,7 +257,7 @@
 
 <noscript>
   <div class="noscript">
-    <p><strong>JavaScript est d&eacute;sactiv&eacute;.</strong> Les photos de la galerie ne peuvent pas s&rsquo;afficher. Contactez-nous &agrave; <a href="mailto:contact@osafoot7.fr">contact@osafoot7.fr</a>.</p>
+    <p><strong>JavaScript est d&eacute;sactiv&eacute;.</strong> Les packs ne peuvent pas fonctionner. Contactez-nous &agrave; <a href="mailto:contact@osafoot7.fr">contact@osafoot7.fr</a>.</p>
   </div>
 </noscript>
 

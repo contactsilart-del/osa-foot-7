@@ -147,6 +147,30 @@ function ordinal(n) {
   return n === 1 ? '1re' : `${n}e`;
 }
 
+/**
+ * Raretés des cartes à collectionner. Elles suivent la note générale : plus le
+ * joueur est fort, plus sa carte est difficile à sortir d'un pack. `weight` est
+ * la chance relative au tirage — une commune sort environ trente fois plus
+ * souvent qu'une ultra rare.
+ */
+export const RARITIES = [
+  { id: 'ultra',   min: 85, label: 'Ultra rare',  weight: 1,  color: '#F0B429' },
+  { id: 'rare',    min: 80, label: 'Rare',        weight: 5,  color: '#B36BE8' },
+  { id: 'peu',     min: 75, label: 'Peu commune', weight: 14, color: '#3DA5E0' },
+  { id: 'commune', min: 0,  label: 'Commune',     weight: 34, color: '#8CA0BF' }
+];
+
+/** La rareté d'un joueur, d'après sa note générale. */
+export function rarityOf(player) {
+  const note = overallOf(player);
+  return RARITIES.find((rarity) => note >= rarity.min) || RARITIES[RARITIES.length - 1];
+}
+
+/** Une rareté par son identifiant, avec un repli sûr. */
+export function rarityById(id) {
+  return RARITIES.find((rarity) => rarity.id === id) || RARITIES[RARITIES.length - 1];
+}
+
 /** Nom complet, sans espace superflu quand le nom de famille manque. */
 export function fullName(player) {
   return [player?.firstName, player?.lastName].filter(Boolean).join(' ').trim() || 'Joueur';
