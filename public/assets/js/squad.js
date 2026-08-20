@@ -148,22 +148,36 @@ function ordinal(n) {
 }
 
 /**
- * Raretés des cartes à collectionner. Elles suivent la note générale : plus le
- * joueur est fort, plus sa carte est difficile à sortir d'un pack. `weight` est
- * la chance relative au tirage — une commune sort environ trente fois plus
- * souvent qu'une ultra rare.
+ * Raretés des cartes à collectionner.
+ *
+ * Le palier suit la note générale, sauf pour les **légendaires**, désignées à la
+ * main dans l'administration : aucune note ne les décroche, elles se méritent au
+ * tirage. `weight` est la chance relative d'une carte — une peu commune sort
+ * plus de dix mille fois plus souvent qu'une légendaire.
+ *
+ * Les seuils sont volontairement hauts : dans un effectif où beaucoup de joueurs
+ * dépassent 85, un palier « ultra rare » à 85 ne distingue plus personne.
  */
 export const RARITIES = [
-  { id: 'ultra',   min: 85, label: 'Ultra rare',  weight: 1,  color: '#F0B429' },
-  { id: 'rare',    min: 80, label: 'Rare',        weight: 5,  color: '#B36BE8' },
-  { id: 'peu',     min: 75, label: 'Peu commune', weight: 14, color: '#3DA5E0' },
-  { id: 'commune', min: 0,  label: 'Commune',     weight: 34, color: '#8CA0BF' }
+  { id: 'legend',  min: null, label: 'Légendaire',  weight: 1,    color: '#FF5A36' },
+  { id: 'ultra',   min: 88,   label: 'Ultra rare',  weight: 6,    color: '#F0B429' },
+  { id: 'rare',    min: 84,   label: 'Rare',        weight: 45,   color: '#B36BE8' },
+  { id: 'peu',     min: 75,   label: 'Peu commune', weight: 700,  color: '#3DA5E0' },
+  { id: 'commune', min: 0,    label: 'Commune',     weight: 1400, color: '#8CA0BF' }
 ];
 
-/** La rareté d'un joueur, d'après sa note générale. */
+/** Les paliers décidés par la note, du plus rare au plus courant. */
+const RARITIES_BY_NOTE = RARITIES.filter((rarity) => rarity.min !== null);
+
+/**
+ * La rareté d'un joueur. Le drapeau `legendary` prime sur tout : c'est un choix
+ * éditorial, pas un calcul.
+ */
 export function rarityOf(player) {
+  if (player?.legendary) return RARITIES[0];
   const note = overallOf(player);
-  return RARITIES.find((rarity) => note >= rarity.min) || RARITIES[RARITIES.length - 1];
+  return RARITIES_BY_NOTE.find((rarity) => note >= rarity.min)
+    || RARITIES[RARITIES.length - 1];
 }
 
 /** Une rareté par son identifiant, avec un repli sûr. */

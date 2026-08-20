@@ -250,10 +250,25 @@ site : l'administration garde sa propre session, sur un cookie distinct.
   chaque journée — minuit se lit à l'heure de Paris, pas en UTC. Le stock est
   **cumulable** : les packs non ouverts se gardent.
 - **3 cartes par pack**, sans doublon à l'intérieur d'un même pack.
-- **La rareté suit la note générale** : à partir de 85 « ultra rare », 80-84
-  « rare », 75-79 « peu commune », en dessous « commune ». Une ultra rare sort
-  environ trente fois moins souvent qu'une commune. Modifier la note d'un joueur
-  dans l'admin change donc sa rareté.
+- **Cinq paliers de rareté.** Quatre suivent la note générale, le cinquième se
+  décide à la main :
+
+  | Palier | Condition | Chance relative |
+  |---|---|---|
+  | **Légendaire** | case « Carte légendaire » dans l'admin | 1 |
+  | **Ultra rare** | note ≥ 88 | 6 |
+  | **Rare** | note 84 – 87 | 45 |
+  | **Peu commune** | note 75 – 83 | 700 |
+  | **Commune** | note < 75 | 1400 |
+
+  Sur l'effectif actuel, cela donne environ **95 % de peu communes**, 4,5 % de
+  rares, et **une légendaire tous les 480 packs**. Les seuils sont volontairement
+  hauts : avec une majorité de joueurs au-dessus de 85, un palier « ultra rare »
+  à 85 ne distinguait plus personne.
+- **Les légendaires sont un choix éditorial**, pas un calcul : aucune note, même
+  99, ne suffit à en décrocher une. La case se coche fiche par fiche dans l'onglet
+  Effectif. Cinq joueurs sont marqués au départ (Valérian, Noan, Joris, Stéphane
+  et Patrice) ; en ajouter ou en retirer se fait depuis l'admin.
 - **Le tirage a lieu sur le serveur.** Le navigateur ne fait qu'afficher : on ne
   peut pas s'offrir une carte depuis la console.
 - La collection couvre **l'effectif publié** : un joueur ajouté apparaît en carte

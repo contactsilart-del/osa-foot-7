@@ -266,6 +266,21 @@ code, pre { font-family: var(--a-mono); font-size: .86em; }
 /* Occupe la place laissée par les champs qui ne concernent pas ce poste. */
 .a-field--wide { grid-column: span 2; }
 
+/* Case à cocher : la zone cliquable englobe le libellé. */
+.a-check {
+  display: flex;
+  align-items: center;
+  gap: .6rem;
+  padding: .55rem .7rem;
+  border-radius: var(--a-radius);
+  background: var(--a-surface-2);
+  border: 1px solid var(--a-line);
+  cursor: pointer;
+}
+.a-check:hover { border-color: var(--a-brand-2); }
+.a-check input { width: 18px; height: 18px; flex: none; accent-color: var(--a-brand-2); cursor: pointer; }
+.a-check span { font-size: .9rem; font-weight: 600; }
+
 /* Compteurs d'un classement : une case par joueur de l'effectif. */
 .counters {
   display: grid;

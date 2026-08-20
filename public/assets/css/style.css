@@ -1498,6 +1498,21 @@ ul, ol { list-style: none; padding: 0; }
 .pack-reveal__card--ultra .player-card {
   box-shadow: 0 0 0 2px var(--rarity), 0 22px 50px -18px var(--rarity);
 }
+/* Une légendaire se voit de loin : c'est un pack sur cinq cents. */
+.pack-reveal__card--legend .player-card {
+  box-shadow: 0 0 0 3px var(--rarity), 0 0 40px -4px var(--rarity), 0 26px 60px -18px var(--rarity);
+}
+.pack-reveal__card--legend .pack-reveal__rarity {
+  background: var(--rarity);
+  color: #1A0A05;
+  animation: legend-pulse 1.8s ease-in-out infinite;
+}
+@keyframes legend-pulse {
+  50% { box-shadow: 0 0 22px -2px var(--rarity); }
+}
+@media (prefers-reduced-motion: reduce) {
+  .pack-reveal__card--legend .pack-reveal__rarity { animation: none; }
+}
 .pack-reveal__rarity {
   padding: .2rem .7rem;
   border-radius: 999px;

@@ -158,6 +158,17 @@ function field(label, path, { type = 'text', value, hint = '', placeholder = '',
       </label>`;
   }
 
+  if (type === 'checkbox') {
+    return `
+      <div class="a-field">
+        <label class="a-check">
+          <input type="checkbox" data-path="${esc(path)}" data-type="bool"${raw ? ' checked' : ''}>
+          <span>${esc(label)}</span>
+        </label>
+        ${hint ? `<small class="a-hint">${esc(hint)}</small>` : ''}
+      </div>`;
+  }
+
   if (type === 'select') {
     return `
       <label class="a-field">
@@ -458,6 +469,11 @@ function playerEditor(player, index) {
                 + 'en gros sur la carte et qui sert au classement.'
           })}
         </div>
+
+        ${field('Carte légendaire', `${path}.legendary`, {
+          type: 'checkbox',
+          hint: "Réservé à une poignée de joueurs : leur carte devient quasiment impossible à sortir d'un pack, quelle que soit leur note."
+        })}
 
         ${field('Compagne', `${path}.partner`, {
           placeholder: 'Prénom',
@@ -878,7 +894,8 @@ function onFieldChange(event) {
   const type = input.dataset.type || 'text';
   let value = input.value;
 
-  if (type === 'number') value = Number(value) || 0;
+  if (type === 'bool') value = input.checked === true;
+  else if (type === 'number') value = Number(value) || 0;
   else if (type === 'list') value = value.split(',').map((s) => s.trim()).filter(Boolean);
   else if (type === 'datetime') value = value ? new Date(value).toISOString() : '';
 
@@ -934,7 +951,7 @@ const BLANK = {
     age: 0, nationality: 'France', position: 'MIL', since: new Date().getFullYear(),
     weakFoot: 3, skillMoves: 3,
     ratings: Object.fromEntries([...RATINGS_OUTFIELD, ...RATINGS_GK].map(([key]) => [key, 50])),
-    overall: 0, partner: '', description: '', marketValue: ''
+    overall: 0, legendary: false, partner: '', description: '', marketValue: ''
   }),
   statGroup: () => ({ id: '', title: 'Nouveau classement', unit: 'buts', accent: 'blue', icon: 'ball', values: {} })
 };

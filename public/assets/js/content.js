@@ -281,7 +281,7 @@ export const DEFAULT_CONTENT = {
  * Version du modèle de contenu. Le serveur l'estampille à chaque
  * enregistrement ; un document plus ancien passe par `migrateContent`.
  */
-export const SCHEMA_VERSION = 3;
+export const SCHEMA_VERSION = 4;
 
 /**
  * v1 → v2 : les classements listaient des noms libres, sans lien avec
@@ -312,6 +312,26 @@ function toV3(content) {
 }
 
 /**
+ * Les cinq cartes légendaires demandées par le club. La liste ne sert qu'une
+ * fois, à la migration : ensuite, c'est la case « Carte légendaire » de
+ * l'administration qui fait foi, et en ajouter ou en retirer se fait là.
+ */
+const LEGENDES_INITIALES = ['vale', 'noan', 'joris', 'stephane-ruiz', 'patrice-calmettes'];
+
+/** v3 → v4 : les légendaires sont désignées à la main, plus par la note. */
+function toV4(content) {
+  const players = Array.isArray(content.squad?.players) ? content.squad.players : [];
+  content.squad = {
+    ...content.squad,
+    players: players.map((player) => ({
+      ...player,
+      legendary: player?.legendary === true || LEGENDES_INITIALES.includes(player?.id)
+    }))
+  };
+  return content;
+}
+
+/**
  * Met à niveau un document enregistré avant la version courante. Les étapes
  * s'enchaînent : un document v1 passe par toutes.
  */
@@ -323,6 +343,7 @@ export function migrateContent(stored) {
   let migrated = cloneContent(stored);
   if (version < 2) migrated = toV2(migrated);
   if (version < 3) migrated = toV3(migrated);
+  if (version < 4) migrated = toV4(migrated);
   // Estampiller évite de rejouer la migration à chaque rendu de la page.
   migrated.version = SCHEMA_VERSION;
   return migrated;
