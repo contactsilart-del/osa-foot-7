@@ -16,7 +16,7 @@
  * Version du modèle de contenu. Un document enregistré sous une version
  * antérieure passe par `migrateContent` avant d'être affiché ou réenregistré.
  */
-export const SCHEMA_VERSION = 6;
+export const SCHEMA_VERSION = 7;
 
 export const DEFAULT_CONTENT = {
   /*
@@ -91,15 +91,20 @@ export const DEFAULT_CONTENT = {
     homeTeamId: 'osa',
     /** Barème de points : toutes les poules ne jouent pas en 3-1-0. */
     points: { win: 3, draw: 1, loss: 0 },
+    /**
+     * `inLeague: false` = adversaire rencontré hors championnat (amical,
+     * coupe). Il garde ses matchs et sa place aux résultats, mais ne figure
+     * pas au classement de la poule.
+     */
     teams: [
-      { id: 'osa', name: 'OSA FOOT 7', short: 'OSA', logo: '/img/osa.png', penalty: 0 },
-      { id: 'cambon-2', name: 'Cambon 2', short: 'Cambon 2', logo: '', penalty: 0 },
-      { id: 'carlus', name: 'Carlus', short: 'Carlus', logo: '', penalty: 0 },
-      { id: 'serenac', name: 'Sérénac', short: 'Sérénac', logo: '', penalty: 0 },
-      { id: 'escoussens', name: 'Escoussens', short: 'Escoussens', logo: '', penalty: 0 },
-      { id: 'berlats', name: 'Berlats', short: 'Berlats', logo: '', penalty: 0 },
-      { id: 'lo-capial-st-juery', name: 'Lo Capial St-Juéry', short: 'Lo Capial', logo: '', penalty: 0 },
-      { id: 'cambon', name: 'Cambon', short: 'Cambon', logo: '/img/cambon.png', penalty: 0 }
+      { id: 'osa', name: 'OSA FOOT 7', short: 'OSA', logo: '/img/osa.png', penalty: 0, inLeague: true },
+      { id: 'cambon-2', name: 'Cambon 2', short: 'Cambon 2', logo: '', penalty: 0, inLeague: false },
+      { id: 'carlus', name: 'Carlus', short: 'Carlus', logo: '', penalty: 0, inLeague: true },
+      { id: 'serenac', name: 'Sérénac', short: 'Sérénac', logo: '', penalty: 0, inLeague: true },
+      { id: 'escoussens', name: 'Escoussens', short: 'Escoussens', logo: '', penalty: 0, inLeague: true },
+      { id: 'berlats', name: 'Berlats', short: 'Berlats', logo: '', penalty: 0, inLeague: false },
+      { id: 'lo-capial-st-juery', name: 'Lo Capial St-Juéry', short: 'Lo Capial', logo: '', penalty: 0, inLeague: true },
+      { id: 'cambon', name: 'Cambon', short: 'Cambon', logo: '/img/cambon.png', penalty: 0, inLeague: true }
     ],
     /**
      * Un match dont les deux scores sont vides est un match a venir. Les
@@ -612,6 +617,36 @@ function toV6(content) {
 }
 
 /**
+ * v6 → v7 : distinguer les clubs de la poule des simples adversaires.
+ *
+ * Le classement listait toutes les équipes enregistrées, y compris celles
+ * rencontrées en amical ou en coupe — qui n'ont rien à y faire. Chaque club
+ * reçoit donc un drapeau, déduit de ses matchs : au moins une rencontre
+ * comptant pour le championnat, et il est de la poule ; que des matchs hors
+ * championnat, et il n'y est pas. Un club sans aucun match est supposé de la
+ * poule : c'est le cas d'un adversaire ajouté en début de saison.
+ */
+function toV7(content) {
+  const champ = content.championship;
+  if (!champ || !Array.isArray(champ.teams)) return content;
+
+  const matches = Array.isArray(champ.matches) ? champ.matches : [];
+  const joue = (id, seulementClassantes) => matches.some((match) =>
+    (match?.homeId === id || match?.awayId === id)
+    && (!seulementClassantes || match?.ranked !== false));
+
+  champ.teams = champ.teams.map((team) => {
+    if (typeof team?.inLeague === 'boolean') return team;
+    // Notre propre club reste au classement quoi qu'il arrive : une saison qui
+    // débute par un amical ne doit pas nous en faire sortir.
+    const nous = team?.id === champ.homeTeamId;
+    return { ...team, inLeague: nous || !joue(team?.id, false) || joue(team?.id, true) };
+  });
+
+  return content;
+}
+
+/**
  * Met à niveau un document enregistré avant la version courante. Les étapes
  * s'enchaînent : un document v1 passe par toutes.
  */
@@ -627,6 +662,7 @@ export function migrateContent(stored) {
   if (version < 3) migrated = toV3(migrated);
   if (version < 4) migrated = toV4(migrated);
   if (version < 6) migrated = toV6(migrated);
+  if (version < 7) migrated = toV7(migrated);
   migrated = toV5(migrated);
   // Estampiller évite de rejouer la migration à chaque rendu de la page.
   migrated.version = SCHEMA_VERSION;

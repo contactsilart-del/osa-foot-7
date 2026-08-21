@@ -364,13 +364,19 @@ function teamEditor(team, index) {
   const path = `championship.teams.${index}`;
   return `
     <article class="repeat__item">
-      ${repeatHead('championship.teams', index, team.name || 'Nouveau club')}
+      ${repeatHead('championship.teams', index,
+        `${team.name || 'Nouveau club'}${team.inLeague === false ? ' · hors championnat' : ''}`)}
       <div class="repeat__body">
         <div class="a-grid a-grid--3">
           ${field('Nom', `${path}.name`, { placeholder: 'Carlus' })}
           ${field('Abréviation', `${path}.short`, { placeholder: 'Carlus', hint: 'Utilisée là où la place manque.' })}
           ${field('Points de pénalité', `${path}.penalty`, { type: 'number', hint: 'Retirés du total. 0 dans presque tous les cas.' })}
         </div>
+        ${field('Participe au championnat', `${path}.inLeague`, {
+          type: 'checkbox',
+          hint: 'Décochez pour un adversaire rencontré seulement en amical ou en coupe : '
+            + 'il garde ses matchs et sa place aux résultats, mais disparaît du classement.'
+        })}
         ${imageField('Écusson', `${path}.logo`)}
       </div>
     </article>`;
@@ -1247,7 +1253,7 @@ function newId(prefixe) {
 }
 
 const BLANK = {
-  team: () => ({ id: newId('club'), name: 'Nouveau club', short: '', logo: '', penalty: 0 }),
+  team: () => ({ id: newId('club'), name: 'Nouveau club', short: '', logo: '', penalty: 0, inLeague: true }),
   match: () => ({
     id: newId('match'), day: 0, competition: '', ranked: true, date: '', venue: '',
     homeId: '', awayId: '', homeScore: null, awayScore: null,

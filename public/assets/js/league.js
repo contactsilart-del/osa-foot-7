@@ -172,6 +172,9 @@ function emptyRow(team) {
   return {
     id: team.id,
     team,
+    // Un adversaire d'amical ou de coupe compte pour ses adversaires, mais ne
+    // figure pas au tableau : on calcule sa ligne, puis on la retire.
+    inLeague: team.inLeague !== false,
     played: 0, won: 0, drawn: 0, lost: 0,
     goalsFor: 0, goalsAgainst: 0, diff: 0,
     points: 0, penalty: 0, rank: 0
@@ -213,8 +216,9 @@ export function computeStandings(championship) {
   for (const match of matchesOf(championship)) {
     for (const id of [match?.homeId, match?.awayId]) {
       if (!id || rows.has(id)) continue;
-      const invente = { id, name: humanizeId(id), short: humanizeId(id), logo: '', penalty: 0 };
-      rows.set(id, emptyRow(invente));
+      const inLeague = matchesOf(championship).some((autre) =>
+        (autre?.homeId === id || autre?.awayId === id) && autre?.ranked !== false);
+      rows.set(id, emptyRow({ id, name: humanizeId(id), short: humanizeId(id), logo: '', penalty: 0, inLeague }));
     }
   }
 
@@ -241,7 +245,9 @@ export function computeStandings(championship) {
     }
   }
 
-  const classées = [...rows.values()];
+  // Le filtrage vient après le calcul : les points marqués contre un adversaire
+  // hors poule restent acquis à celui qui les a pris.
+  const classées = [...rows.values()].filter((row) => row.inLeague);
   for (const row of classées) row.diff = row.goalsFor - row.goalsAgainst;
 
   classées.sort((a, b) =>

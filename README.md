@@ -277,6 +277,10 @@ Points d'attention :
   reste à zéro et le tableau ne veut plus rien dire.
 - Un match de **coupe ou d'amical** : décochez « Compte pour le classement ».
   Il nourrit alors la forme du moment sans peser sur le tableau.
+- Un **adversaire rencontré hors championnat** (amical, coupe) : décochez
+  « Participe au championnat » sur sa fiche. Il garde ses matchs, sa place aux
+  résultats et ses pronostics, mais disparaît du classement de la poule. Le
+  réglage est deviné à la première mise à jour, d'après les matchs déjà saisis.
 - La **forme du moment** (cinq carrés vert / gris / rouge sous les écussons de
   l'accueil) reprend les cinq derniers matchs joués, coupe comprise, du plus
   ancien au plus récent.
