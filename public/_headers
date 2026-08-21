@@ -22,7 +22,7 @@
 # en-tetes — un objet garde en cache continue d'annoncer l'ancienne politique,
 # ce qui donne l'illusion que la nouvelle n'est pas appliquee.
 /assets/*
-  Cache-Control: public, max-age=0, must-revalidate
+  Cache-Control: no-cache
 
 /img/*
   Cache-Control: public, max-age=604800, must-revalidate
