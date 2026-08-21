@@ -192,6 +192,20 @@ function revealCards(cards) {
 
 /* ═══════════════════════════════════════════ Actions ══ */
 
+/**
+ * Page vers laquelle revenir apres connexion, indiquee par `?retour=`.
+ * Seuls les chemins internes sont acceptes : une URL absolue ferait de cette
+ * page un tremplin vers n'importe quel site.
+ */
+function retourApresConnexion() {
+  try {
+    const brut = new URLSearchParams(window.location.search).get('retour') || '';
+    return /^\/[^/\\]/.test(brut) || brut === '/' ? brut : '';
+  } catch {
+    return '';
+  }
+}
+
 async function submitCredentials(event) {
   event.preventDefault();
   if (state.busy) return;
@@ -215,6 +229,13 @@ async function submitCredentials(event) {
     toast(payload.created
       ? `Bienvenue ${payload.user.username} ! ${payload.user.packs} packs vous attendent.`
       : `Content de vous revoir, ${payload.user.username} !`);
+
+    // Venu d'ailleurs pour se connecter (un pronostic en attente, par exemple) :
+    // on le ramene la ou il etait plutot que de le laisser chercher.
+    const retour = retourApresConnexion();
+    if (retour) {
+      window.setTimeout(() => { window.location.href = retour; }, 900);
+    }
   } catch (error) {
     setError(error.message);
   } finally {

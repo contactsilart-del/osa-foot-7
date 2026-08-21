@@ -12,7 +12,19 @@
 
 /** @typedef {{name: string, logo: string}} Team */
 
+/**
+ * Version du modèle de contenu. Un document enregistré sous une version
+ * antérieure passe par `migrateContent` avant d'être affiché ou réenregistré.
+ */
+export const SCHEMA_VERSION = 6;
+
 export const DEFAULT_CONTENT = {
+  /*
+   * Le contenu par défaut est déjà à la version courante : sans cette
+   * estampille, une première installation produirait un document sans version,
+   * que le serveur refuserait d'enregistrer comme il refuse un onglet périmé.
+   */
+  version: SCHEMA_VERSION,
   club: {
     name: 'OSA FOOT 7',
     tagline: 'Olympique Saint-Affrique',
@@ -371,12 +383,6 @@ export const DEFAULT_CONTENT = {
 };
 
 /**
- * Version du modèle de contenu. Le serveur l'estampille à chaque
- * enregistrement ; un document plus ancien passe par `migrateContent`.
- */
-export const SCHEMA_VERSION = 6;
-
-/**
  * v1 → v2 : les classements listaient des noms libres, sans lien avec
  * l'effectif. Ils comptent désormais les joueurs par identifiant, et les
  * anciens compteurs repartent de zéro — c'est ce qui a été demandé.
@@ -491,8 +497,12 @@ function dayOf(competition) {
 
 function toV6(content) {
   // Un document déjà converti n'est pas retouché : la conversion n'est pas
-  // idempotente (elle recréerait des matchs à partir d'actualités absentes).
-  if (content.championship && Array.isArray(content.championship.matches)) return content;
+  // idempotente. Mais un championnat *vide* accompagné d'actualités trahit une
+  // conversion qui n'a pas eu lieu — là, il faut la rejouer, sinon les matchs
+  // resteraient perdus pour toujours.
+  if (Array.isArray(content.championship?.matches) && content.championship.matches.length) {
+    return content;
+  }
 
   const nomClub = String(content.club?.name || 'OSA FOOT 7').trim();
   const idClub = slugId(nomClub, 'osa');

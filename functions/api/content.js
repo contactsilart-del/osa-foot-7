@@ -10,7 +10,7 @@
 import { json, fail, methodNotAllowed, readJson } from '../../lib/http.js';
 import { requireAuth, checkOrigin } from '../../lib/auth.js';
 import { readContent, writeContent, resetContent } from '../../lib/store.js';
-import { sanitizeContent } from '../../lib/validate.js';
+import { sanitizeContent, SCHEMA_VERSION } from '../../lib/validate.js';
 
 const ALLOWED = ['GET', 'PUT', 'DELETE'];
 
@@ -69,24 +69,21 @@ export async function onRequest(context) {
 
     /**
      * Garde-fou contre l'onglet resté ouvert sur une version antérieure du
-     * panel : son document ignore les sections ajoutées depuis, et
-     * l'enregistrer les effacerait. Le numéro de modèle sert d'arbitre — il
-     * n'est jamais estampillé par le serveur, donc il dit bien d'où vient le
-     * document, pas quand il a été reçu.
+     * panel. Son document ne connaît pas les sections ajoutées depuis : la
+     * normalisation les remplacerait par du vide, et la migration ne pourrait
+     * plus rien reconstruire — les données seraient perdues pour de bon.
+     *
+     * On compare au modèle courant, pas au document stocké : le client migre
+     * toujours avant d'enregistrer, donc un numéro inférieur ne peut venir que
+     * d'un code périmé. Le refus est franc, et le message dit quoi faire.
      */
-    try {
-      const actuel = Number((await readContent(env.DB))?.content?.version) || 0;
-      if (actuel && Number(content.version) < actuel) {
-        return fail(
-          "Cette page d'administration date d'avant la dernière mise à jour du site. "
-          + "Rechargez-la (Ctrl+F5) avant d’enregistrer, sinon des sections seraient perdues.",
-          409
-        );
-      }
-    } catch (error) {
-      // Base illisible : l'écriture qui suit échouera de toute façon, avec un
-      // message plus précis. On ne bloque pas l'enregistrement pour autant.
-      console.error('[content:version]', error);
+    if (Number(content.version) < SCHEMA_VERSION) {
+      return fail(
+        "Cette page d'administration date d'avant la dernière mise à jour du site. "
+        + "Rechargez-la (Ctrl+F5) avant d’enregistrer : en l'état, elle effacerait "
+        + 'des sections du site.',
+        409
+      );
     }
 
     try {

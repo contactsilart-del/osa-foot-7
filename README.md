@@ -284,8 +284,11 @@ Points d'attention :
   3-1-0.
 - Les **points de pénalité** d'un club se saisissent sur sa fiche et sont
   retirés de son total.
-- Un club supprimé du tableau ne détruit pas ses matchs : le remettre les
-  restaure. En attendant, ils sont simplement ignorés du calcul.
+- **Supprimer un club encore engagé dans des matchs** est signalé avant
+  confirmation. Si vous le faites quand même, le club est recréé
+  automatiquement sous un nom deviné depuis son identifiant (« us-autan » →
+  « Us Autan »), visible dans l'onglet Championnat où il n'y a plus qu'à le
+  renommer. Pour le faire disparaître vraiment, supprimez d'abord ses matchs.
 
 ### Pronostics (`/resultats#pronos`)
 
@@ -301,6 +304,10 @@ vous saisissez le score du match.
 
 Les trois paliers s'excluent : un score exact rapporte 15 packs, pas 15 + 3 + 1.
 
+- Le pronostic du prochain match se saisit **directement sur la page d'accueil**,
+  sous le compte à rebours. Les champs sont ouverts à tout le monde : le compte
+  n'est demandé qu'**au moment de valider**, et le score saisi est gardé sur
+  l'appareil puis envoyé tout seul dès la connexion.
 - Un match n'est ouvert aux pronostics que s'il a **une date** et que le coup
   d'envoi n'est pas passé. Sans date, impossible de fermer les paris à temps :
   on préfère ne pas les ouvrir.

@@ -1269,6 +1269,26 @@ const BLANK = {
   statGroup: () => ({ id: '', title: 'Nouveau classement', unit: 'buts', accent: 'blue', icon: 'ball', values: {} })
 };
 
+/**
+ * Le message de confirmation d'une suppression. Supprimer un club encore
+ * engage dans des matchs cassait l'affiche de la page d'accueil sans prevenir :
+ * on annonce desormais la consequence avant, pas apres.
+ */
+function removalWarning(listPath, element) {
+  if (listPath === 'championship.teams' && element?.id) {
+    const matchs = (state.draft.championship?.matches || [])
+      .filter((match) => match.homeId === element.id || match.awayId === element.id);
+    if (matchs.length) {
+      return `« ${element.name || element.id} » est engagé dans ${matchs.length} match`
+        + `${matchs.length > 1 ? 's' : ''}. Le supprimer laisserait `
+        + `${matchs.length > 1 ? 'ces rencontres' : 'cette rencontre'} sans adversaire nommé.\n\n`
+        + 'Supprimez plutôt les matchs concernés si vous ne voulez plus de ce club.\n\n'
+        + 'Supprimer quand même ?';
+    }
+  }
+  return 'Supprimer définitivement cet élément ?';
+}
+
 function onPanelClick(event) {
   const target = event.target.closest('button');
   if (!target) return;
@@ -1326,7 +1346,7 @@ function onPanelClick(event) {
   if (target.dataset.remove) {
     const list = getPath(state.draft, target.dataset.remove);
     const index = Number(target.dataset.index);
-    if (Array.isArray(list) && confirm('Supprimer définitivement cet élément ?')) {
+    if (Array.isArray(list) && confirm(removalWarning(target.dataset.remove, list[index]))) {
       list.splice(index, 1);
       state.openEditor = null;
       renderTab();

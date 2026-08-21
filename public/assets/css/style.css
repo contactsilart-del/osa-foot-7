@@ -2943,6 +2943,81 @@ ul, ol { list-style: none; padding: 0; }
 }
 .result__when { font-size: .78rem; color: var(--muted); }
 
+/* ── Pronostic dans le héros ── */
+.hero-prono {
+  width: min(100%, 520px);
+  margin: clamp(1.1rem, 3vw, 1.6rem) auto 0;
+  padding: clamp(.9rem, 2.5vw, 1.25rem);
+  border-radius: var(--radius);
+  background: rgba(255, 255, 255, .06);
+  border: 1px solid var(--dark-line);
+  backdrop-filter: blur(6px);
+}
+.hero-prono[hidden] { display: none; }
+
+.hero-prono__title {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: .4rem;
+  margin-bottom: .6rem;
+  font-family: var(--font-display);
+  font-size: .74rem;
+  font-weight: 900;
+  letter-spacing: .12em;
+  text-transform: uppercase;
+  color: var(--gold-500);
+}
+.hero-prono__title svg { width: 15px; height: 15px; fill: currentColor; }
+
+.hero-prono__row {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: center;
+  gap: .5rem .7rem;
+}
+.hero-prono__team {
+  font-family: var(--font-display);
+  font-size: .82rem;
+  font-weight: 900;
+  letter-spacing: .05em;
+  text-transform: uppercase;
+  color: var(--dark-ink);
+}
+
+.hero-prono__note,
+.hero-prono__invite {
+  margin-top: .7rem;
+  font-size: .78rem;
+  line-height: 1.5;
+  text-align: center;
+  color: var(--dark-muted);
+}
+.hero-prono__note b { color: var(--dark-ink); }
+.hero-prono__more {
+  display: inline-block;
+  margin-left: .35rem;
+  color: var(--brand-300);
+  font-weight: 700;
+}
+
+/* L'invitation n'arrive qu'apres une tentative : elle a droit a plus de poids. */
+.hero-prono__invite {
+  display: grid;
+  gap: .6rem;
+  justify-items: center;
+  padding-top: .7rem;
+  border-top: 1px solid var(--dark-line);
+  color: var(--dark-ink);
+}
+
+@media (max-width: 480px) {
+  .hero-prono__row { gap: .4rem .5rem; }
+  .hero-prono__team { font-size: .74rem; }
+  .hero-prono__row .btn { width: 100%; }
+}
+
 /* ══════════════════════════════ 21. Pronostics ══ */
 
 .rewards {

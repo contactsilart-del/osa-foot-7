@@ -34,17 +34,32 @@ export function teamById(championship, id) {
 }
 
 /**
+ * Nom lisible reconstruit depuis un identifiant : « us-autan » → « Us Autan ».
+ *
+ * Sert quand un match cite un club retire du tableau. Approximatif sur la
+ * casse, mais infiniment preferable a un tiret vide sur la page d'accueil —
+ * et l'administration recree le club, ce qui permet de le renommer.
+ */
+export function humanizeId(id) {
+  return String(id ?? '')
+    .split('-')
+    .filter(Boolean)
+    .map((mot) => mot.charAt(0).toUpperCase() + mot.slice(1))
+    .join(' ');
+}
+
+/**
  * Nom d'affichage d'une équipe. Un match dont l'adversaire a été supprimé du
  * tableau reste lisible plutôt que de disparaître.
  */
 export function teamName(championship, id) {
-  return teamById(championship, id)?.name || 'Équipe inconnue';
+  return teamById(championship, id)?.name || humanizeId(id) || 'Équipe inconnue';
 }
 
 /** Abréviation pour les colonnes étroites : « OSA » plutôt que « OSA FOOT 7 ». */
 export function teamShort(championship, id) {
   const team = teamById(championship, id);
-  return team?.short || team?.name || '—';
+  return team?.short || team?.name || humanizeId(id) || '—';
 }
 
 export function teamLogo(championship, id) {
@@ -187,6 +202,20 @@ export function computeStandings(championship) {
     // `-0` s'affiche « -0 » : on ne le laisse pas apparaitre dans le tableau.
     row.points = row.penalty ? -row.penalty : 0;
     rows.set(team.id, row);
+  }
+
+  /*
+   * Un club retire du tableau mais encore engage dans des matchs reprend sa
+   * ligne, sous un nom devine depuis son identifiant. Sans cela le tableau
+   * changerait tout seul au prochain enregistrement, puisque le serveur, lui,
+   * recree le club. Les deux disent desormais la meme chose.
+   */
+  for (const match of matchesOf(championship)) {
+    for (const id of [match?.homeId, match?.awayId]) {
+      if (!id || rows.has(id)) continue;
+      const invente = { id, name: humanizeId(id), short: humanizeId(id), logo: '', penalty: 0 };
+      rows.set(id, emptyRow(invente));
+    }
   }
 
   for (const match of matchesOf(championship)) {
