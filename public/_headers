@@ -10,12 +10,18 @@
 # longue retarderait d'autant l'arrivée d'un correctif chez les visiteurs déjà
 # venus. 10 minutes de fraîcheur, puis revalidation en arrière-plan.
 # Les modules ES doivent rester coherents entre eux et avec les Functions.
-# Sans empreinte dans les noms de fichiers, `stale-while-revalidate` servait
-# pendant 24 h un melange de versions : un panel d'administration pouvait
-# tourner sur l'ancien code apres une mise a jour, meme apres Ctrl+F5.
-# On revalide donc a chaque chargement — un 304 coute presque rien.
+# `stale-while-revalidate` servait pendant 24 h un melange de versions : un
+# panel d'administration pouvait tourner sur l'ancien code apres une mise a
+# jour, meme apres Ctrl+F5 — la reponse perimee etant rendue immediatement.
+#
+# Cloudflare Pages impose un plancher de 4 h sur les assets : `max-age` plus
+# court est ignore, seules les directives supplementaires passent. On garde
+# donc `must-revalidate`, qui interdit d'utiliser une reponse perimee sans
+# demander. Un rechargement force ramene desormais toujours la derniere
+# version, et le serveur ne depend plus de la fraicheur du panel : un document
+# incomplet est complete, jamais refuse (voir functions/api/content.js).
 /assets/*
-  Cache-Control: public, max-age=60, must-revalidate
+  Cache-Control: public, max-age=14400, must-revalidate
 
 /img/*
   Cache-Control: public, max-age=2592000, stale-while-revalidate=604800
