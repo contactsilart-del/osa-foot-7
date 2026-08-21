@@ -28,6 +28,54 @@ export function matchesOf(championship) {
   return Array.isArray(championship?.matches) ? championship.matches : [];
 }
 
+/* ═══════════════════════════════════════ Compétitions ══ */
+
+export function competitionsOf(championship) {
+  return Array.isArray(championship?.competitions) ? championship.competitions : [];
+}
+
+export function competitionById(championship, id) {
+  if (!id) return null;
+  return competitionsOf(championship).find((competition) => competition.id === id) || null;
+}
+
+export function competitionName(championship, id) {
+  return competitionById(championship, id)?.name || humanizeId(id) || '';
+}
+
+/** Les compétitions qui méritent un tableau : championnat, coupe… pas les amicaux. */
+export function standingsCompetitions(championship) {
+  return competitionsOf(championship).filter((competition) => competition.standings !== false);
+}
+
+export function matchesIn(championship, competitionId) {
+  return matchesOf(championship).filter((match) => match.competitionId === competitionId);
+}
+
+/**
+ * Un match pèse sur un classement si sa compétition en tient un. C'est la
+ * compétition qui décide, plus un drapeau posé sur chaque match : deux
+ * réglages pour une même question finissaient toujours par se contredire.
+ */
+export function isRanked(championship, match) {
+  return competitionById(championship, match?.competitionId)?.standings !== false;
+}
+
+/**
+ * Les clubs d'une compétition : ceux qui y sont inscrits, plus ceux que ses
+ * matchs citent sans qu'on les y ait inscrits.
+ */
+export function teamIdsIn(championship, competitionId) {
+  const competition = competitionById(championship, competitionId);
+  const ids = Array.isArray(competition?.teamIds) ? [...competition.teamIds] : [];
+  for (const match of matchesIn(championship, competitionId)) {
+    for (const id of [match?.homeId, match?.awayId]) {
+      if (id && !ids.includes(id)) ids.push(id);
+    }
+  }
+  return ids;
+}
+
 export function teamById(championship, id) {
   if (!id) return null;
   return teamsOf(championship).find((team) => team.id === id) || null;
@@ -172,9 +220,6 @@ function emptyRow(team) {
   return {
     id: team.id,
     team,
-    // Un adversaire d'amical ou de coupe compte pour ses adversaires, mais ne
-    // figure pas au tableau : on calcule sa ligne, puis on la retire.
-    inLeague: team.inLeague !== false,
     played: 0, won: 0, drawn: 0, lost: 0,
     goalsFor: 0, goalsAgainst: 0, diff: 0,
     points: 0, penalty: 0, rank: 0
@@ -188,42 +233,36 @@ function pointsFor(championship) {
 }
 
 /**
- * Le classement, calculé depuis les seuls matchs joués et comptant pour le
- * championnat. Un match de coupe (`ranked: false`) nourrit la forme du moment
- * mais pas le tableau — c'est ce qu'on attend d'un classement de poule.
+ * Le classement d'une compétition, calculé depuis ses seuls matchs joués.
+ *
+ * Le championnat et la coupe n'opposent pas les mêmes clubs : chacun a donc
+ * son tableau, et un match ne pèse que sur celui de sa compétition.
  *
  * Départage : points, puis différence de buts, puis buts marqués, puis nom.
  */
-export function computeStandings(championship) {
+export function computeStandings(championship, competitionId) {
   const barème = pointsFor(championship);
   const rows = new Map();
+  const catalogue = new Map(teamsOf(championship).map((team) => [team.id, team]));
 
-  for (const team of teamsOf(championship)) {
-    if (!team?.id || rows.has(team.id)) continue;
+  /*
+   * Un club retiré du catalogue mais encore inscrit ou engagé garde sa ligne,
+   * sous un nom deviné depuis son identifiant : sinon le site affichait un
+   * tiret vide, et le match ne comptait pour personne.
+   */
+  for (const id of teamIdsIn(championship, competitionId)) {
+    if (!id || rows.has(id)) continue;
+    const team = catalogue.get(id)
+      || { id, name: humanizeId(id), short: humanizeId(id), logo: '', penalty: 0 };
     const row = emptyRow(team);
     row.penalty = Number(team.penalty) || 0;
     // `-0` s'affiche « -0 » : on ne le laisse pas apparaitre dans le tableau.
     row.points = row.penalty ? -row.penalty : 0;
-    rows.set(team.id, row);
+    rows.set(id, row);
   }
 
-  /*
-   * Un club retire du tableau mais encore engage dans des matchs reprend sa
-   * ligne, sous un nom devine depuis son identifiant. Sans cela le tableau
-   * changerait tout seul au prochain enregistrement, puisque le serveur, lui,
-   * recree le club. Les deux disent desormais la meme chose.
-   */
-  for (const match of matchesOf(championship)) {
-    for (const id of [match?.homeId, match?.awayId]) {
-      if (!id || rows.has(id)) continue;
-      const inLeague = matchesOf(championship).some((autre) =>
-        (autre?.homeId === id || autre?.awayId === id) && autre?.ranked !== false);
-      rows.set(id, emptyRow({ id, name: humanizeId(id), short: humanizeId(id), logo: '', penalty: 0, inLeague }));
-    }
-  }
-
-  for (const match of matchesOf(championship)) {
-    if (!isPlayed(match) || match.ranked === false) continue;
+  for (const match of matchesIn(championship, competitionId)) {
+    if (!isPlayed(match)) continue;
     const domicile = rows.get(match.homeId);
     const exterieur = rows.get(match.awayId);
     // Un match dont une équipe a été retirée du tableau ne fausse pas le total.
@@ -245,9 +284,7 @@ export function computeStandings(championship) {
     }
   }
 
-  // Le filtrage vient après le calcul : les points marqués contre un adversaire
-  // hors poule restent acquis à celui qui les a pris.
-  const classées = [...rows.values()].filter((row) => row.inLeague);
+  const classées = [...rows.values()];
   for (const row of classées) row.diff = row.goalsFor - row.goalsAgainst;
 
   classées.sort((a, b) =>
@@ -263,22 +300,25 @@ export function computeStandings(championship) {
 /* ══════════════════════════════════════════ Journées ══ */
 
 /**
- * Regroupe les matchs par journée, de la plus récente à la plus ancienne.
- * Les matchs sans numéro de journée sont rassemblés à part, sous leur
- * compétition — c'est là que tombent les matchs de coupe.
+ * Regroupe les matchs d'une compétition par journée, de la plus récente à la
+ * plus ancienne. Les matchs sans numéro de journée — un tour de coupe, un
+ * amical — sont rassemblés à la fin, sous un intitulé générique.
  */
-export function matchesByDay(championship, { playedOnly = false } = {}) {
+export function matchesByDay(championship, competitionId, { playedOnly = false } = {}) {
   const groupes = new Map();
+  const liste = competitionId === undefined
+    ? matchesOf(championship)
+    : matchesIn(championship, competitionId);
 
-  for (const match of sortByDate(matchesOf(championship), -1)) {
+  for (const match of sortByDate(liste, -1)) {
     if (playedOnly && !isPlayed(match)) continue;
     const day = Number(match?.day) || 0;
-    const clé = day > 0 ? `j${day}` : `autre:${match?.competition || ''}`;
+    const clé = day > 0 ? `j${day}` : 'sans-journee';
     if (!groupes.has(clé)) {
       groupes.set(clé, {
         key: clé,
         day,
-        label: day > 0 ? `${day}${day === 1 ? 're' : 'e'} journée` : (match?.competition || 'Hors championnat'),
+        label: day > 0 ? `${day}${day === 1 ? 're' : 'e'} journée` : 'Autres rencontres',
         matches: []
       });
     }
@@ -292,6 +332,16 @@ export function matchesByDay(championship, { playedOnly = false } = {}) {
     if (b.day) return 1;
     return 0;
   });
+}
+
+/**
+ * Toute la saison, compétition par compétition, dans l'ordre où elles sont
+ * déclarées. Une compétition sans aucun match n'apparaît pas.
+ */
+export function matchesByCompetition(championship, options = {}) {
+  return competitionsOf(championship)
+    .map((competition) => ({ competition, days: matchesByDay(championship, competition.id, options) }))
+    .filter((bloc) => bloc.days.length);
 }
 
 /* ═══════════════════════════════════════ Pronostics ══ */

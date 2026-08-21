@@ -332,6 +332,18 @@ code, pre { font-family: var(--a-mono); font-size: .86em; }
   border-top: 1px dashed var(--a-line, rgba(255, 255, 255, .14));
 }
 
+/* Liste d'inscriptions : les clubs engages dans une competition. */
+.a-checks {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(180px, 1fr));
+  gap: .35rem .9rem;
+  padding: .7rem .85rem;
+  border-radius: 10px;
+  background: rgba(255, 255, 255, .04);
+  border: 1px solid var(--a-line);
+}
+.a-checks .a-check { margin: 0; font-size: .85rem; }
+
 /* ────────────────────────────────────── Champs ── */
 .a-field { display: grid; gap: .35rem; min-width: 0; }
 .a-field > span, .a-field__label {

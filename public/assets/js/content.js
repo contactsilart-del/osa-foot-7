@@ -16,7 +16,7 @@
  * Version du modèle de contenu. Un document enregistré sous une version
  * antérieure passe par `migrateContent` avant d'être affiché ou réenregistré.
  */
-export const SCHEMA_VERSION = 7;
+export const SCHEMA_VERSION = 8;
 
 export const DEFAULT_CONTENT = {
   /*
@@ -92,31 +92,57 @@ export const DEFAULT_CONTENT = {
     /** Barème de points : toutes les poules ne jouent pas en 3-1-0. */
     points: { win: 3, draw: 1, loss: 0 },
     /**
-     * `inLeague: false` = adversaire rencontré hors championnat (amical,
-     * coupe). Il garde ses matchs et sa place aux résultats, mais ne figure
-     * pas au classement de la poule.
+     * Les compétitions de la saison. Chacune a ses clubs et, si on le demande,
+     * son propre classement — le championnat et la coupe n'opposent pas les
+     * mêmes équipes, et n'ont donc rien à faire dans le même tableau.
+     *
+     * `standings: false` pour les amicaux : on les joue, on ne les compte pas.
      */
+    competitions: [
+      {
+        id: 'championnat',
+        name: 'Championnat D2 UFOLEP',
+        standings: true,
+        teamIds: ['osa', 'carlus', 'serenac', 'escoussens', 'lo-capial-st-juery', 'cambon']
+      },
+      {
+        id: 'coupe',
+        name: 'Coupe',
+        standings: true,
+        teamIds: ['osa', 'cambon-2', 'berlats']
+      },
+      {
+        id: 'amicaux',
+        name: 'Matchs amicaux',
+        standings: false,
+        teamIds: ['osa']
+      }
+    ],
+
+    /** Catalogue des clubs. L'appartenance à une compétition se règle ci-dessus. */
     teams: [
-      { id: 'osa', name: 'OSA FOOT 7', short: 'OSA', logo: '/img/osa.png', penalty: 0, inLeague: true },
-      { id: 'cambon-2', name: 'Cambon 2', short: 'Cambon 2', logo: '', penalty: 0, inLeague: false },
-      { id: 'carlus', name: 'Carlus', short: 'Carlus', logo: '', penalty: 0, inLeague: true },
-      { id: 'serenac', name: 'Sérénac', short: 'Sérénac', logo: '', penalty: 0, inLeague: true },
-      { id: 'escoussens', name: 'Escoussens', short: 'Escoussens', logo: '', penalty: 0, inLeague: true },
-      { id: 'berlats', name: 'Berlats', short: 'Berlats', logo: '', penalty: 0, inLeague: false },
-      { id: 'lo-capial-st-juery', name: 'Lo Capial St-Juéry', short: 'Lo Capial', logo: '', penalty: 0, inLeague: true },
-      { id: 'cambon', name: 'Cambon', short: 'Cambon', logo: '/img/cambon.png', penalty: 0, inLeague: true }
+      { id: 'osa', name: 'OSA FOOT 7', short: 'OSA', logo: '/img/osa.png', penalty: 0 },
+      { id: 'cambon-2', name: 'Cambon 2', short: 'Cambon 2', logo: '', penalty: 0 },
+      { id: 'carlus', name: 'Carlus', short: 'Carlus', logo: '', penalty: 0 },
+      { id: 'serenac', name: 'Sérénac', short: 'Sérénac', logo: '', penalty: 0 },
+      { id: 'escoussens', name: 'Escoussens', short: 'Escoussens', logo: '', penalty: 0 },
+      { id: 'berlats', name: 'Berlats', short: 'Berlats', logo: '', penalty: 0 },
+      { id: 'lo-capial-st-juery', name: 'Lo Capial St-Juéry', short: 'Lo Capial', logo: '', penalty: 0 },
+      { id: 'cambon', name: 'Cambon', short: 'Cambon', logo: '/img/cambon.png', penalty: 0 }
     ],
     /**
-     * Un match dont les deux scores sont vides est un match a venir. Les
+     * Un match dont les deux scores sont vides est un match à venir. Les
      * champs éditoriaux (titre, texte, photo) sont facultatifs : un match sans
      * titre figure aux résultats sans apparaître dans les actualités.
+     *
+     * `competitionId` dit où il compte. C'est lui, et non un drapeau posé sur
+     * le match, qui décide s'il pèse sur un classement.
      */
     matches: [
       {
         id: 'osa-cambon-j6',
         day: 6,
-        competition: 'Championnat UFOLEP — Foot à 7',
-        ranked: true,
+        competitionId: 'championnat',
         date: '2026-09-05T20:30:00+02:00',
         venue: 'Stade de Saint-Affrique-les-Montagnes',
         homeId: 'osa', awayId: 'cambon',
@@ -127,8 +153,7 @@ export const DEFAULT_CONTENT = {
       {
         id: 'cambon-coupe',
         day: 0,
-        competition: 'Coupe',
-        ranked: false,
+        competitionId: 'coupe',
         date: '',
         venue: '',
         homeId: 'cambon-2', awayId: 'osa',
@@ -142,8 +167,7 @@ export const DEFAULT_CONTENT = {
       {
         id: 'carlus-j5',
         day: 5,
-        competition: '5e journée',
-        ranked: true,
+        competitionId: 'championnat',
         date: '',
         venue: '',
         homeId: 'carlus', awayId: 'osa',
@@ -157,8 +181,7 @@ export const DEFAULT_CONTENT = {
       {
         id: 'serenac-j4',
         day: 4,
-        competition: '4e journée',
-        ranked: true,
+        competitionId: 'championnat',
         date: '',
         venue: '',
         homeId: 'osa', awayId: 'serenac',
@@ -172,8 +195,7 @@ export const DEFAULT_CONTENT = {
       {
         id: 'escoussens-j3',
         day: 3,
-        competition: '3e journée',
-        ranked: true,
+        competitionId: 'championnat',
         date: '',
         venue: '',
         homeId: 'escoussens', awayId: 'osa',
@@ -187,8 +209,7 @@ export const DEFAULT_CONTENT = {
       {
         id: 'berlats-coupe',
         day: 0,
-        competition: 'Coupe',
-        ranked: false,
+        competitionId: 'coupe',
         date: '',
         venue: '',
         homeId: 'berlats', awayId: 'osa',
@@ -202,8 +223,7 @@ export const DEFAULT_CONTENT = {
       {
         id: 'lo-capial-j2',
         day: 2,
-        competition: '2e journée',
-        ranked: true,
+        competitionId: 'championnat',
         date: '',
         venue: '',
         homeId: 'osa', awayId: 'lo-capial-st-juery',
@@ -647,6 +667,69 @@ function toV7(content) {
 }
 
 /**
+ * v7 → v8 : le championnat devient *les* compétitions.
+ *
+ * Une seule liste d'équipes et un drapeau « compte pour le classement » posé
+ * sur chaque match ne suffisaient plus : un club rencontré en coupe n'affronte
+ * pas la même poule qu'en championnat, et méritait son propre tableau. Chaque
+ * compétition porte donc ses clubs et, si on le demande, son classement.
+ *
+ * La conversion range les matchs existants d'après leur ancien libellé —
+ * « coupe » et « amical » se reconnaissent, le reste est du championnat — et
+ * inscrit dans chaque compétition les clubs qui y ont joué.
+ */
+const COMPETITIONS_CONNUES = [
+  { id: 'coupe', motif: /coupe/i },
+  { id: 'amicaux', motif: /amical|tournoi/i }
+];
+
+function toV8(content) {
+  const champ = content.championship;
+  if (!champ || Array.isArray(champ.competitions)) return content;
+
+  const modele = DEFAULT_CONTENT.championship.competitions;
+  const competitions = modele.map((competition) => ({ ...competition, teamIds: [] }));
+  const parId = new Map(competitions.map((competition) => [competition.id, competition]));
+
+  const matches = Array.isArray(champ.matches) ? champ.matches : [];
+  for (const match of matches) {
+    const libelle = String(match?.competition ?? '');
+    const trouve = COMPETITIONS_CONNUES.find((connue) => connue.motif.test(libelle));
+    // Un match qui ne comptait pour aucun classement et dont le libellé ne dit
+    // rien reste un amical : c'est le seul rangement qui ne fausse personne.
+    const id = trouve?.id || (match?.ranked === false ? 'amicaux' : 'championnat');
+
+    match.competitionId = id;
+    delete match.competition;
+    delete match.ranked;
+
+    for (const club of [match?.homeId, match?.awayId]) {
+      if (club && !parId.get(id).teamIds.includes(club)) parId.get(id).teamIds.push(club);
+    }
+  }
+
+  // Les clubs de la poule qui n'ont pas encore joué rejoignent le championnat.
+  const poule = parId.get('championnat');
+  for (const team of Array.isArray(champ.teams) ? champ.teams : []) {
+    if (team?.inLeague !== false && team?.id && !poule.teamIds.includes(team.id)) {
+      poule.teamIds.push(team.id);
+    }
+    delete team.inLeague;
+  }
+
+  // Notre club est de toutes les compétitions : il les dispute toutes.
+  const nous = champ.homeTeamId;
+  if (nous) {
+    for (const competition of competitions) {
+      if (!competition.teamIds.includes(nous)) competition.teamIds.unshift(nous);
+    }
+  }
+
+  champ.competitions = competitions;
+  return content;
+}
+
+/**
  * Met à niveau un document enregistré avant la version courante. Les étapes
  * s'enchaînent : un document v1 passe par toutes.
  */
@@ -663,6 +746,7 @@ export function migrateContent(stored) {
   if (version < 4) migrated = toV4(migrated);
   if (version < 6) migrated = toV6(migrated);
   if (version < 7) migrated = toV7(migrated);
+  if (version < 8) migrated = toV8(migrated);
   migrated = toV5(migrated);
   // Estampiller évite de rejouer la migration à chaque rendu de la page.
   migrated.version = SCHEMA_VERSION;

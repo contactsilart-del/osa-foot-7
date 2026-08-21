@@ -9,8 +9,9 @@
 import { DEFAULT_CONTENT, cloneContent, deepMerge, migrateContent } from './content.js';
 import { playerCardHTML, playerProfileHTML, sortPlayers, SORTS, fullName } from './squad.js';
 import {
-  computeStandings, formOf, homeTeamId, involves, isPlayed, matchesByDay, matchesOf,
-  nextMatchFor, outcomeFor, sortByDate, teamLogo, teamName, teamShort, OUTCOME_LABEL
+  competitionName, computeStandings, formOf, homeTeamId, involves, isPlayed,
+  matchesByCompetition, matchesOf, nextMatchFor, outcomeFor, sortByDate,
+  standingsCompetitions, teamLogo, teamName, teamShort, OUTCOME_LABEL
 } from './league.js';
 import { initCompo, renderCompo } from './compo.js';
 import { initPacks, renderPacks } from './packs.js';
@@ -449,7 +450,7 @@ function nextFixture(content) {
   const aDomicile = match.homeId === usId(content);
   return {
     matchId: match.id,
-    competition: match.competition || content?.nextMatch?.competition || '',
+    competition: competitionName(champ, match.competitionId) || content?.nextMatch?.competition || '',
     home: { name: teamShort(champ, match.homeId), logo: teamLogo(champ, match.homeId) },
     away: { name: teamShort(champ, match.awayId), logo: teamLogo(champ, match.awayId) },
     kickoff: match.date,
@@ -548,7 +549,8 @@ function renderNews(content) {
         </div>
         <div class="news-card__body">
           <p class="news-card__meta">
-            ${match.competition ? `<span class="chip">${esc(match.competition)}</span>` : ''}
+            ${competitionName(champ, match.competitionId)
+              ? `<span class="chip">${esc(competitionName(champ, match.competitionId))}</span>` : ''}
             ${involves(match, nous) ? `<span class="chip chip--soft">${match.homeId === nous ? 'Domicile' : 'Extérieur'}</span>` : ''}
             ${date ? `<span class="news-card__date">${esc(capitalize(DATE_LONG.format(date)))}</span>` : ''}
           </p>
@@ -581,7 +583,8 @@ function openNewsModal(match) {
     <div class="modal__content">
       <p class="modal__meta">
         ${outcome ? `<span class="badge badge--${outcome}">${OUTCOME_LABEL[outcome]}</span>` : ''}
-        ${match.competition ? `<span class="chip">${esc(match.competition)}</span>` : ''}
+        ${competitionName(champ, match.competitionId)
+          ? `<span class="chip">${esc(competitionName(champ, match.competitionId))}</span>` : ''}
         ${involves(match, nous) ? `<span class="chip chip--soft">${match.homeId === nous ? 'À domicile' : "À l'extérieur"}</span>` : ''}
         ${date ? `<span class="news-card__date">${esc(capitalize(DATE_LONG.format(date)))}</span>` : ''}
       </p>
@@ -604,13 +607,10 @@ function openNewsModal(match) {
  * scores entrés dans l'administration, ce qui interdit à la somme des colonnes
  * de contredire les résultats affichés juste à côté.
  */
-function ladderHTML(content) {
+function ladderHTML(content, competition) {
   const champ = champOf(content);
-  const rows = computeStandings(champ);
-  if (!rows.length) {
-    return soonState('Classement à venir',
-      "Les clubs de la poule s'ajoutent depuis l'onglet « Championnat » de l'administration.");
-  }
+  const rows = computeStandings(champ, competition.id);
+  if (!rows.length) return '';
 
   const nous = usId(content);
   const entete = [
@@ -622,7 +622,7 @@ function ladderHTML(content) {
     <div class="table-scroll">
       <table class="ladder">
         <caption class="ladder__caption">
-          ${esc(champ.title || 'Classement')}${champ.season ? ` — saison ${esc(champ.season)}` : ''}
+          ${esc(competition.name)}${champ.season ? ` — saison ${esc(champ.season)}` : ''}
         </caption>
         <thead>
           <tr>
@@ -654,10 +654,28 @@ function ladderHTML(content) {
     </div>`;
 }
 
+/**
+ * Un classement par compétition qui en tient un. Le championnat et la coupe
+ * n'opposent pas les mêmes clubs : les mélanger n'aurait aucun sens.
+ */
 function renderStandings(content) {
   const zones = ['#standings-grid', '#ladder-full'].map((sel) => $(sel)).filter(Boolean);
   if (!zones.length) return;
-  const html = ladderHTML(content);
+
+  const champ = champOf(content);
+  const tableaux = standingsCompetitions(champ)
+    .map((competition) => ({ competition, html: ladderHTML(content, competition) }))
+    .filter((tableau) => tableau.html);
+
+  const html = tableaux.length
+    ? tableaux.map(({ competition, html: table }, index) => `
+        <section class="ladder-block" data-reveal style="--delay:${index * 80}ms">
+          ${tableaux.length > 1 ? `<h3 class="ladder-block__title">${esc(competition.name)}</h3>` : ''}
+          ${table}
+        </section>`).join('')
+    : soonState('Classement à venir',
+        "Les compétitions et leurs clubs s'ajoutent depuis l'onglet « Championnat » de l'administration.");
+
   zones.forEach((zone) => {
     zone.innerHTML = html;
     initReveal(zone);
@@ -666,7 +684,7 @@ function renderStandings(content) {
 
 /* ══════════════════════════════════════════ Résultats ══ */
 
-function resultRowHTML(content, match, groupe = '') {
+function resultRowHTML(content, match) {
   const champ = champOf(content);
   const nous = usId(content);
   const joue = isPlayed(match);
@@ -693,9 +711,6 @@ function resultRowHTML(content, match, groupe = '') {
       </span>
 
       <span class="result__meta">
-        ${match.competition && match.competition !== groupe
-          ? `<span class="chip chip--soft">${esc(match.competition)}</span>`
-          : ''}
         ${quand ? `<span class="result__when">${esc(quand)}</span>` : ''}
         ${match.title && recit >= 0
           ? `<button class="link-btn" type="button" data-news="${recit}">Le récit</button>`
@@ -708,19 +723,23 @@ function renderResults(content) {
   const zone = $('#results-list');
   if (!zone) return;
 
-  const groupes = matchesByDay(champOf(content));
-  if (!groupes.length) {
+  const blocs = matchesByCompetition(champOf(content));
+  if (!blocs.length) {
     zone.innerHTML = soonState('Saison à venir',
       "Les rencontres s'ajoutent depuis l'onglet « Championnat » de l'administration.");
     return;
   }
 
-  zone.innerHTML = groupes.map((groupe, index) => `
-    <section class="matchday" data-reveal style="--delay:${index * 60}ms">
-      <h3 class="matchday__title">${esc(groupe.label)}</h3>
-      <ul class="matchday__list">
-        ${groupe.matches.map((match) => resultRowHTML(content, match, groupe.label)).join('')}
-      </ul>
+  zone.innerHTML = blocs.map(({ competition, days }, index) => `
+    <section class="competition" data-reveal style="--delay:${index * 60}ms">
+      <h3 class="competition__title">${esc(competition.name)}</h3>
+      ${days.map((groupe) => `
+        <div class="matchday">
+          ${days.length > 1 || groupe.day ? `<h4 class="matchday__title">${esc(groupe.label)}</h4>` : ''}
+          <ul class="matchday__list">
+            ${groupe.matches.map((match) => resultRowHTML(content, match)).join('')}
+          </ul>
+        </div>`).join('')}
     </section>`).join('');
 
   initReveal(zone);

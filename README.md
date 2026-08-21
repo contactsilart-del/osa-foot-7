@@ -210,7 +210,7 @@ Rendez-vous sur `/admin/` et connectez-vous avec `ADMIN_PASSWORD`.
 
 | Onglet | Ce qu'on y fait |
 |---|---|
-| **Championnat** | Les clubs de la poule (nom, abréviation, écusson, points de pénalité), le barème de points, et **tous les matchs de la saison** : journée, compétition, coup d'envoi, équipes, score, et un récit facultatif (titre, buteurs, accroche, texte, photo) |
+| **Championnat** | Les **compétitions** (championnat, coupe, amicaux) avec leurs clubs et leur classement, le **catalogue des clubs** (nom, abréviation, écusson, pénalités), le barème de points, et **tous les matchs de la saison** : compétition, journée, coup d'envoi, équipes, score, et un récit facultatif (titre, buteurs, accroche, texte, photo) |
 | **Effectif** | Joueurs mis en avant (« en forme », « à surveiller »…), puis les fiches repliées en accordéon : photo, identité, numéro de maillot, âge, nationalité, poste (gardien, défenseur, milieu, attaquant, coach), année d'arrivée, étoiles mauvais pied et gestes techniques, 6 notes sur 99 (jeu de notes propre aux gardiens, aucune pour le staff), note générale, compagne, descriptif, valeur marchande |
 | **Stats saison** | Neuf classements (buteurs, passeurs, CSC, penaltys concédés, matchs joués, présence à l'entraînement, buts sur coup franc, buts sur penalty, arrêts) : un compteur par joueur de l'effectif, plus le titre, l'unité, la couleur, l'icône et le poste concerné de chaque colonne. Les 3 premiers forment le podium, le reste se déroule à la demande |
 | **Palmarès** | Titres et distinctions : année, intitulé, compétition, place obtenue, précisions, photo, et une case « mettre en avant » qui passe la médaille en trophée |
@@ -265,6 +265,27 @@ marqués/encaissés, différence, points — se calcule à partir des scores sai
 dans l'onglet Championnat. Les colonnes ne peuvent donc pas contredire les
 résultats affichés juste à côté.
 
+### Les compétitions
+
+Une saison, plusieurs compétitions : le championnat, la coupe, les amicaux.
+Chacune a **ses clubs** et, si vous le voulez, **son propre classement** — le
+championnat et la coupe n'opposent pas les mêmes équipes.
+
+| Réglage | Effet |
+|---|---|
+| **Nom** | Titre du bloc sur la page Résultats et du tableau de classement |
+| **Tenir un classement** | Décoché pour les amicaux : on les joue, on ne les compte pas |
+| **Clubs engagés** | Seuls ces clubs sont proposés à la saisie d'un match de cette compétition |
+
+Les clubs vivent dans un **catalogue commun** : un club qui joue le championnat
+et la coupe n'existe qu'une fois, avec un seul écusson. Cochez-le simplement
+dans les deux compétitions. Le bouton « Créer un club dans cette compétition »
+l'ajoute au catalogue **et** l'y inscrit d'un coup.
+
+Chaque match désigne sa compétition, et c'est elle — pas un drapeau posé sur le
+match — qui décide du classement où il pèse. Deux réglages pour une même
+question finissent toujours par se contredire.
+
 Une seule saisie alimente cinq endroits du site :
 
 | Ce que vous saisissez | Ce qui se met à jour |
@@ -277,12 +298,10 @@ Points d'attention :
 
 - **Saisissez aussi les matchs entre les autres clubs**, sinon leur classement
   reste à zéro et le tableau ne veut plus rien dire.
-- Un match de **coupe ou d'amical** : décochez « Compte pour le classement ».
-  Il nourrit alors la forme du moment sans peser sur le tableau.
-- Un **adversaire rencontré hors championnat** (amical, coupe) : décochez
-  « Participe au championnat » sur sa fiche. Il garde ses matchs, sa place aux
-  résultats et ses pronostics, mais disparaît du classement de la poule. Le
-  réglage est deviné à la première mise à jour, d'après les matchs déjà saisis.
+- **Saisissez les matchs dans la bonne compétition** : c'est ce qui les range
+  dans le bon classement et dans le bon bloc de la page Résultats.
+- Un adversaire d'amical n'apparaît dans **aucun** classement, tant qu'il n'est
+  inscrit qu'à une compétition qui n'en tient pas.
 - La **forme du moment** (cinq carrés vert / gris / rouge sous les écussons de
   l'accueil) reprend les cinq derniers matchs joués, coupe comprise, du plus
   ancien au plus récent.
@@ -294,7 +313,10 @@ Points d'attention :
   confirmation. Si vous le faites quand même, le club est recréé
   automatiquement sous un nom deviné depuis son identifiant (« us-autan » →
   « Us Autan »), visible dans l'onglet Championnat où il n'y a plus qu'à le
-  renommer. Pour le faire disparaître vraiment, supprimez d'abord ses matchs.
+  renommer. Pour le faire disparaître vraiment, retirez-le d'abord de ses
+  compétitions et supprimez ses matchs.
+- **Supprimer une compétition** qui compte des matchs est signalé de même : ces
+  matchs seront rattachés à la première compétition restante, jamais perdus.
 
 ### Pronostics (`/resultats#pronos`)
 

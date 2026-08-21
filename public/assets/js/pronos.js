@@ -11,7 +11,8 @@
  */
 
 import {
-  isPredictable, predictableMatches, teamLogo, teamName, teamShort, kickoffTime, nextMatchFor
+  competitionName, isPredictable, predictableMatches, teamLogo, teamName, teamShort,
+  kickoffTime, nextMatchFor
 } from './league.js';
 
 const $ = (sel, root = document) => root.querySelector(sel);
@@ -296,7 +297,8 @@ function pronoFormHTML(match, index) {
     <form class="prono" data-match="${esc(match.id)}">
       <p class="prono__meta">
         ${match.day ? `<span class="chip">${match.day}${match.day === 1 ? 're' : 'e'} journée</span>` : ''}
-        ${match.competition ? `<span class="chip chip--soft">${esc(match.competition)}</span>` : ''}
+        ${competitionName(champ(), match.competitionId)
+          ? `<span class="chip chip--soft">${esc(competitionName(champ(), match.competitionId))}</span>` : ''}
         <span class="prono__when">${esc(whenLabel(match))}</span>
       </p>
 

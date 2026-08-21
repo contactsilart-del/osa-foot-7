@@ -2868,8 +2868,32 @@ ul, ol { list-style: none; padding: 0; }
 .ladder tbody tr.is-us { background: color-mix(in srgb, var(--brand-600) 9%, transparent); }
 .ladder tbody tr.is-us .ladder__name { color: var(--brand-600); font-weight: 900; }
 
+/* ── Un tableau par compétition ── */
+.ladder-block + .ladder-block { margin-top: clamp(1.6rem, 4vw, 2.4rem); }
+.ladder-block__title {
+  margin-bottom: .7rem;
+  font-family: var(--font-display);
+  font-size: 1.05rem;
+  font-weight: 900;
+  letter-spacing: .06em;
+  text-transform: uppercase;
+}
+.section--dark .ladder-block__title { color: var(--dark-ink); }
+
 /* ── Résultats, journée par journée ── */
 .results { display: grid; gap: clamp(1.2rem, 3vw, 1.9rem); }
+.competition + .competition { margin-top: clamp(1.8rem, 4vw, 2.6rem); }
+.competition__title {
+  margin-bottom: .9rem;
+  padding-bottom: .5rem;
+  border-bottom: 2px solid var(--brand-600);
+  font-family: var(--font-display);
+  font-size: clamp(1.05rem, 2.5vw, 1.25rem);
+  font-weight: 900;
+  letter-spacing: .04em;
+}
+.competition .matchday + .matchday { margin-top: 1.1rem; }
+
 .matchday__title {
   font-family: var(--font-display);
   font-size: .95rem;

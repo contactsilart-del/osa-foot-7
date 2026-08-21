@@ -285,6 +285,27 @@ function teamOptions(teams) {
   ];
 }
 
+function competitions() {
+  return state.draft.championship?.competitions || [];
+}
+
+function competitionOptions() {
+  return competitions().map((competition) => ({ value: competition.id, label: competition.name }));
+}
+
+/**
+ * Les clubs proposés pour un match : ceux de sa compétition, et rien d'autre.
+ * C'est tout l'intérêt d'avoir des compétitions — ne plus chercher un club de
+ * coupe au milieu de la poule du championnat.
+ */
+function teamsForCompetition(competitionId) {
+  const competition = competitions().find((c) => c.id === competitionId);
+  const catalogue = state.draft.championship?.teams || [];
+  if (!competition) return catalogue;
+  const inscrits = new Set(competition.teamIds || []);
+  return catalogue.filter((team) => inscrits.has(team.id));
+}
+
 function teamLabel(teams, id) {
   return teams.find((team) => team.id === id)?.name || '—';
 }
@@ -335,13 +356,31 @@ function renderChampionship() {
 
     <section class="a-card">
       <header class="a-card__head">
-        <div><h2>Clubs de la poule</h2><p>${teams.length} club${teams.length > 1 ? 's' : ''} au tableau.</p></div>
+        <div>
+          <h2>Compétitions</h2>
+          <p>Championnat, coupe, amicaux : chacune a ses clubs et, si vous le voulez, son classement.</p>
+        </div>
+        <button class="a-btn a-btn--primary a-btn--sm" type="button" data-add="competition">+ Ajouter une compétition</button>
+      </header>
+      <div class="a-card__body">
+        ${competitions().length
+          ? `<div class="repeat">${competitions().map(competitionEditor).join('')}</div>`
+          : '<p class="empty-state">Aucune compétition. Ajoutez-en une avant de saisir des matchs.</p>'}
+      </div>
+    </section>
+
+    <section class="a-card">
+      <header class="a-card__head">
+        <div>
+          <h2>Tous les clubs</h2>
+          <p>${teams.length} club${teams.length > 1 ? 's' : ''} — nom, écusson et pénalités. L'inscription aux compétitions se règle au-dessus.</p>
+        </div>
         <button class="a-btn a-btn--primary a-btn--sm" type="button" data-add="team">+ Ajouter un club</button>
       </header>
       <div class="a-card__body">
         ${teams.length
           ? `<div class="repeat">${teams.map(teamEditor).join('')}</div>`
-          : '<p class="empty-state">Aucun club. Commencez par ajouter les équipes de la poule.</p>'}
+          : '<p class="empty-state">Aucun club. Ajoutez-en depuis une compétition, ou ici.</p>'}
       </div>
     </section>
 
@@ -360,23 +399,70 @@ function renderChampionship() {
     </section>`;
 }
 
+function competitionEditor(competition, index) {
+  const path = `championship.competitions.${index}`;
+  const catalogue = state.draft.championship?.teams || [];
+  const inscrits = new Set(competition.teamIds || []);
+  const matchs = (state.draft.championship?.matches || [])
+    .filter((match) => match.competitionId === competition.id).length;
+
+  return `
+    <article class="repeat__item">
+      ${repeatHead('championship.competitions', index,
+        `${competition.name || 'Nouvelle compétition'} · ${inscrits.size} club${inscrits.size > 1 ? 's' : ''}`)}
+      <div class="repeat__body">
+        <div class="a-grid a-grid--2">
+          ${field('Nom', `${path}.name`, { placeholder: 'Championnat D2 UFOLEP' })}
+          ${field('Tenir un classement', `${path}.standings`, {
+            type: 'checkbox',
+            hint: 'Décochez pour les amicaux : on les joue, on ne les compte pas.'
+          })}
+        </div>
+
+        <div class="a-field">
+          <span class="a-field__label">Clubs engagés</span>
+          ${catalogue.length ? `
+            <div class="a-checks">
+              ${catalogue.map((team) => `
+                <label class="a-check">
+                  <input type="checkbox" data-competition="${esc(competition.id)}" data-team="${esc(team.id)}"
+                         ${inscrits.has(team.id) ? 'checked' : ''}>
+                  <span>${esc(team.name || team.id)}</span>
+                </label>`).join('')}
+            </div>`
+            : '<p class="a-hint">Aucun club au catalogue pour l\'instant.</p>'}
+          <small class="a-hint">
+            ${matchs} match${matchs > 1 ? 's' : ''} rattaché${matchs > 1 ? 's' : ''} à cette compétition.
+            Seuls les clubs cochés seront proposés à la saisie d'un match.
+          </small>
+        </div>
+
+        <button class="a-btn a-btn--sm" type="button" data-add="team-in" data-competition="${esc(competition.id)}">
+          + Créer un club dans cette compétition
+        </button>
+      </div>
+    </article>`;
+}
+
+/** « Carlus · Championnat D2 UFOLEP, Coupe » — où ce club joue. */
+function engagements(team) {
+  const dans = competitions()
+    .filter((competition) => (competition.teamIds || []).includes(team.id))
+    .map((competition) => competition.name);
+  return `${team.name || 'Nouveau club'}${dans.length ? ` · ${dans.join(', ')}` : ' · aucune compétition'}`;
+}
+
 function teamEditor(team, index) {
   const path = `championship.teams.${index}`;
   return `
     <article class="repeat__item">
-      ${repeatHead('championship.teams', index,
-        `${team.name || 'Nouveau club'}${team.inLeague === false ? ' · hors championnat' : ''}`)}
+      ${repeatHead('championship.teams', index, engagements(team))}
       <div class="repeat__body">
         <div class="a-grid a-grid--3">
           ${field('Nom', `${path}.name`, { placeholder: 'Carlus' })}
           ${field('Abréviation', `${path}.short`, { placeholder: 'Carlus', hint: 'Utilisée là où la place manque.' })}
           ${field('Points de pénalité', `${path}.penalty`, { type: 'number', hint: 'Retirés du total. 0 dans presque tous les cas.' })}
         </div>
-        ${field('Participe au championnat', `${path}.inLeague`, {
-          type: 'checkbox',
-          hint: 'Décochez pour un adversaire rencontré seulement en amical ou en coupe : '
-            + 'il garde ses matchs et sa place aux résultats, mais disparaît du classement.'
-        })}
         ${imageField('Écusson', `${path}.logo`)}
       </div>
     </article>`;
@@ -385,7 +471,9 @@ function teamEditor(team, index) {
 function matchEditor(match, index) {
   const path = `championship.matches.${index}`;
   const teams = state.draft.championship?.teams || [];
-  const options = teamOptions(teams);
+  // Le choix se restreint aux clubs de la compétition : c'est la raison d'être
+  // des compétitions, et cela empêche d'opposer un club de coupe à la poule.
+  const options = teamOptions(teamsForCompetition(match.competitionId));
   const ouverte = state.openEditor === index;
   const titre = `${teamLabel(teams, match.homeId)} — ${teamLabel(teams, match.awayId)} · ${matchSummary(match)}`;
 
@@ -394,8 +482,12 @@ function matchEditor(match, index) {
       ${repeatHead('championship.matches', index, titre, { collapsible: true })}
       <div class="repeat__body">
         <div class="a-grid a-grid--3">
-          ${field('Journée', `${path}.day`, { type: 'number', hint: '0 pour une coupe ou un amical.' })}
-          ${field('Compétition', `${path}.competition`, { placeholder: '6e journée' })}
+          ${field('Compétition', `${path}.competitionId`, {
+            type: 'select',
+            options: competitionOptions(),
+            hint: 'Détermine les clubs proposés ci-dessous, et le classement concerné.'
+          })}
+          ${field('Journée', `${path}.day`, { type: 'number', hint: '0 pour un tour de coupe ou un amical.' })}
           ${field('Coup d\'envoi', `${path}.date`, { type: 'datetime', hint: 'Indispensable pour ouvrir les pronostics.' })}
         </div>
 
@@ -422,10 +514,6 @@ function matchEditor(match, index) {
           </div>
         </div>
 
-        ${field('Compte pour le classement', `${path}.ranked`, {
-          type: 'checkbox',
-          hint: 'Décochez pour une coupe ou un amical : le match nourrit la forme du moment sans peser au tableau.'
-        })}
         ${field('Lieu', `${path}.venue`, { placeholder: 'Stade de Saint-Affrique-les-Montagnes', hint: 'Facultatif.' })}
 
         <p class="a-hint a-hint--section">
@@ -1158,6 +1246,20 @@ function refreshCounts() {
 function onFieldChange(event) {
   const input = event.target;
 
+  /* Inscription d'un club à une compétition. */
+  if (input.dataset.competition !== undefined && input.dataset.team !== undefined) {
+    const competition = competitions().find((c) => c.id === input.dataset.competition);
+    if (competition) {
+      const inscrits = new Set(competition.teamIds || []);
+      if (input.checked) inscrits.add(input.dataset.team);
+      else inscrits.delete(input.dataset.team);
+      competition.teamIds = [...inscrits];
+    }
+    refreshDirtyState();
+    // Les listes déroulantes des matchs suivent immédiatement.
+    return renderTab();
+  }
+
   /*
    * Score d'un match. Un champ vide vaut `null`, pas zéro : c'est ce qui
    * distingue un match à venir d'un match perdu 0-0.
@@ -1197,6 +1299,18 @@ function onFieldChange(event) {
   if (/\.(title|name|caption)$/.test(path)) {
     const label = input.closest('.repeat__item')?.querySelector('.repeat__label');
     if (label) label.textContent = value || '—';
+  }
+
+  // Changer de compétition change les clubs proposés : il faut redessiner.
+  if (/^championship\.matches\.\d+\.competitionId$/.test(path)) {
+    refreshDirtyState();
+    return renderTab();
+  }
+
+  // Renommer une compétition se répercute sur les en-têtes et les listes.
+  if (/^championship\.competitions\.\d+\.name$/.test(path)) {
+    refreshDirtyState();
+    return renderTab();
   }
 
   // Changer une équipe met à jour l'en-tête replié du match.
@@ -1253,9 +1367,10 @@ function newId(prefixe) {
 }
 
 const BLANK = {
-  team: () => ({ id: newId('club'), name: 'Nouveau club', short: '', logo: '', penalty: 0, inLeague: true }),
+  competition: () => ({ id: newId('competition'), name: 'Nouvelle compétition', standings: true, teamIds: [] }),
+  team: () => ({ id: newId('club'), name: 'Nouveau club', short: '', logo: '', penalty: 0 }),
   match: () => ({
-    id: newId('match'), day: 0, competition: '', ranked: true, date: '', venue: '',
+    id: newId('match'), competitionId: '', day: 0, date: '', venue: '',
     homeId: '', awayId: '', homeScore: null, awayScore: null,
     title: '', excerpt: '', body: '', image: '', scorers: []
   }),
@@ -1281,6 +1396,17 @@ const BLANK = {
  * on annonce desormais la consequence avant, pas apres.
  */
 function removalWarning(listPath, element) {
+  if (listPath === 'championship.competitions' && element?.id) {
+    const matchs = (state.draft.championship?.matches || [])
+      .filter((match) => match.competitionId === element.id);
+    if (matchs.length) {
+      return `« ${element.name || element.id} » compte ${matchs.length} match`
+        + `${matchs.length > 1 ? 's' : ''}. Les supprimer avec elle ?\n\n`
+        + 'Sinon, ils seront rattachés à la première compétition restante.\n\n'
+        + 'Supprimer la compétition ?';
+    }
+  }
+
   if (listPath === 'championship.teams' && element?.id) {
     const matchs = (state.draft.championship?.matches || [])
       .filter((match) => match.homeId === element.id || match.awayId === element.id);
@@ -1308,16 +1434,34 @@ function onPanelClick(event) {
   }
 
   /* — Ajouts — */
+  if (target.dataset.add === 'competition') {
+    ((state.draft.championship ||= {}).competitions ||= []).push(BLANK.competition());
+    return renderTab();
+  }
   if (target.dataset.add === 'team') {
     ((state.draft.championship ||= {}).teams ||= []).push(BLANK.team());
     return renderTab();
   }
+  if (target.dataset.add === 'team-in') {
+    // Un club créé depuis une compétition y est inscrit d'emblée : sinon il
+    // faudrait le cocher juste après, sans raison.
+    const champ = (state.draft.championship ||= {});
+    const club = BLANK.team();
+    (champ.teams ||= []).push(club);
+    const competition = (champ.competitions || []).find((c) => c.id === target.dataset.competition);
+    if (competition) (competition.teamIds ||= []).push(club.id);
+    return renderTab();
+  }
   if (target.dataset.add === 'match') {
     const champ = (state.draft.championship ||= {});
-    const equipes = champ.teams || [];
     const nouveau = BLANK.match();
-    // Deux clubs pré-remplis : on ne s'ouvre pas sur un formulaire vide.
-    nouveau.homeId = champ.homeTeamId || equipes[0]?.id || '';
+    nouveau.competitionId = (champ.competitions || [])[0]?.id || '';
+    // Deux clubs pré-remplis, pris dans la compétition : on ne s'ouvre pas sur
+    // un formulaire vide.
+    const equipes = teamsForCompetition(nouveau.competitionId);
+    nouveau.homeId = equipes.some((team) => team.id === champ.homeTeamId)
+      ? champ.homeTeamId
+      : (equipes[0]?.id || '');
     nouveau.awayId = (equipes.find((team) => team.id !== nouveau.homeId) || {}).id || '';
     (champ.matches ||= []).unshift(nouveau);
     state.openEditor = 0;
