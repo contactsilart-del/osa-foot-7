@@ -607,6 +607,25 @@ cookies déposés par le site lui-même se comptent sur deux doigts
 (`osa_session` pour l'administration, `osa_player` pour les comptes
 supporters), tous deux strictement nécessaires au service demandé.
 
+**Un réglage Cloudflare retarde les mises en ligne.** Dans le tableau de bord
+de la zone, *Caching → Configuration → **Browser Cache TTL*** est sur
+« 4 hours ». Cloudflare relève alors à 14 400 s toute durée de vie plus courte
+demandée par `_headers` — mesuré : `no-cache` et `max-age=60` ressortent tous
+deux à `max-age=14400`, tandis que `max-age=604800` passe intact. Le plancher
+tient au **type de fichier**, pas au chemin : renommer un dossier n'y change
+rien.
+
+Conséquence : après un déploiement, un visiteur venu dans les quatre dernières
+heures continue de voir l'ancien CSS et l'ancien JavaScript — son navigateur ne
+redemande même pas. Un rechargement forcé (`Ctrl+F5`, `Cmd+Shift+R`) le
+débloque, une navigation privée aussi.
+
+**La correction tient en un clic** : basculer ce réglage sur « **Respect
+Existing Headers** ». `public/_headers` demande déjà `max-age=0,
+must-revalidate` pour `/assets/*` ; la règle prendra effet le jour même. Le
+contenu édité depuis l'administration n'est pas concerné : il vient de
+`/api/content`, qui n'est jamais mis en cache.
+
 **Le schéma D1 est auto-créé.** `lib/store.js` intercepte l'erreur
 « no such table », applique le schéma puis rejoue la requête. Aucune migration
 manuelle n'est nécessaire au premier déploiement.

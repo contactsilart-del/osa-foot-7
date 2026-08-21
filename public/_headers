@@ -8,26 +8,31 @@
 
 # Le CSS et le JS ne portent pas d'empreinte dans leur nom : toute duree de vie
 # non nulle repousse d'autant l'arrivee d'un correctif chez un visiteur deja
-# venu — et il n'y a aucun moyen de le rattraper entre-temps.
+# venu, sans aucun moyen de le rattraper entre-temps. D'ou `max-age=0,
+# must-revalidate` : le navigateur redemande a chaque fois, et le serveur
+# repond « 304, rien de neuf » tant que le fichier n'a pas bouge.
 #
-# `max-age=0, must-revalidate` : le navigateur redemande a chaque fois, et le
-# serveur repond « 304, rien de neuf » tant que le fichier n'a pas bouge. Le
-# cout est celui d'un aller-retour de quelques centaines d'octets par fichier ;
-# le gain, une mise en ligne visible immediatement, sans demander a personne de
-# vider son cache.
+# ATTENTION — ce reglage est aujourd'hui SANS EFFET, et la cause n'est pas ici.
+# Le tableau de bord Cloudflare (Caching > Configuration > Browser Cache TTL)
+# est regle sur « 4 hours » : Cloudflare releve alors toute duree plus courte a
+# 14 400 s avant de repondre. Mesure faite le 21 aout 2026, sur trois chemins :
 #
-# `stale-while-revalidate` est banni ici : il rendait la reponse perimee
-# *immediatement*, donc un panel d'administration pouvait tourner sur l'ancien
-# code apres une mise a jour, meme apres Ctrl+F5. Pire, il fige aussi les
-# en-tetes — un objet garde en cache continue d'annoncer l'ancienne politique,
-# ce qui donne l'illusion que la nouvelle n'est pas appliquee.
+#   /assets/*  demande no-cache        -> servi max-age=14400   (releve)
+#   /sonde/*   demande max-age=60      -> servi max-age=14400   (releve)
+#   /img/*     demande max-age=604800  -> servi max-age=604800  (respecte)
+#
+# Le plancher tient donc au type de fichier, pas au chemin : renommer le
+# dossier n'y changerait rien. La seule correction est de basculer ce reglage
+# sur « Respect Existing Headers » dans le tableau de bord ; la regle ci-dessous
+# prendra effet le jour meme, sans rien changer au depot.
+#
+# `stale-while-revalidate` est banni ici : il rend la reponse perimee
+# *immediatement*, donc un panel d'administration peut tourner sur l'ancien code
+# apres une mise a jour, meme apres Ctrl+F5. Pire, il fige aussi les en-tetes —
+# un objet garde en cache continue d'annoncer l'ancienne politique, ce qui donne
+# l'illusion qu'une nouvelle regle n'est pas appliquee.
 /assets/*
-  Cache-Control: no-cache
-
-# Sonde temporaire : le plancher de 4 h tient-il au chemin /assets/ ou au type
-# de fichier ? Meme extension, autre dossier, duree de vie courte.
-/sonde/*
-  Cache-Control: public, max-age=60
+  Cache-Control: public, max-age=0, must-revalidate
 
 /img/*
   Cache-Control: public, max-age=604800, must-revalidate
