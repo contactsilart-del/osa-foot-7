@@ -74,8 +74,15 @@ export function autoBets(content) {
 
   const champ = championshipOf(content);
   const rewards = { ...DEFAULT_MATCH_REWARDS, ...(bets.matchRewards || {}) };
+  /*
+   * Seul un pari de score saisi a la main remplace celui du match : c'est la
+   * meme question, elle ne doit pas etre posee deux fois. Un pari « qui marque
+   * en premier ? » rattache au meme match, lui, s'ajoute — le supprimer
+   * emporterait le pronostic de score sans que personne ne l'ait demande.
+   */
   const repris = new Set(
-    (bets.items || []).map((item) => item?.matchId).filter(Boolean)
+    (bets.items || []).filter((item) => item?.type === 'score')
+      .map((item) => item.matchId).filter(Boolean)
   );
 
   return matchesOf(champ)
@@ -182,6 +189,13 @@ export function openBets(content, now = Date.now()) {
  * « Victoire de Carlus » à la main, c'est se tromper le jour où l'on corrige
  * l'affiche.
  */
+/** « Victoire de Cambon », mais « Victoire d'OSA ». */
+const COMMENCE_PAR_VOYELLE = /^[aeiouyàâäéèêëîïôöûü]/i;
+
+function elide(nom) {
+  return COMMENCE_PAR_VOYELLE.test(nom) ? `d’${nom}` : `de ${nom}`;
+}
+
 export function optionsOf(content, bet) {
   if (bet?.type !== 'result') {
     return (bet?.options || []).filter((option) => option && option.id);
@@ -189,9 +203,9 @@ export function optionsOf(content, bet) {
   const champ = championshipOf(content);
   const match = matchOf(content, bet);
   return [
-    { id: '1', label: match ? `Victoire de ${teamName(champ, match.homeId)}` : 'Victoire à domicile' },
+    { id: '1', label: match ? `Victoire ${elide(teamName(champ, match.homeId))}` : 'Victoire à domicile' },
     { id: 'N', label: 'Match nul' },
-    { id: '2', label: match ? `Victoire de ${teamName(champ, match.awayId)}` : 'Victoire à l’extérieur' }
+    { id: '2', label: match ? `Victoire ${elide(teamName(champ, match.awayId))}` : 'Victoire à l’extérieur' }
   ];
 }
 
@@ -273,6 +287,79 @@ export function scaleOf(bet) {
   return paliers
     .map((outcome) => ({ outcome, label: outcomeLabel(bet, outcome), packs: rewardOf(bet, outcome) }))
     .filter((palier) => palier.packs > 0);
+}
+
+/* ═══════════════════════════════════ Répartition ══ */
+
+/**
+ * Comment les autres ont répondu.
+ *
+ * Le décompte arrive du serveur sous sa forme la plus brute — une réponse, un
+ * nombre. C'est ici qu'il devient lisible, et la présentation dépend de la
+ * nature du pari : sur un score, chacun tape le sien, et lister « 3-1 : une
+ * personne » quarante fois n'apprendrait rien. On regroupe donc par issue, en
+ * gardant à part les trois scores les plus joués.
+ *
+ * @param {object} tally  réponse → nombre de mises
+ * @param {string} mienne la réponse du visiteur, mise en évidence
+ * @returns {{total: number, rows: Array, top: Array}}
+ */
+export function tallyRows(content, bet, tally = {}, mienne = '') {
+  const brut = Object.entries(tally || {})
+    .map(([answer, count]) => [answer, Number(count) || 0])
+    .filter(([, count]) => count > 0);
+  const total = brut.reduce((somme, [, count]) => somme + count, 0);
+  if (!total) return { total: 0, rows: [], top: [] };
+
+  const part = (count) => Math.round((count / total) * 100);
+
+  if (bet?.type === 'score') {
+    const parIssue = { 1: 0, N: 0, 2: 0 };
+    for (const [answer, count] of brut) {
+      const score = parseScore(answer);
+      if (score) parIssue[resultKey(score.home, score.away)] += count;
+    }
+    const mien = parseScore(mienne);
+    const issueMienne = mien ? resultKey(mien.home, mien.away) : '';
+
+    return {
+      total,
+      // Les libellés d'un pari 1/N/2 nomment déjà les deux clubs : on les reprend.
+      rows: optionsOf(content, { ...bet, type: 'result' }).map((option) => ({
+        id: option.id,
+        label: option.label,
+        count: parIssue[option.id],
+        share: part(parIssue[option.id]),
+        mine: option.id === issueMienne
+      })),
+      top: brut
+        .sort((a, b) => b[1] - a[1] || a[0].localeCompare(b[0]))
+        .slice(0, 3)
+        .map(([answer, count]) => ({
+          id: answer,
+          label: answerLabel(content, bet, answer),
+          count,
+          share: part(count),
+          mine: answer === mienne
+        }))
+    };
+  }
+
+  const compte = new Map(brut);
+  return {
+    total,
+    rows: optionsOf(content, bet).map((option) => {
+      const count = compte.get(option.id) || 0;
+      return {
+        id: option.id,
+        label: option.label,
+        count,
+        share: part(count),
+        mine: option.id === mienne
+      };
+    }),
+    top: []
+  };
 }
 
 /** Comment s'affiche une mise déjà posée. */

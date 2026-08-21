@@ -14,9 +14,10 @@
 
 import {
   allBets, answerLabel, betById, betStatus, correctAnswers, deadlineOf, isOpen,
-  matchOf, openBets, optionsOf, outcomeLabel, parseScore, scaleOf, scoreAnswer
+  matchOf, openBets, optionsOf, outcomeLabel, parseScore, scaleOf, scoreAnswer,
+  tallyRows
 } from './bets.js';
-import { teamLogo, teamName, teamShort, competitionName } from './league.js';
+import { competitionName, nextMatchFor, teamLogo, teamName, teamShort } from './league.js';
 
 const $ = (sel, root = document) => root.querySelector(sel);
 const $$ = (sel, root = document) => Array.from(root.querySelectorAll(sel));
@@ -37,11 +38,20 @@ const state = {
   /** betId → { answer, settled, outcome, awarded } */
   wagers: new Map(),
   board: [],
+  /** betId → { réponse: nombre }, seulement pour les paris qu'on a le droit de voir. */
+  tallies: {},
   busy: false,
   loaded: false,
   /** Pari du héros où l'invitation à se connecter est affichée. */
-  invite: ''
+  invite: '',
+  /** Diapositive affichée dans le carrousel du héros. */
+  slide: 0,
+  /** Le défilement s'arrête tant que le visiteur s'occupe du bloc. */
+  pause: false
 };
+
+/** Cadence du carrousel du héros. Assez lent pour lire, assez vif pour vivre. */
+const CADENCE = 7000;
 
 /* ══════════════════════════════ Pari en attente ══ */
 
@@ -124,6 +134,7 @@ function absorb(payload) {
   state.wagers = new Map(
     (Array.isArray(payload.wagers) ? payload.wagers : []).map((mise) => [mise.betId, mise])
   );
+  if (payload.tallies && typeof payload.tallies === 'object') state.tallies = payload.tallies;
   state.loaded = true;
 }
 
@@ -144,6 +155,7 @@ async function envoyerAttente() {
       body: JSON.stringify({ betId: attente.betId, answer: attente.answer })
     });
     state.wagers.set(attente.betId, payload.wager);
+    if (payload.tally) state.tallies = { ...state.tallies, [attente.betId]: payload.tally };
     garderAttente(null);
     toast(`Pari enregistré : ${answerLabel(contenu(), pari, attente.answer)}. Bonne chance !`);
     return true;
@@ -200,6 +212,44 @@ function baremeHTML(pari) {
           <b>${palier.packs}</b> ${esc(palier.label.toLowerCase())}
         </span>`).join('')}
     </span>`;
+}
+
+/* ────────────────────────────── Répartition ── */
+
+/**
+ * Comment les autres ont répondu.
+ *
+ * Le serveur ne l'envoie qu'une fois qu'on a soi-même répondu, ou que les mises
+ * sont closes : voir la répartition avant de choisir, c'est suivre le troupeau
+ * plutôt que son idée. Rien à afficher tant que `state.tallies` est muet.
+ */
+function oddsHTML(pari, classe = 'prono__odds') {
+  const decompte = state.tallies[pari.id];
+  if (!decompte) return '';
+
+  const mienne = state.wagers.get(pari.id)?.answer || '';
+  const { total, rows, top } = tallyRows(contenu(), pari, decompte, mienne);
+  if (!total) return '';
+
+  const ligne = (entree) => `
+    <li class="odds__row${entree.mine ? ' is-mine' : ''}" style="--share:${entree.share}%">
+      <span class="odds__label">${esc(entree.label)}</span>
+      <span class="odds__bar" aria-hidden="true"><i></i></span>
+      <span class="odds__share">${entree.share}&nbsp;%</span>
+    </li>`;
+
+  return `
+    <div class="${esc(classe)} odds">
+      <p class="odds__head">
+        Réponses des parieurs
+        <small>${total} mise${total > 1 ? 's' : ''}</small>
+      </p>
+      <ul class="odds__list">${rows.map(ligne).join('')}</ul>
+      ${top.length ? `
+        <p class="odds__top">Scores les plus joués&nbsp;:
+          ${top.map((entree) => `<b${entree.mine ? ' class="is-mine"' : ''}>${esc(entree.label)}</b> ${entree.share}&nbsp;%`).join(' · ')}
+        </p>` : ''}
+    </div>`;
 }
 
 /* ─────────────────────────── Champs de réponse ── */
@@ -265,71 +315,160 @@ function etatHTML(pari) {
 
 /* ══════════════════════════════════ Héros ══ */
 
-/** Le pari mis en avant sur l'accueil : le prochain match, à défaut le premier. */
-function pariDuHeros() {
+/**
+ * Les paris du prochain match, dans l'ordre où on veut les voir.
+ *
+ * Le score exact d'abord : c'est celui que tout le monde attend, et le seul qui
+ * existe sur tous les matchs. Viennent ensuite le 1/N/2, puis les questions que
+ * le bureau a inventées. Si aucun pari ne porte sur le prochain match — un mois
+ * sans rencontre programmée, par exemple — on montre les autres plutôt que rien.
+ */
+const RANG_TYPE = { score: 0, result: 1, choice: 2 };
+
+function parisDuHeros() {
   const ouverts = openBets(contenu());
-  if (!ouverts.length) return null;
-  const surUnMatch = ouverts.find((pari) => pari.matchId && pari.type === 'score');
-  return surUnMatch || ouverts[0];
+  if (!ouverts.length) return [];
+
+  const prochain = nextMatchFor(contenu().championship || {});
+  const duMatch = prochain ? ouverts.filter((pari) => pari.matchId === prochain.id) : [];
+  const retenus = duMatch.length ? duMatch : ouverts;
+
+  return [...retenus].sort((a, b) => (RANG_TYPE[a.type] ?? 9) - (RANG_TYPE[b.type] ?? 9));
 }
 
-/**
- * Le pari du prochain match, directement dans le héros. Les champs sont ouverts
- * à tous : c'est en validant, pas avant, qu'on demande un compte.
- */
-function renderHero() {
-  const zone = $('#pronos-hero');
-  if (!zone) return;
-
-  const pari = pariDuHeros();
-  zone.hidden = !pari;
-  if (!pari) { zone.innerHTML = ''; return; }
-
+/** Le contenu d'une diapositive : un pari, prêt à recevoir une réponse. */
+function heroSlideHTML(pari, rang) {
   const champ = contenu().championship || {};
   const match = matchOf(contenu(), pari);
   const mise = state.wagers.get(pari.id);
   const invite = state.invite === pari.id && !state.user;
   const paliers = scaleOf(pari);
+  const prefixe = `hero-prono-${rang}`;
 
   const rappel = paliers.length
     ? paliers.map((palier) => `${palier.label.toLowerCase()} : ${palier.packs}`).join(' · ')
     : 'Réponse juste, packs à la clé';
 
+  const corps = pari.type === 'score' && match
+    ? `
+      <div class="hero-prono__row">
+        <span class="hero-prono__team">${esc(teamShort(champ, match.homeId))}</span>
+        ${controlsHTML(pari, prefixe)}
+        <span class="hero-prono__team">${esc(teamShort(champ, match.awayId))}</span>
+        <button class="btn btn--primary btn--sm" type="submit">${mise ? 'Modifier' : 'Valider'}</button>
+      </div>`
+    : `
+      <p class="hero-prono__question">${esc(pari.question)}</p>
+      <div class="hero-prono__row hero-prono__row--choice">
+        ${controlsHTML(pari, prefixe)}
+        <button class="btn btn--primary btn--sm" type="submit">${mise ? 'Modifier' : 'Valider'}</button>
+      </div>`;
+
+  return `
+    <div class="hero-prono__slide" data-slide="${rang}">
+      <form class="hero-prono__form" data-bet="${esc(pari.id)}">
+        ${corps}
+        ${invite ? `
+          <p class="hero-prono__invite" role="status">
+            Créez votre compte pour enregistrer ce pari — c'est gratuit, et votre
+            réponse est déjà gardée de côté.
+            <a class="btn btn--primary btn--sm" href="/packs?retour=%2F">Créer mon compte</a>
+          </p>`
+        : `
+          <p class="hero-prono__note">
+            ${mise
+              ? `Enregistré : <b>${esc(answerLabel(contenu(), pari, mise.answer))}</b>. Modifiable jusqu'à la clôture.`
+              : esc(rappel)}
+          </p>`}
+        ${oddsHTML(pari, 'hero-prono__odds')}
+      </form>
+    </div>`;
+}
+
+/**
+ * Le carrousel du héros.
+ *
+ * Il défile tout seul, mais s'arrête dès que le visiteur s'en approche : rien
+ * n'est plus agaçant qu'un formulaire qui glisse pendant qu'on le remplit.
+ * `positionHero` déplace la piste sans redessiner, pour ne pas voler le focus.
+ */
+function renderHero() {
+  const zone = $('#pronos-hero');
+  if (!zone) return;
+
+  const paris = parisDuHeros();
+  zone.hidden = !paris.length;
+  if (!paris.length) { zone.innerHTML = ''; return; }
+
+  if (state.slide >= paris.length) state.slide = 0;
+
   zone.innerHTML = `
-    <form class="hero-prono__form" data-bet="${esc(pari.id)}">
-      <p class="hero-prono__title">
-        <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 2 4.5 6v6c0 4.4 3.2 8.5 7.5 9.5 4.3-1 7.5-5.1 7.5-9.5V6L12 2zm-1 5h2v6h-2V7zm0 8h2v2h-2v-2z"/></svg>
-        ${mise ? 'Ton pari' : 'Ton pari ?'}
-      </p>
+    <p class="hero-prono__title">
+      <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 2 4.5 6v6c0 4.4 3.2 8.5 7.5 9.5 4.3-1 7.5-5.1 7.5-9.5V6L12 2zm-1 5h2v6h-2V7zm0 8h2v2h-2v-2z"/></svg>
+      ${paris.length > 1 ? 'Les paris du match' : 'Ton pari ?'}
+    </p>
 
-      ${pari.type === 'score' && match ? `
-        <div class="hero-prono__row">
-          <span class="hero-prono__team">${esc(teamShort(champ, match.homeId))}</span>
-          ${controlsHTML(pari, 'hero-prono')}
-          <span class="hero-prono__team">${esc(teamShort(champ, match.awayId))}</span>
-          <button class="btn btn--primary btn--sm" type="submit">${mise ? 'Modifier' : 'Valider'}</button>
-        </div>`
-      : `
-        <p class="hero-prono__question">${esc(pari.question)}</p>
-        <div class="hero-prono__row hero-prono__row--choice">
-          ${controlsHTML(pari, 'hero-prono')}
-          <button class="btn btn--primary btn--sm" type="submit">${mise ? 'Modifier' : 'Valider'}</button>
-        </div>`}
+    <div class="hero-prono__viewport">
+      <div class="hero-prono__track">
+        ${paris.map(heroSlideHTML).join('')}
+      </div>
+    </div>
 
-      ${invite ? `
-        <p class="hero-prono__invite" role="status">
-          Créez votre compte pour enregistrer ce pari — c'est gratuit, et votre
-          réponse est déjà gardée de côté.
-          <a class="btn btn--primary btn--sm" href="/packs?retour=%2F">Créer mon compte</a>
-        </p>`
-      : `
-        <p class="hero-prono__note">
-          ${mise
-            ? `Enregistré : <b>${esc(answerLabel(contenu(), pari, mise.answer))}</b>. Modifiable jusqu'à la clôture.`
-            : esc(rappel)}
-          <a class="hero-prono__more" href="/pronostics">Tous les paris</a>
-        </p>`}
-    </form>`;
+    <div class="hero-prono__foot">
+      ${paris.length > 1 ? `
+        <span class="hero-prono__dots" role="tablist" aria-label="Paris du match">
+          ${paris.map((pari, rang) => `
+            <button class="hero-prono__dot" type="button" role="tab"
+                    data-slide-to="${rang}" aria-label="${esc(pari.question)}"></button>`).join('')}
+        </span>` : ''}
+      <a class="btn btn--ghost btn--sm hero-prono__more" href="/pronostics">Voir tous les paris
+        <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M13 5l7 7-7 7v-4H4v-6h9V5z"/></svg>
+      </a>
+    </div>`;
+
+  positionHero();
+}
+
+/** Applique la position courante : piste, pastilles, et accessibilité. */
+function positionHero() {
+  const zone = $('#pronos-hero');
+  const piste = $('.hero-prono__track', zone || document);
+  if (!zone || !piste) return;
+
+  const diapos = $$('.hero-prono__slide', zone);
+  if (!diapos.length) return;
+  const actif = Math.min(Math.max(state.slide, 0), diapos.length - 1);
+  state.slide = actif;
+
+  piste.style.transform = `translateX(-${actif * 100}%)`;
+
+  diapos.forEach((diapo, rang) => {
+    const visible = rang === actif;
+    /*
+     * `inert` retire d'un coup les champs cachés du parcours au clavier et des
+     * lecteurs d'écran. Sans lui, une tabulation emmènerait le visiteur dans un
+     * formulaire invisible, hors de l'écran.
+     */
+    diapo.classList.toggle('is-active', visible);
+    if (visible) diapo.removeAttribute('inert');
+    else diapo.setAttribute('inert', '');
+    diapo.setAttribute('aria-hidden', visible ? 'false' : 'true');
+  });
+
+  $$('.hero-prono__dot', zone).forEach((point, rang) => {
+    point.classList.toggle('is-active', rang === actif);
+    point.setAttribute('aria-selected', rang === actif ? 'true' : 'false');
+  });
+}
+
+/** Fait tourner le carrousel, sauf si le visiteur s'en occupe. */
+function avancerHeros() {
+  const zone = $('#pronos-hero');
+  if (!zone || zone.hidden || state.pause) return;
+  const diapos = $$('.hero-prono__slide', zone).length;
+  if (diapos < 2) return;
+  state.slide = (state.slide + 1) % diapos;
+  positionHero();
 }
 
 /* ══════════════════════════════════ Liste ══ */
@@ -389,6 +528,7 @@ function pariHTML(pari) {
         ${etatHTML(pari)}
         ${baremeHTML(pari)}
       </div>
+      ${oddsHTML(pari)}
     </form>`;
 }
 
@@ -597,6 +737,8 @@ async function submitPari(event) {
       body: JSON.stringify({ betId, answer })
     });
     state.wagers.set(betId, payload.wager);
+    // Le pari vient d'être posé : la répartition devient visible pour ce pari-là.
+    if (payload.tally) state.tallies = { ...state.tallies, [betId]: payload.tally };
     state.invite = '';
     garderAttente(null);
     toast('Pari enregistré. Bonne chance !');
@@ -617,6 +759,33 @@ export function initPronos() {
   if (!zones.length) return;
 
   zones.forEach((zone) => zone.addEventListener('submit', submitPari));
+
+  const heros = $('#pronos-hero');
+  if (heros) {
+    heros.addEventListener('click', (event) => {
+      const point = event.target.closest('[data-slide-to]');
+      if (!point) return;
+      state.slide = Number(point.dataset.slideTo) || 0;
+      positionHero();
+    });
+
+    /*
+     * Le défilement s'interrompt dès qu'on survole le bloc ou qu'on y pose le
+     * curseur de saisie, et ne reprend qu'une fois qu'on l'a quitté. Un
+     * formulaire qui glisse pendant qu'on le remplit est une mauvaise farce.
+     */
+    const suspendre = () => { state.pause = true; };
+    const reprendre = () => { state.pause = false; };
+    heros.addEventListener('mouseenter', suspendre);
+    heros.addEventListener('mouseleave', reprendre);
+    heros.addEventListener('focusin', suspendre);
+    heros.addEventListener('focusout', reprendre);
+
+    // Le mouvement automatique n'est pas imposé à qui l'a désactivé.
+    const sobre = window.matchMedia?.('(prefers-reduced-motion: reduce)');
+    if (!sobre?.matches) setInterval(avancerHeros, CADENCE);
+  }
+
   charger();
 }
 

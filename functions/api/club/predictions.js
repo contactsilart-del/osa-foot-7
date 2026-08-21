@@ -15,6 +15,11 @@
  * source, lue par le même module. Les répéter ici les ferait diverger le jour
  * où l'un des deux changerait.
  *
+ * La répartition des réponses n'est envoyée que pour les paris auxquels le
+ * visiteur a déjà répondu, ou qui sont fermés. La montrer avant, c'est décider
+ * à la place du parieur : on suit le troupeau plutôt que son idée. La règle
+ * vaut donc côté serveur, pas seulement à l'écran.
+ *
  * L'adresse garde son nom d'origine : un onglet resté ouvert sur l'ancienne
  * version du site continue de l'appeler, et une page en cache vaut mieux qu'un
  * 404. Le format de la réponse, lui, parle bien de paris.
@@ -23,17 +28,31 @@
 import { json, fail, methodNotAllowed, readJson, isMethod } from '../../../lib/http.js';
 import { checkOrigin, currentUserId, clearedPlayerCookie } from '../../../lib/auth.js';
 import {
-  findUserById, readContent, saveWager, listWagers, topPredictors, runOnce, importPredictions
+  findUserById, readContent, saveWager, listWagers, topPredictors, runOnce,
+  importPredictions, tallyWagers
 } from '../../../lib/store.js';
 import { settleUserWagers } from '../../../lib/settle.js';
 import { DEFAULT_CONTENT, migrateContent } from '../../../public/assets/js/content.js';
-import { betById, isOpen, normalizeAnswer } from '../../../public/assets/js/bets.js';
+import { allBets, betById, isOpen, normalizeAnswer } from '../../../public/assets/js/bets.js';
 
 /** Le contenu du site tel qu'il est affiché, migrations comprises. */
 async function siteContent(env) {
   const stored = await readContent(env.DB);
   const content = stored?.content ? migrateContent(stored.content) : null;
   return content && typeof content === 'object' ? content : DEFAULT_CONTENT;
+}
+
+/**
+ * La répartition des réponses, restreinte à ce que le visiteur a le droit de
+ * voir : les paris où il s'est déjà engagé, et ceux dont les mises sont closes.
+ */
+function visibleTallies(content, toutes, joues, now) {
+  const filtre = {};
+  for (const bet of allBets(content)) {
+    if (!toutes[bet.id]) continue;
+    if (joues.has(bet.id) || !isOpen(content, bet, now)) filtre[bet.id] = toutes[bet.id];
+  }
+  return filtre;
 }
 
 /** Ce qu'on renvoie au navigateur pour une mise. */
@@ -72,13 +91,16 @@ async function handleGet(request, env) {
   }
 
   const board = await topPredictors(env.DB);
+  const toutes = await tallyWagers(env.DB);
+  const now = Date.now();
+  const closes = () => visibleTallies(content, toutes, new Set(), now);
 
   const id = await currentUserId(request, env);
-  if (!id) return json({ ok: true, user: null, wagers: [], settled: null, board });
+  if (!id) return json({ ok: true, user: null, wagers: [], settled: null, board, tallies: closes() });
 
   const user = await findUserById(env.DB, id);
   if (!user) {
-    return json({ ok: true, user: null, wagers: [], settled: null, board },
+    return json({ ok: true, user: null, wagers: [], settled: null, board, tallies: closes() },
       { headers: { 'Set-Cookie': clearedPlayerCookie() } });
   }
 
@@ -93,7 +115,8 @@ async function handleGet(request, env) {
     user: { username: frais.username, packs: Number(frais.packs) || 0 },
     wagers: lignes.map(publicWager),
     settled: regles.packs || regles.details.length ? regles : null,
-    board
+    board,
+    tallies: visibleTallies(content, toutes, new Set(lignes.map((l) => l.bet_id)), now)
   });
 }
 
@@ -124,8 +147,13 @@ async function handlePost(request, env) {
   const enregistre = await saveWager(env.DB, id, betId, answer);
   if (!enregistre) return fail('Ce pari a déjà été réglé.', 409);
 
+  // Le parieur vient de s'engager : il a désormais le droit de voir comment les
+  // autres ont répondu — et c'est le moment où ça l'intéresse.
+  const toutes = await tallyWagers(env.DB);
+
   return json({
     ok: true,
-    wager: { betId, answer, settled: false, outcome: '', awarded: 0 }
+    wager: { betId, answer, settled: false, outcome: '', awarded: 0 },
+    tally: toutes[betId] || {}
   });
 }

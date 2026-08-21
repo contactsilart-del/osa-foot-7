@@ -377,10 +377,24 @@ le dit avant que vous n'enregistriez, pas après.
 
 #### Ce qui vaut pour tous les paris
 
-- Le pari du prochain match se saisit **directement sur la page d'accueil**,
-  sous le compte à rebours. Les champs sont ouverts à tout le monde : le compte
-  n'est demandé qu'**au moment de valider**, et la réponse est gardée sur
-  l'appareil puis envoyée toute seule dès la connexion.
+- Les paris du prochain match se saisissent **directement sur la page
+  d'accueil**, sous le compte à rebours. Ils défilent en carrousel — le score
+  exact d'abord, puis le 1/N/2, puis vos questions — avec un renvoi vers la page
+  complète. Le défilement **s'arrête dès qu'on survole le bloc ou qu'on y pose
+  le curseur** : un formulaire qui glisse pendant qu'on le remplit est une
+  mauvaise farce. Il ne démarre pas du tout chez qui a désactivé les animations
+  dans son système.
+- Les champs sont ouverts à tout le monde : le compte n'est demandé qu'**au
+  moment de valider**, et la réponse est gardée sur l'appareil puis envoyée
+  toute seule dès la connexion.
+- Une fois la réponse posée, chaque pari affiche **comment les autres ont
+  répondu**, en pourcentages, la sienne mise en évidence. Avant d'avoir joué, on
+  ne voit rien : le serveur lui-même ne l'envoie pas. Voir la répartition avant
+  de choisir, c'est suivre le troupeau plutôt que son idée. Un pari dont les
+  mises sont closes, en revanche, se lit par tout le monde.
+  Sur un pronostic de score, où chacun tape le sien, les réponses sont
+  **regroupées par issue** (victoire, nul, défaite), avec les trois scores les
+  plus joués cités à part.
 - Un pari sur un match n'ouvre que s'il a **une date** et que le coup d'envoi
   n'est pas passé. Sans date, impossible de fermer les mises à temps : on
   préfère ne pas les ouvrir.
@@ -637,6 +651,7 @@ si `SESSION_SECRET` n'est pas défini (il sert alors de clé de signature).
 | Classements de la saison (buteurs, passeurs, CSC, penaltys, matchs joués, entraînement) | *Stats saison* |
 | Le palmarès et les paroles du chant, s'il y en a | *Palmarès*, *Chant du club* |
 | Le barème des pronostics de match, et vos premiers paris | *Paris* |
+| Un second pari sur le prochain match, si vous voulez voir le carrousel de l'accueil tourner | *Paris* |
 
 Une pastille **!** reste affichée sur l'onglet *Mentions légales* tant que les
 informations obligatoires manquent, et un encadré d'avertissement s'affiche sur
