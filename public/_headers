@@ -24,6 +24,11 @@
 /assets/*
   Cache-Control: no-cache
 
+# Sonde temporaire : le plancher de 4 h tient-il au chemin /assets/ ou au type
+# de fichier ? Meme extension, autre dossier, duree de vie courte.
+/sonde/*
+  Cache-Control: public, max-age=60
+
 /img/*
   Cache-Control: public, max-age=604800, must-revalidate
 
