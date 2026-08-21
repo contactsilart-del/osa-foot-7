@@ -51,7 +51,7 @@ export const YES_NO = [{ id: 'oui', label: 'Oui' }, { id: 'non', label: 'Non' }]
 /** Préfixe des paris ouverts d'office sur les matchs. Voir `autoBets`. */
 export const AUTO_PREFIX = 'match:';
 
-export function betsBlock(content) {
+function betsBlock(content) {
   return (content && typeof content.bets === 'object' && content.bets) || {};
 }
 
@@ -195,10 +195,6 @@ export function optionsOf(content, bet) {
   ];
 }
 
-export function optionLabel(content, bet, id) {
-  return optionsOf(content, bet).find((option) => option.id === id)?.label || '';
-}
-
 /* ═══════════════════════════════════════ Réponses ══ */
 
 /** Un score se transporte en une seule chaîne : « 2-1 ». */
@@ -285,5 +281,5 @@ export function answerLabel(content, bet, answer) {
     const score = parseScore(answer);
     return score ? `${score.home} – ${score.away}` : '—';
   }
-  return optionLabel(content, bet, answer) || '—';
+  return optionsOf(content, bet).find((option) => option.id === answer)?.label || '—';
 }

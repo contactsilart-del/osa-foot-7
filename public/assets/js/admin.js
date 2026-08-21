@@ -9,7 +9,7 @@
 
 import { DEFAULT_CONTENT, cloneContent, deepMerge, migrateContent } from './content.js';
 import { RATINGS_OUTFIELD, RATINGS_GK, ratingsFor, averageOf, isStaff, fullName } from './squad.js';
-import { betStatus, optionsOf, YES_NO } from './bets.js';
+import { betStatus, YES_NO } from './bets.js';
 
 /** Doit rester aligné sur `SIGNUP_PACKS` de lib/players.js. */
 const SIGNUP_PACKS = 5;
