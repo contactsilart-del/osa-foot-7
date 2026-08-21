@@ -297,6 +297,8 @@ export function playerCardHTML(player, options = {}) {
   const overall = overallOf(player);
   // 0 = numéro non attribué : la pastille disparaît plutôt que d'afficher « 0 ».
   const numero = Number(player.number) || 0;
+  // Le surnom ne tient pas sur la carte du bandeau défilant : il attend la grande.
+  const surnom = String(player.nickname || '').trim();
   const tag = href ? 'a' : 'button';
   const attrs = href
     ? `href="${esc(href)}"`
@@ -338,6 +340,7 @@ export function playerCardHTML(player, options = {}) {
       <span class="player-card__identity">
         <span class="player-card__first">${esc(player.firstName || '')}</span>
         <span class="player-card__last">${esc(player.lastName || '')}</span>
+        ${surnom && !compact ? `<span class="player-card__nick">« ${esc(surnom)} »</span>` : ''}
       </span>
 
       <span class="player-card__meta">
@@ -373,6 +376,7 @@ export function playerProfileHTML(player) {
 
   const facts = [
     Number(player.number) ? ['Numéro', `N° ${player.number}`] : null,
+    player.nickname ? ['Surnom', player.nickname] : null,
     Number(player.age) ? ['Âge', `${player.age} ans`] : null,
     player.nationality ? ['Nationalité', player.nationality] : null,
     ['Poste', position.label],

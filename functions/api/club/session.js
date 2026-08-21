@@ -21,7 +21,7 @@ import {
   validateCredentials, usernameKey, newSalt, hashPassword, applyDailyGrant, parisDay,
   SIGNUP_PACKS, STOCK_ADJUSTMENT, buildCollection
 } from '../../../lib/players.js';
-import { settleUserPredictions } from '../../../lib/predictions.js';
+import { settleUserWagers } from '../../../lib/settle.js';
 import { DEFAULT_CONTENT, migrateContent } from '../../../public/assets/js/content.js';
 
 /** Inscriptions autorisées depuis une même adresse en 24 h. */
@@ -50,12 +50,12 @@ function squadFrom(content) {
 }
 
 /**
- * Règle les pronostics arrivés à échéance et renvoie le compte remis à jour.
+ * Règle les paris arrivés à échéance et renvoie le compte remis à jour.
  * Les packs gagnés doivent apparaître ici aussi : un supporter qui ne va que
  * sur la page des packs verrait sinon un stock en retard sur ses gains.
  */
 async function collectWinnings(env, user, content) {
-  const gains = await settleUserPredictions(env.DB, user.id, content.championship);
+  const gains = await settleUserWagers(env.DB, user.id, content);
   if (!gains.packs) return gains;
   const frais = await findUserById(env.DB, user.id);
   if (frais) user.packs = frais.packs;

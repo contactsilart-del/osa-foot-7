@@ -350,9 +350,7 @@ function applyBindings(content) {
 
   const computed = {
     'nextMatch.dateFull': kickoff ? capitalize(DATE_FULL.format(kickoff)) : 'Date à venir',
-    'nextMatch.dateLabel': kickoff ? capitalize(DATE_SHORT.format(kickoff)) : 'À venir',
-    // L'adresse de contact des mentions légales retombe sur celle du club.
-    'legal.email': content.legal?.email || content.club?.email || ''
+    'nextMatch.dateLabel': kickoff ? capitalize(DATE_SHORT.format(kickoff)) : 'À venir'
   };
 
   $$('[data-bind]').forEach((el) => {
@@ -374,15 +372,6 @@ function applyBindings(content) {
       el.hidden = false;
     } else {
       el.hidden = true;
-    }
-  });
-
-  $$('[data-bind-mail]').forEach((el) => {
-    const value = get(content, el.dataset.bindMail);
-    if (!value) return;
-    el.href = `mailto:${value}`;
-    if (el.dataset.keepText !== 'true' && el.tagName === 'A' && el.children.length === 0) {
-      el.textContent = value;
     }
   });
 
@@ -968,13 +957,13 @@ function podiumRow(entry, rank, leader, unit) {
 /* ═══════════════════════════════════════════ Stade ══ */
 
 /**
- * La carte Google n'est pas chargée d'emblée : l'afficher ouvre une connexion
- * aux serveurs de Google, qui peuvent y déposer des cookies. Un clic explicite
- * du visiteur vaut mieux qu'un traceur imposé — et la page se charge d'autant
- * plus vite pour ceux que le plan n'intéresse pas.
+ * Le plan du stade s'affiche directement : demander un clic avant de le montrer
+ * faisait manquer l'essentiel — savoir où l'on joue — à qui ne cliquait pas.
+ *
+ * L'iframe reste en `loading="lazy"` : elle n'appelle Google qu'au moment où la
+ * section entre dans le champ de l'écran, et jamais pour un visiteur qui ne
+ * descend pas jusque-là. Les mentions légales déclarent ce dépôt (section 6).
  */
-let venueMapAccepted = false;
-
 function renderVenue(content) {
   const zone = $('#venue-map');
   if (!zone) return;
@@ -997,38 +986,14 @@ function renderVenue(content) {
     return;
   }
 
-  if (venueMapAccepted) {
-    showVenueMap(embed);
-    return;
-  }
-
-  zone.innerHTML = `
-    <button class="venue__consent" type="button" id="venue-load">
-      <span class="venue__consent-ico" aria-hidden="true">
-        <svg viewBox="0 0 24 24"><path d="M20.5 3.1 15 5 9 3 3.4 4.9a1 1 0 0 0-.7 1V20a.5.5 0 0 0 .7.5L9 18.5l6 2 5.6-1.9a1 1 0 0 0 .7-1V3.6a.5.5 0 0 0-.8-.5zM9 16.4 5 17.8V6.6l4-1.4v11.2zm6 2-4-1.4V5.6l4 1.4v11.4zm4-1.2-3 1V6.9l3-1v11.3z"/></svg>
-      </span>
-      <b>Afficher le plan du stade</b>
-      <small>La carte est fournie par Google. En l'affichant, votre navigateur se
-        connecte aux serveurs de Google, qui peuvent y déposer des cookies.</small>
-    </button>`;
-}
-
-function showVenueMap(embed) {
-  const zone = $('#venue-map');
-  if (!zone || !embed) return;
-  venueMapAccepted = true;
   zone.innerHTML = `
     <iframe class="venue__frame" src="${esc(embed)}" title="Plan du stade"
             loading="lazy" allowfullscreen
-            referrerpolicy="strict-origin-when-cross-origin"></iframe>`;
+            referrerpolicy="strict-origin-when-cross-origin"></iframe>
+    <p class="venue__credit">Plan fourni par Google&nbsp;Maps.</p>`;
 }
 
 function initVenue() {
-  $('#venue-map')?.addEventListener('click', (event) => {
-    if (!event.target.closest('#venue-load')) return;
-    showVenueMap(state.content?.venue?.mapsEmbed || '');
-  });
-
   $('#venue-copy')?.addEventListener('click', async () => {
     const adresse = state.content?.club?.address || '';
     if (!adresse) return;
@@ -1363,11 +1328,10 @@ function initContactForm() {
         throw new Error(payload.error || `Erreur ${response.status}`);
       }
     } catch (error) {
-      const mail = state.content?.club?.email;
-      const fallback = mail
-        ? ` Écrivez-nous directement à <a href="mailto:${esc(mail)}?subject=${encodeURIComponent(data.subject)}&body=${encodeURIComponent(data.message)}">${esc(mail)}</a>.`
-        : '';
-      setStatus(`L'envoi automatique n'a pas fonctionné.${fallback}`, 'error');
+      // Plus d'adresse de repli a proposer : on renvoie vers les reseaux, seule
+      // autre porte d'entree du club.
+      setStatus("L'envoi n'a pas fonctionné. Réessayez dans un instant, ou "
+        + 'écrivez-nous sur Facebook ou Instagram.', 'error');
       console.warn('[contact]', error);
     } finally {
       submit.disabled = false;

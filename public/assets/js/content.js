@@ -16,7 +16,7 @@
  * Version du modèle de contenu. Un document enregistré sous une version
  * antérieure passe par `migrateContent` avant d'être affiché ou réenregistré.
  */
-export const SCHEMA_VERSION = 8;
+export const SCHEMA_VERSION = 9;
 
 export const DEFAULT_CONTENT = {
   /*
@@ -29,7 +29,6 @@ export const DEFAULT_CONTENT = {
     name: 'OSA FOOT 7',
     tagline: 'Olympique Saint-Affrique',
     logo: '/img/osa.png',
-    email: 'contact@osafoot7.fr',
     address: '21 Rte du Stade, 81290 Saint-Affrique-les-Montagnes',
     facebook: 'https://www.facebook.com/osafoot7',
     instagram: 'https://www.instagram.com/olympique.saint.affrique/',
@@ -41,6 +40,9 @@ export const DEFAULT_CONTENT = {
    * Mentions légales. Les valeurs vides laissent apparaître la mention
    * « À compléter » sur la page : c'est le signal qu'il reste à les renseigner
    * depuis l'onglet « Mentions légales » de l'administration.
+   *
+   * Aucune adresse e-mail : le club ne se contacte pas par courriel. Le
+   * formulaire de la page d'accueil est le moyen de contact déclaré.
    */
   legal: {
     entity: 'OSA FOOT 7 — Olympique Saint-Affrique',
@@ -49,7 +51,6 @@ export const DEFAULT_CONTENT = {
     rna: '',
     siren: '',
     director: '',
-    email: '',            // vide → on retombe automatiquement sur club.email
     updated: 'Janvier 2026'
   },
 
@@ -238,6 +239,24 @@ export const DEFAULT_CONTENT = {
   },
 
   /**
+   * Les paris.
+   *
+   * `autoMatch` ouvre d'office un pronostic de score sur chaque match daté du
+   * calendrier : c'est ce qui fait vivre le formulaire du héros sans que
+   * personne n'ait à créer quoi que ce soit chaque semaine. Les paris saisis
+   * dans `items` viennent en plus — 1/N/2, buteur, passeur, ou question pour
+   * rire — et c'est le bureau, et lui seul, qui les clôt et les tranche.
+   */
+  bets: {
+    title: 'Les paris',
+    subtitle: 'Devinez juste, empochez des packs. Les pronostics ferment au coup d\'envoi.',
+    intro: '',
+    autoMatch: true,
+    matchRewards: { exact: 15, result: 3, played: 1 },
+    items: []
+  },
+
+  /**
    * Effectif. Toutes les valeurs ci-dessous sont des repères de départ,
    * destinés à être ajustés depuis l'onglet « Effectif » de l'administration :
    * l'âge est laissé à 0 (la ligne se masque alors), et les notes sont des
@@ -256,6 +275,7 @@ export const DEFAULT_CONTENT = {
         id: 'keks',
         firstName: 'Keks', lastName: '',
         photo: '/img/keks.jpg',
+        nickname: '',
         number: 0,
         age: 0, nationality: 'France', position: 'ATT', since: 2022,
         weakFoot: 3, skillMoves: 3,
@@ -267,6 +287,7 @@ export const DEFAULT_CONTENT = {
         id: 'silas',
         firstName: 'Silas', lastName: 'Clamens Albert',
         photo: '/img/silas.jpg',
+        nickname: '',
         number: 0,
         age: 0, nationality: 'France', position: 'MIL', since: 2021,
         weakFoot: 4, skillMoves: 4,
@@ -278,6 +299,7 @@ export const DEFAULT_CONTENT = {
         id: 'claude',
         firstName: 'Claude', lastName: '',
         photo: '/img/claude.jpg',
+        nickname: '',
         number: 0,
         age: 0, nationality: 'France', position: 'ATT', since: 2023,
         weakFoot: 3, skillMoves: 3,
@@ -289,6 +311,7 @@ export const DEFAULT_CONTENT = {
         id: 'vale',
         firstName: 'Valé', lastName: '',
         photo: '/img/val.jpg',
+        nickname: '',
         number: 0,
         age: 0, nationality: 'France', position: 'MIL', since: 2020,
         weakFoot: 4, skillMoves: 3,
@@ -300,6 +323,7 @@ export const DEFAULT_CONTENT = {
         id: 'noan',
         firstName: 'Noan', lastName: '',
         photo: '/img/noan.jpg',
+        nickname: '',
         number: 0,
         age: 0, nationality: 'France', position: 'MIL', since: 2023,
         weakFoot: 3, skillMoves: 4,
@@ -311,6 +335,7 @@ export const DEFAULT_CONTENT = {
         id: 'joris',
         firstName: 'Joris', lastName: '',
         photo: '/img/joris.jpg',
+        nickname: '',
         number: 0,
         age: 0, nationality: 'France', position: 'ATT', since: 2022,
         weakFoot: 2, skillMoves: 3,
@@ -322,6 +347,7 @@ export const DEFAULT_CONTENT = {
         id: 'pierre',
         firstName: 'Pierre', lastName: '',
         photo: '/img/pierre.jpg',
+        nickname: '',
         number: 0,
         age: 0, nationality: 'France', position: 'DEF', since: 2019,
         weakFoot: 2, skillMoves: 2,
@@ -333,6 +359,7 @@ export const DEFAULT_CONTENT = {
         id: 'samy',
         firstName: 'Samy', lastName: '',
         photo: '',
+        nickname: '',
         number: 0,
         age: 0, nationality: 'France', position: 'MIL', since: 2024,
         weakFoot: 3, skillMoves: 3,
@@ -344,6 +371,7 @@ export const DEFAULT_CONTENT = {
         id: 'julien',
         firstName: 'Julien', lastName: '',
         photo: '',
+        nickname: '',
         number: 0,
         age: 0, nationality: 'France', position: 'DEF', since: 2024,
         weakFoot: 2, skillMoves: 2,
@@ -730,6 +758,21 @@ function toV8(content) {
 }
 
 /**
+ * v8 → v9 : les pronostics deviennent des paris.
+ *
+ * Le pronostic de score sur le prochain match n'était nulle part : il naissait
+ * du calendrier, et son barème vivait en dur dans le code du serveur. Il devient
+ * un pari comme les autres — réglable, et accompagné de ceux que le bureau
+ * invente. Rien à convertir : les mises déjà posées portent l'identifiant du
+ * match, que les paris automatiques reprennent tel quel.
+ */
+function toV9(content) {
+  if (content.bets && typeof content.bets === 'object') return content;
+  content.bets = cloneContent(DEFAULT_CONTENT.bets);
+  return content;
+}
+
+/**
  * Met à niveau un document enregistré avant la version courante. Les étapes
  * s'enchaînent : un document v1 passe par toutes.
  */
@@ -747,6 +790,7 @@ export function migrateContent(stored) {
   if (version < 6) migrated = toV6(migrated);
   if (version < 7) migrated = toV7(migrated);
   if (version < 8) migrated = toV8(migrated);
+  if (version < 9) migrated = toV9(migrated);
   migrated = toV5(migrated);
   // Estampiller évite de rejouer la migration à chaque rendu de la page.
   migrated.version = SCHEMA_VERSION;

@@ -9,6 +9,7 @@
 
 import { DEFAULT_CONTENT, cloneContent, deepMerge, migrateContent } from './content.js';
 import { RATINGS_OUTFIELD, RATINGS_GK, ratingsFor, averageOf, isStaff, fullName } from './squad.js';
+import { betStatus, optionsOf, YES_NO } from './bets.js';
 
 /** Doit rester aligné sur `SIGNUP_PACKS` de lib/players.js. */
 const SIGNUP_PACKS = 5;
@@ -263,6 +264,7 @@ function repeatHead(listPath, index, label, { collapsible = false } = {}) {
 
 const TABS = {
   championship: { title: 'Championnat', render: renderChampionship },
+  bets:     { title: 'Paris', render: renderBets },
   squad:    { title: 'Effectif', render: renderSquad },
   stats:    { title: 'Stats saison', render: renderStats },
   palmares: { title: 'Palmarès', render: renderPalmares },
@@ -532,6 +534,229 @@ function matchEditor(match, index) {
 
 /* ───────────────────────────────────────── Palmarès ── */
 
+/* ────────────────────────────────────────────── Paris ── */
+
+const BET_TYPES = [
+  { value: 'score', label: 'Score exact d\u2019un match' },
+  { value: 'result', label: 'R\u00e9sultat 1 / N / 2 d\u2019un match' },
+  { value: 'choice', label: 'Question \u00e0 choix (buteur, passeur, pari pour rire\u2026)' }
+];
+
+const STATUT_LABELS = {
+  open: 'Mises ouvertes',
+  locked: 'Mises closes, r\u00e9sultat attendu',
+  settled: 'R\u00e9gl\u00e9'
+};
+
+function bets() {
+  return state.draft.bets?.items || [];
+}
+
+/** Les matchs proposés à un pari, du plus récent au plus ancien. */
+function matchOptions() {
+  const champ = state.draft.championship || {};
+  const teams = champ.teams || [];
+  return [
+    { value: '', label: '— aucun —' },
+    ...(champ.matches || []).map((match) => ({
+      value: match.id,
+      label: `${teamLabel(teams, match.homeId)} – ${teamLabel(teams, match.awayId)}`
+        + (match.date ? ` · ${DATE_FMT.format(new Date(match.date))}` : '')
+    }))
+  ];
+}
+
+/**
+ * Le statut d'un pari, calculé par le module que le site utilise.
+ *
+ * Le recalculer ici, sur le brouillon, c'est ce qui rend l'écran honnête : le
+ * bureau voit tout de suite qu'une date passée ou une réponse désignée ferme
+ * le pari — avant d'enregistrer, pas après.
+ */
+function betStatutLabel(bet) {
+  return STATUT_LABELS[betStatus(state.draft, bet)] || '';
+}
+
+function renderBets() {
+  const liste = bets();
+
+  return `
+    <section class="a-card">
+      <header class="a-card__head">
+        <div>
+          <h2>Les paris</h2>
+          <p>Le score du prochain match s'ouvre tout seul. Le reste, c'est vous qui l'inventez —
+            et vous seul pouvez clore un pari et désigner la bonne réponse.</p>
+        </div>
+      </header>
+      <div class="a-card__body">
+        <div class="a-grid a-grid--2">
+          ${field('Titre de la page', 'bets.title', { placeholder: 'Les paris' })}
+          ${field('Sous-titre', 'bets.subtitle', { placeholder: 'Devinez juste, empochez des packs.' })}
+        </div>
+        ${field('Mot d\u2019introduction', 'bets.intro', {
+          type: 'textarea',
+          hint: 'Facultatif. Affiché en haut de la page des paris. Vide = rien.'
+        })}
+      </div>
+    </section>
+
+    <section class="a-card">
+      <header class="a-card__head">
+        <div>
+          <h2>Pronostic automatique sur les matchs</h2>
+          <p>Un pronostic de score s'ouvre de lui-même sur chaque match daté du calendrier,
+            ferme au coup d'envoi, et se règle dès que vous saisissez le score.</p>
+        </div>
+      </header>
+      <div class="a-card__body">
+        ${field('Ouvrir un pronostic de score sur chaque match', 'bets.autoMatch', {
+          type: 'checkbox',
+          hint: 'Décoché, plus aucun pronostic ne s\u2019ouvre tout seul : à vous de les créer ci-dessous.'
+        })}
+
+        <p class="a-hint a-hint--section">Ce que rapporte un pronostic de match, en packs.
+          Les trois paliers s'excluent : un score exact ne rapporte pas aussi le bon résultat.</p>
+        <div class="a-grid a-grid--3">
+          ${field('Score exact', 'bets.matchRewards.exact', { type: 'number' })}
+          ${field('Bon résultat', 'bets.matchRewards.result', { type: 'number' })}
+          ${field('Participation', 'bets.matchRewards.played', { type: 'number' })}
+        </div>
+      </div>
+    </section>
+
+    <section class="a-card">
+      <header class="a-card__head">
+        <div>
+          <h2>Vos paris</h2>
+          <p>${liste.length} pari${liste.length > 1 ? 's' : ''} créé${liste.length > 1 ? 's' : ''}.</p>
+        </div>
+        <button class="a-btn a-btn--primary" type="button" data-add="bet">Ajouter un pari</button>
+      </header>
+      <div class="a-card__body">
+        <div class="repeat">
+          ${liste.length
+            ? liste.map((bet, index) => betEditor(bet, index)).join('')
+            : '<p class="empty-state">Aucun pari pour l\u2019instant. « Ajouter un pari » en crée un, réglé sur oui / non.</p>'}
+        </div>
+      </div>
+    </section>`;
+}
+
+function betEditor(bet, index) {
+  const path = `bets.items.${index}`;
+  const ouvert = state.openEditor === index;
+  const surUnMatch = bet.type === 'score' || bet.type === 'result';
+  const statut = betStatutLabel(bet);
+
+  return `
+    <article class="repeat__item${ouvert ? '' : ' is-collapsed'}">
+      ${repeatHead('bets.items', index, `${bet.question || 'Sans question'} · ${statut}`, { collapsible: true })}
+      <div class="repeat__body">
+        ${field('La question', `${path}.question`, {
+          placeholder: 'Nathan perd 2 kilos ou plus d\u2019ici la fin de la saison ?',
+          hint: 'C\u2019est le titre du pari sur le site.'
+        })}
+
+        <div class="a-grid a-grid--2">
+          ${field('Nature du pari', `${path}.type`, { type: 'select', options: BET_TYPES })}
+          ${field(surUnMatch ? 'Match concerné (obligatoire)' : 'Match concerné (facultatif)',
+            `${path}.matchId`, {
+              type: 'select',
+              options: matchOptions(),
+              hint: surUnMatch
+                ? 'Sans match, le pari n\u2019a ni échéance ni résultat : il redevient une question à choix.'
+                : 'Rattacher un match donne au pari le coup d\u2019envoi comme date de clôture.'
+            })}
+        </div>
+
+        ${field('Précision', `${path}.note`, {
+          type: 'textarea',
+          hint: 'Facultatif : la règle exacte, ce qui compte et ce qui ne compte pas.'
+        })}
+
+        ${bet.type === 'choice' ? betOptionsEditor(bet, index) : `
+          <p class="a-hint a-hint--section">
+            ${bet.type === 'score'
+              ? 'Les parieurs saisissent deux nombres. La bonne réponse est le score que vous entrez dans l\u2019onglet Championnat : rien à désigner ici.'
+              : 'Les parieurs choisissent entre les deux équipes et le match nul. La bonne réponse sort du score saisi dans l\u2019onglet Championnat : rien à désigner ici.'}
+          </p>`}
+
+        <p class="a-hint a-hint--section">Clôture des mises. Passé la date, ou la case cochée,
+          plus personne ne peut répondre.</p>
+        <div class="a-grid a-grid--2">
+          ${field('Date limite de mise', `${path}.closesAt`, {
+            type: 'datetime',
+            hint: surUnMatch ? 'Vide = le coup d\u2019envoi du match.' : 'Vide = aucune limite : à vous de clore.'
+          })}
+          ${field('Clore les mises maintenant', `${path}.closed`, {
+            type: 'checkbox',
+            hint: 'Ferme le pari sur-le-champ, quelle que soit la date.'
+          })}
+        </div>
+
+        <p class="a-hint a-hint--section">Récompenses, en packs.</p>
+        <div class="a-grid a-grid--3">
+          ${field(bet.type === 'score' ? 'Score exact' : 'Bonne réponse', `${path}.rewards.exact`, { type: 'number' })}
+          ${bet.type === 'score'
+            ? field('Bon résultat', `${path}.rewards.result`, { type: 'number' })
+            : ''}
+          ${field('Participation', `${path}.rewards.played`, {
+            type: 'number',
+            hint: 'Versé à qui a joué et s\u2019est trompé. 0 = rien.'
+          })}
+        </div>
+
+        <p class="a-hint a-hint--section">État : <b>${esc(statut)}</b></p>
+      </div>
+    </article>`;
+}
+
+/**
+ * Les réponses proposées, et celle qui gagne.
+ *
+ * Désigner la bonne réponse ferme le pari du même geste — c'est dit ici, avant
+ * de cocher : laisser miser après coup reviendrait à distribuer les packs à qui
+ * lit cette page.
+ */
+function betOptionsEditor(bet, index) {
+  const path = `bets.items.${index}`;
+  const options = bet.options || [];
+  const gagnantes = new Set(bet.answers || []);
+
+  return `
+    <p class="a-hint a-hint--section">Les réponses proposées. Deux raccourcis&nbsp;: « Oui / Non »
+      pour un pari pour rire, « l'effectif » pour un buteur ou un passeur.</p>
+
+    <div class="a-actions">
+      <button class="a-btn a-btn--sm" type="button" data-preset="yesno" data-index="${index}">Oui / Non</button>
+      <button class="a-btn a-btn--sm" type="button" data-preset="squad" data-index="${index}">Les joueurs de l'effectif</button>
+      <button class="a-btn a-btn--sm" type="button" data-add="bet-option" data-index="${index}">Ajouter une réponse</button>
+    </div>
+
+    ${options.length ? `
+      <div class="a-options">
+        ${options.map((option, rang) => `
+          <div class="a-option">
+            <label class="a-check" title="Bonne réponse">
+              <input type="checkbox" data-bet-answer="${esc(option.id)}" data-index="${index}"${gagnantes.has(option.id) ? ' checked' : ''}>
+              <span class="sr-only">Bonne réponse</span>
+            </label>
+            <input type="text" data-path="${esc(path)}.options.${rang}.label" data-type="text"
+                   value="${esc(option.label || '')}" placeholder="Réponse ${rang + 1}">
+            <button class="a-btn a-btn--icon a-btn--danger" type="button"
+                    data-remove="${esc(path)}.options" data-index="${rang}" aria-label="Supprimer cette réponse">
+              <svg viewBox="0 0 24 24"><path d="M9 3h6l1 2h4v2H4V5h4l1-2zM6 9h12l-1 12H7L6 9z"/></svg>
+            </button>
+          </div>`).join('')}
+      </div>`
+    : '<p class="empty-state">Aucune réponse proposée : le pari ne s\u2019affichera pas.</p>'}
+
+    <p class="a-hint">Cochez la ou les bonnes réponses <b>une fois le pari terminé</b> :
+      cela clôt le pari et verse les packs au prochain passage des parieurs.
+      Plusieurs cases sont permises — un match a souvent deux buteurs.</p>`;
+}
+
 function renderPalmares() {
   const entries = state.draft.palmares?.entries || [];
   return `
@@ -770,6 +995,11 @@ function playerEditor(player, index) {
           ${field('Nom', `${path}.lastName`, { placeholder: 'Clamens Albert', hint: 'Facultatif.' })}
           ${field('Numéro', `${path}.number`, { type: 'number', hint: '0 = pas de numéro sur la carte.' })}
         </div>
+
+        ${field('Surnom', `${path}.nickname`, {
+          placeholder: 'Le Renard',
+          hint: 'Affiché entre guillemets sous le nom, sur la grande carte et dans la fiche. Vide = rien.'
+        })}
 
         ${imageField('Photo', `${path}.photo`)}
 
@@ -1012,16 +1242,17 @@ function renderClub() {
 
     <section class="a-card">
       <header class="a-card__head">
-        <div><h2>Contact &amp; réseaux</h2><p>Utilisés dans la section Contact et le pied de page.</p></div>
+        <div>
+          <h2>Contact &amp; réseaux</h2>
+          <p>Utilisés dans la section Contact et le pied de page. Le club ne publie pas
+            d'adresse e-mail : les messages arrivent par le formulaire, dans « Messages reçus ».</p>
+        </div>
       </header>
       <div class="a-card__body">
-        <div class="a-grid a-grid--2">
-          ${field('E-mail public', 'club.email', { placeholder: 'contact@osafoot7.fr' })}
-          ${field('Terrain / adresse', 'club.address', {
-            placeholder: '21 Rte du Stade, 81290 Saint-Affrique-les-Montagnes',
-            hint: 'Adresse postale du stade. Elle apparaît en section Contact, en pied de page et sur la carte.'
-          })}
-        </div>
+        ${field('Terrain / adresse', 'club.address', {
+          placeholder: '21 Rte du Stade, 81290 Saint-Affrique-les-Montagnes',
+          hint: 'Adresse postale du stade. Elle apparaît en section Contact, en pied de page et sur la carte.'
+        })}
         <div class="a-grid a-grid--2">
           ${field('Page Facebook', 'club.facebook', { placeholder: 'https://www.facebook.com/…', hint: 'URL complète. Vide = lien masqué.' })}
           ${field('Compte Instagram', 'club.instagram', { placeholder: 'https://www.instagram.com/…', hint: 'URL complète. Vide = lien masqué.' })}
@@ -1084,10 +1315,8 @@ function renderLegal() {
           ${field('Date de mise à jour', 'legal.updated', { placeholder: 'Janvier 2026' })}
         </div>
 
-        ${field('E-mail de contact légal', 'legal.email', {
-          placeholder: 'contact@osafoot7.fr',
-          hint: 'Laissez vide pour réutiliser l\'e-mail public défini dans « Club & réseaux ».'
-        })}
+        <p class="a-hint">Le moyen de contact déclaré dans les mentions légales est le
+          formulaire du site : l'association ne publie pas d'adresse e-mail.</p>
       </div>
     </section>
 
@@ -1224,6 +1453,7 @@ function refreshCounts() {
   const unread = state.messages.filter((m) => !m.is_read).length;
   const counts = {
     championship: (state.draft?.championship?.matches || []).length,
+    bets: (state.draft?.bets?.items || []).length,
     squad: (state.draft?.squad?.players || []).length,
     palmares: (state.draft?.palmares?.entries || []).length,
     calendar: (state.draft?.calendar?.images || []).length,
@@ -1245,6 +1475,23 @@ function refreshCounts() {
 
 function onFieldChange(event) {
   const input = event.target;
+
+  /*
+   * La bonne réponse d'un pari. Elle vaut des packs : la cocher clôt le pari et
+   * déclenche le versement au prochain passage des parieurs. On redessine donc
+   * aussitôt, pour que l'état affiché dise la vérité.
+   */
+  if (input.dataset.betAnswer !== undefined) {
+    const pari = bets()[Number(input.dataset.index)];
+    if (pari) {
+      const gagnantes = new Set(pari.answers || []);
+      if (input.checked) gagnantes.add(input.dataset.betAnswer);
+      else gagnantes.delete(input.dataset.betAnswer);
+      pari.answers = [...gagnantes];
+    }
+    refreshDirtyState();
+    return renderTab();
+  }
 
   /* Inscription d'un club à une compétition. */
   if (input.dataset.competition !== undefined && input.dataset.team !== undefined) {
@@ -1305,6 +1552,24 @@ function onFieldChange(event) {
   if (/^championship\.matches\.\d+\.competitionId$/.test(path)) {
     refreshDirtyState();
     return renderTab();
+  }
+
+  /*
+   * Changer la nature d'un pari change tout l'éditeur : un score n'a pas de
+   * réponses à lister, une question à choix n'a pas de palier « bon résultat ».
+   * Le match rattaché en fait autant — il donne l'échéance.
+   */
+  if (/^bets\.items\.\d+\.(type|matchId)$/.test(path)) {
+    refreshDirtyState();
+    return renderTab();
+  }
+
+  // La question d'un pari sert de titre à sa fiche repliée.
+  if (/^bets\.items\.\d+\.question$/.test(path)) {
+    refreshDirtyState();
+    const label = input.closest('.repeat__item')?.querySelector('.repeat__label');
+    if (label) label.textContent = value || '—';
+    return;
   }
 
   // Renommer une compétition se répercute sur les en-têtes et les listes.
@@ -1368,6 +1633,18 @@ function newId(prefixe) {
 
 const BLANK = {
   competition: () => ({ id: newId('competition'), name: 'Nouvelle compétition', standings: true, teamIds: [] }),
+  /*
+   * Un pari neuf est un pari pour rire : c'est celui qu'on invente le plus
+   * souvent, et les deux réponses sont déjà là. Le score des matchs, lui,
+   * s'ouvre tout seul — personne n'a à le créer.
+   */
+  bet: () => ({
+    id: newId('pari'), type: 'choice', question: 'Nouveau pari', note: '', matchId: '',
+    options: YES_NO.map((option) => ({ ...option })),
+    answers: [], closesAt: '', closed: false,
+    rewards: { exact: 5, result: 0, played: 1 }
+  }),
+  betOption: () => ({ id: newId('option'), label: '' }),
   team: () => ({ id: newId('club'), name: 'Nouveau club', short: '', logo: '', penalty: 0 }),
   match: () => ({
     id: newId('match'), competitionId: '', day: 0, date: '', venue: '',
@@ -1405,6 +1682,11 @@ function removalWarning(listPath, element) {
         + 'Sinon, ils seront rattachés à la première compétition restante.\n\n'
         + 'Supprimer la compétition ?';
     }
+  }
+
+  if (listPath === 'bets.items' && element?.question) {
+    return `Supprimer « ${element.question} » ?\n\n`
+      + 'Les mises déjà posées sur ce pari resteront en attente : elles ne rapporteront rien.';
   }
 
   if (listPath === 'championship.teams' && element?.id) {
@@ -1467,6 +1749,36 @@ function onPanelClick(event) {
     state.openEditor = 0;
     return renderTab();
   }
+  if (target.dataset.add === 'bet') {
+    ((state.draft.bets ||= {}).items ||= []).push(BLANK.bet());
+    state.openEditor = state.draft.bets.items.length - 1;
+    return renderTab();
+  }
+  if (target.dataset.add === 'bet-option') {
+    const pari = bets()[Number(target.dataset.index)];
+    if (pari) (pari.options ||= []).push(BLANK.betOption());
+    return renderTab();
+  }
+
+  /*
+   * Les deux raccourcis de saisie. Ils remplacent la liste au lieu de s'y
+   * ajouter : mélanger « Oui / Non » et l'effectif ne veut rien dire, et une
+   * bonne réponse déjà cochée n'a plus de sens une fois les options changées.
+   */
+  if (target.dataset.preset) {
+    const pari = bets()[Number(target.dataset.index)];
+    if (!pari) return;
+    if (target.dataset.preset === 'yesno') {
+      pari.options = YES_NO.map((option) => ({ ...option }));
+    } else {
+      pari.options = (state.draft.squad?.players || [])
+        .filter((joueur) => !isStaff(joueur))
+        .map((joueur) => ({ id: joueur.id, label: fullName(joueur) }));
+    }
+    pari.answers = [];
+    return renderTab();
+  }
+
   if (target.dataset.add === 'palmares') {
     ((state.draft.palmares ||= {}).entries ||= []).push(BLANK.palmares());
     return renderTab();

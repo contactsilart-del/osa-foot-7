@@ -38,6 +38,11 @@
   --dark-line: rgba(255, 255, 255, .12);
   --dark-surface: rgba(255, 255, 255, .055);
 
+  /* Bouton fantome : sa couleur suit la surface qui le porte (cf. .btn--ghost). */
+  --ghost-ink:  var(--ink);
+  --ghost-line: #7C90AE;
+  --ghost-wash: rgba(11, 27, 51, .05);
+
   /* Rythme */
   --shell: 1180px;
   --gutter: clamp(1.15rem, 4vw, 2.5rem);
@@ -232,12 +237,25 @@ ul, ol { list-style: none; padding: 0; }
 }
 .btn--primary:hover { box-shadow: 0 22px 46px -18px rgba(29, 79, 165, .8); }
 
+/*
+ * Le bouton fantome n'a pas de fond : sa lisibilite depend entierement de la
+ * surface qui le porte. Ecrit en blanc dur, il disparaissait sur les sections
+ * claires — le CTA de la galerie, celui sous le classement, « Copier
+ * l'adresse ». Les jetons ci-dessous portent la couleur ; seuls les fonds
+ * sombres les redefinissent, une fois pour toutes, juste en dessous.
+ */
 .btn--ghost {
   background: transparent;
-  color: #fff;
-  border-color: rgba(255, 255, 255, .35);
+  color: var(--ghost-ink);
+  border-color: var(--ghost-line);
 }
-.btn--ghost:hover { background: rgba(255, 255, 255, .1); border-color: rgba(255, 255, 255, .6); }
+.btn--ghost:hover { background: var(--ghost-wash); border-color: var(--ghost-ink); }
+
+.hero, .page-hero, .section--dark, .site-footer {
+  --ghost-ink:  #fff;
+  --ghost-line: rgba(255, 255, 255, .38);
+  --ghost-wash: rgba(255, 255, 255, .12);
+}
 
 .btn--block { width: 100%; }
 
@@ -1683,36 +1701,19 @@ ul, ol { list-style: none; padding: 0; }
 }
 .venue__frame { display: block; width: 100%; height: 100%; min-height: 320px; border: 0; }
 
-/* Le plan ne se charge qu'à la demande : tant qu'on n'a pas cliqué, aucune
-   requête ne part vers Google. */
-.venue__consent {
-  display: grid;
-  justify-items: center;
-  align-content: center;
-  gap: .5rem;
-  width: 100%;
-  min-height: 320px;
-  height: 100%;
-  padding: clamp(1.4rem, 4vw, 2.4rem);
-  text-align: center;
-  color: var(--ink);
-  background:
-    repeating-linear-gradient(45deg, color-mix(in srgb, var(--brand-500) 5%, transparent) 0 12px, transparent 12px 24px),
-    var(--bg-soft);
-  transition: background var(--t-fast);
+/* Mention de source, posée sur le coin du plan : Google demande d'attribuer. */
+.venue__credit {
+  position: absolute;
+  right: .5rem;
+  bottom: .5rem;
+  margin: 0;
+  padding: .2rem .55rem;
+  border-radius: 999px;
+  background: rgba(255, 255, 255, .88);
+  color: var(--muted);
+  font-size: .68rem;
+  pointer-events: none;
 }
-.venue__consent:hover { background: color-mix(in srgb, var(--brand-500) 10%, var(--bg-soft)); }
-.venue__consent:focus-visible { outline: 2px solid var(--brand-500); outline-offset: -4px; }
-.venue__consent-ico {
-  display: grid;
-  place-items: center;
-  width: 52px; height: 52px;
-  border-radius: 50%;
-  background: color-mix(in srgb, var(--brand-500) 16%, transparent);
-}
-.venue__consent-ico svg { width: 26px; height: 26px; fill: var(--brand-500); }
-.venue__consent b { font-size: 1.02rem; }
-.venue__consent small { max-width: 44ch; font-size: .8rem; line-height: 1.5; color: var(--muted); }
 
 .venue__none {
   display: grid;
@@ -1727,7 +1728,7 @@ ul, ol { list-style: none; padding: 0; }
 
 @media (max-width: 860px) {
   .venue { grid-template-columns: 1fr; }
-  .venue__map, .venue__consent, .venue__frame, .venue__none { min-height: 260px; }
+  .venue__map, .venue__frame, .venue__none { min-height: 260px; }
 }
 
 /* ──────────────────────────────────────────── 11b. Compo ── */
@@ -2152,6 +2153,24 @@ ul, ol { list-style: none; padding: 0; }
 }
 .player-avatar--card { width: clamp(88px, 22vw, 108px); aspect-ratio: 1; }
 .player-avatar--card .player-avatar__initials { font-size: 2rem; }
+
+/* Surnom de vestiaire, entre guillemets sous le nom. Il s'efface avant le nom :
+   deux lignes maximum, puis l'ellipse — une carte ne s'etire pas. */
+.player-card__nick {
+  display: block;
+  margin-top: .15rem;
+  font-family: var(--font);
+  font-size: .74rem;
+  font-weight: 600;
+  font-style: italic;
+  letter-spacing: 0;
+  text-transform: none;
+  color: color-mix(in srgb, var(--position-accent, var(--brand-400)) 70%, #fff);
+  overflow: hidden;
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+}
 
 .player-card__identity { display: grid; gap: .05rem; line-height: 1.1; }
 .player-card__first { font-size: .82rem; color: var(--dark-muted); }
@@ -3044,41 +3063,6 @@ ul, ol { list-style: none; padding: 0; }
 
 /* ══════════════════════════════ 21. Pronostics ══ */
 
-.rewards {
-  list-style: none;
-  display: flex;
-  flex-wrap: wrap;
-  justify-content: center;
-  gap: .7rem;
-  padding: 0;
-  margin: 0 auto clamp(1.2rem, 3vw, 1.9rem);
-}
-.rewards__item {
-  display: flex;
-  align-items: center;
-  gap: .55rem;
-  padding: .5rem .95rem;
-  border-radius: 999px;
-  background: var(--dark-surface);
-  border: 1px solid var(--dark-line);
-}
-.rewards__item b {
-  font-family: var(--font-display);
-  font-size: 1.5rem;
-  font-weight: 900;
-  line-height: 1;
-}
-.rewards__item span {
-  font-size: .66rem;
-  line-height: 1.25;
-  letter-spacing: .06em;
-  text-transform: uppercase;
-  color: var(--dark-muted);
-}
-.rewards__item--exact b  { color: var(--gold-500); }
-.rewards__item--result b { color: var(--brand-400); }
-.rewards__item--played b { color: var(--dark-muted); }
-
 .pronos__account {
   display: flex;
   flex-wrap: wrap;
@@ -3150,6 +3134,90 @@ ul, ol { list-style: none; padding: 0; }
 .prono__state { font-size: .8rem; color: var(--dark-muted); }
 .prono__state--set { color: var(--brand-300); }
 .prono__state--won { color: var(--gold-500); font-weight: 700; }
+
+/* La question d'un pari libre : c'est elle le titre de la carte. */
+.prono__question {
+  font-family: var(--font-display);
+  font-size: 1.02rem;
+  font-weight: 800;
+  line-height: 1.3;
+  color: var(--dark-ink);
+}
+.prono__note { font-size: .82rem; color: var(--dark-muted); }
+
+/* Un pari a choix n'a pas d'ecussons a aligner : ses reponses prennent
+   toute la largeur, et se replient d'elles-memes. */
+.prono__row--choice { display: block; }
+.prono__choices { display: flex; flex-wrap: wrap; gap: .4rem; }
+
+.prono__choice { position: relative; }
+.prono__choice input {
+  position: absolute;
+  inset: 0;
+  width: 100%; height: 100%;
+  margin: 0;
+  opacity: 0;
+  cursor: pointer;
+}
+.prono__choice span {
+  display: block;
+  padding: .42rem .9rem;
+  border-radius: 999px;
+  border: 1px solid var(--dark-line);
+  background: rgba(255, 255, 255, .04);
+  font-size: .86rem;
+  color: var(--dark-ink);
+  transition: background var(--t-fast), border-color var(--t-fast);
+}
+.prono__choice input:hover + span { background: rgba(255, 255, 255, .1); }
+.prono__choice input:checked + span {
+  background: color-mix(in srgb, var(--brand-500) 32%, transparent);
+  border-color: var(--brand-400);
+  font-weight: 700;
+}
+.prono__choice input:focus-visible + span { outline: 2px solid var(--gold-500); outline-offset: 2px; }
+
+/* Le bareme, en toutes lettres sur la carte : ce que chaque palier rapporte. */
+.prono__scale {
+  display: flex;
+  flex-wrap: wrap;
+  gap: .3rem .7rem;
+  font-size: .74rem;
+  color: var(--dark-muted);
+}
+.prono__scale-item b {
+  font-family: var(--font-display);
+  font-size: .9rem;
+  color: var(--gold-500);
+}
+
+.pronos__intro {
+  max-width: 68ch;
+  margin: 0 auto 1rem;
+  text-align: center;
+  color: var(--dark-muted);
+}
+.pronos__rules {
+  max-width: 68ch;
+  margin: clamp(1.5rem, 4vw, 2.4rem) auto 0;
+  text-align: center;
+  font-size: .82rem;
+  color: var(--dark-muted);
+}
+
+/* Le pari du heros quand ce n'est pas un score : la question, puis les choix. */
+.hero-prono__question {
+  font-family: var(--font-display);
+  font-size: .95rem;
+  font-weight: 800;
+  color: var(--dark-ink);
+}
+.hero-prono__row--choice {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: .45rem;
+}
 
 .pronos__panel { max-width: 760px; margin: clamp(1.3rem, 3vw, 2rem) auto 0; }
 .pronos__subtitle {
@@ -3330,8 +3398,6 @@ ul, ol { list-style: none; padding: 0; }
   .result__name, .prono__name { white-space: normal; font-size: .76rem; line-height: 1.25; }
   .result__crest, .prono__crest { width: 26px; height: 26px; }
   .prono__inputs input { width: 2.7rem; font-size: 1rem; }
-  .rewards__item { padding: .45rem .75rem; }
-  .rewards__item b { font-size: 1.25rem; }
   .palmares-card { grid-template-columns: 1fr; }
   .palmares-card__icon { width: 40px; height: 40px; }
 }

@@ -45,6 +45,7 @@
         <li><a class="nav__link" href="/effectif">Effectif</a></li>
         <li><a class="nav__link" href="/compo">Compo</a></li>
         <li><a class="nav__link is-active" href="/resultats" aria-current="page">Résultats</a></li>
+        <li><a class="nav__link" href="/pronostics">Paris</a></li>
         <li><a class="nav__link" href="/palmares">Palmarès</a></li>
         <li><a class="nav__link" href="/galerie">Galerie</a></li>
         <li><a class="nav__link" href="/#stats">Stats</a></li>
@@ -107,35 +108,24 @@
   </section>
 
   <!-- ═══════════════════════════════════════ PRONOSTICS ══ -->
+  <!-- Les paris ont leur page : la garder ici en double reviendrait a
+       maintenir deux fois le meme formulaire. -->
   <section class="section section--dark" id="pronos">
     <div class="section__bg" aria-hidden="true"><span class="hero__glow hero__glow--c"></span></div>
     <div class="shell">
       <header class="section__head" data-reveal>
-        <p class="eyebrow eyebrow--light">Pronostics</p>
-        <h2 class="section__title">Devine le score, gagne des packs</h2>
+        <p class="eyebrow eyebrow--light">Paris</p>
+        <h2 class="section__title">Devine, et empoche des packs</h2>
         <p class="section__lead">
-          Les pronostics ferment au coup d&rsquo;envoi et se r&egrave;glent tout seuls d&egrave;s que
-          le r&eacute;sultat est publi&eacute;.
+          Le score du prochain match, le buteur, ou la question que le bureau a
+          invent&eacute;e cette semaine&nbsp;: chaque bonne r&eacute;ponse rapporte.
         </p>
       </header>
 
-      <ul class="rewards" data-reveal>
-        <li class="rewards__item rewards__item--exact"><b>15</b><span>packs<br>score exact</span></li>
-        <li class="rewards__item rewards__item--result"><b>3</b><span>packs<br>bon r&eacute;sultat</span></li>
-        <li class="rewards__item rewards__item--played"><b>1</b><span>pack<br>pour avoir jou&eacute;</span></li>
-      </ul>
-
-      <p class="pronos__account" id="pronos-account"></p>
-      <p class="form__status form__status--error" id="pronos-error" role="alert" hidden></p>
-
-      <div class="pronos" id="pronos-list"><!-- injecté par pronos.js --></div>
-
-      <div class="pronos__panel" data-pronos-history hidden>
-        <div id="pronos-history"></div>
-      </div>
-
-      <div class="pronos__panel" data-pronos-board hidden>
-        <div id="pronos-board"></div>
+      <div class="squad-cta" data-reveal>
+        <a class="btn btn--primary" href="/pronostics">Voir tous les paris
+          <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M13 5l7 7-7 7v-4H4v-6h9V5z"/></svg>
+        </a>
       </div>
     </div>
   </section>
@@ -189,7 +179,7 @@
         <li><a href="/galerie">Galerie</a></li>
         <li><a href="/#stade">Notre stade</a></li>
         <li><a href="/resultats">Résultats &amp; classement</a></li>
-        <li><a href="/resultats#pronos">Pronostics</a></li>
+        <li><a href="/pronostics">Pronostics</a></li>
         <li><a href="/palmares">Palmarès</a></li>
         <li><a href="/#stats">Stats Saison</a></li>
       </ul>
@@ -214,7 +204,7 @@
           <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 2.2c3.2 0 3.6 0 4.9.1 1.2.1 1.8.2 2.2.4.6.2 1 .5 1.4 1 .5.4.8.8 1 1.4.2.4.4 1 .4 2.2.1 1.3.1 1.7.1 4.9s0 3.6-.1 4.9c0 1.2-.2 1.8-.4 2.2-.2.6-.5 1-1 1.4-.4.5-.8.8-1.4 1-.4.2-1 .4-2.2.4-1.3.1-1.7.1-4.9.1s-3.6 0-4.9-.1c-1.2 0-1.8-.2-2.2-.4-.6-.2-1-.5-1.4-1-.5-.4-.8-.8-1-1.4-.2-.4-.4-1-.4-2.2-.1-1.3-.1-1.7-.1-4.9s0-3.6.1-4.9c0-1.2.2-1.8.4-2.2.2-.6.5-1 1-1.4.4-.5.8-.8 1.4-1 .4-.2 1-.4 2.2-.4 1.3-.1 1.7-.1 4.9-.1zm0 3.3A6.5 6.5 0 1 0 18.5 12 6.5 6.5 0 0 0 12 5.5zm0 10.7A4.2 4.2 0 1 1 16.2 12 4.2 4.2 0 0 1 12 16.2zm6.8-10.9a1.5 1.5 0 1 1-1.5-1.5 1.5 1.5 0 0 1 1.5 1.5z"/></svg>
         </a>
       </div>
-      <p class="site-footer__note">Une question&nbsp;? <a data-bind-mail="club.email" href="#">Écris-nous</a></p>
+      <p class="site-footer__note">Une question&nbsp;? <a href="/#contact">Écris-nous</a></p>
     </div>
   </div>
 
@@ -248,7 +238,7 @@
 
 <noscript>
   <div class="noscript">
-    <p><strong>JavaScript est d&eacute;sactiv&eacute;.</strong> Les r&eacute;sultats et le classement ne peuvent pas s&rsquo;afficher. Contactez-nous &agrave; <a href="mailto:contact@osafoot7.fr">contact@osafoot7.fr</a>.</p>
+    <p><strong>JavaScript est d&eacute;sactiv&eacute;.</strong> Les r&eacute;sultats et le classement ne peuvent pas s&rsquo;afficher. Retrouvez-nous sur Facebook ou Instagram.</p>
   </div>
 </noscript>
 

@@ -34,7 +34,8 @@ OSA/
 ├─ public/                     ← tout ce qui est publié (build output)
 │  ├─ index.html               ← la page d'accueil
 │  ├─ effectif.html            ← fiches des joueurs
-│  ├─ resultats.html           ← classement, résultats, pronostics
+│  ├─ resultats.html           ← classement et résultats
+│  ├─ pronostics.html          ← les paris du club
 │  ├─ palmares.html            ← titres et distinctions du club
 │  ├─ galerie.html · compo.html · packs.html
 │  ├─ mentions-legales.html
@@ -48,6 +49,7 @@ OSA/
 │  │  └─ js/
 │  │     ├─ content.js         ← contenu par défaut (source de vérité initiale)
 │  │     ├─ league.js          ← classement, forme du moment, matchs (pur calcul)
+│  │     ├─ bets.js            ← paris : statut, options, règlement (pur calcul)
 │  │     ├─ squad.js           ← cartes et fiches de l'effectif
 │  │     ├─ compo.js · packs.js · pronos.js
 │  │     ├─ app.js             ← logique du site public
@@ -64,13 +66,13 @@ OSA/
 │  ├─ media/[key].js           ← GET / DELETE         → un fichier
 │  ├─ club/session.js          ← comptes supporters
 │  ├─ club/packs.js            ← ouverture d'un pack
-│  ├─ club/predictions.js      ← pronostics et versement des gains
+│  ├─ club/predictions.js      ← paris et versement des gains
 │  └─ club/reset.js            ← remise à zéro des collections
 │
 ├─ lib/                        ← code partagé par les Functions
 │  ├─ http.js · auth.js · store.js · validate.js
 │  ├─ players.js               ← comptes, raretés, tirage des packs
-│  └─ predictions.js           ← règlement des pronostics
+│  └─ settle.js                ← règlement des paris
 │
 ├─ schema.sql                  ← schéma D1 (optionnel : auto-créé)
 ├─ wrangler.toml               ← configuration Cloudflare
@@ -199,7 +201,7 @@ L'administration est disponible sur **`https://votre-site.pages.dev/admin/`**.
 |---|---|---|---|
 | `ADMIN_PASSWORD` | Secret | Mot de passe du panel | Admin désactivée, site public OK |
 | `SESSION_SECRET` | Secret | Signature des cookies | Repli sur `ADMIN_PASSWORD` |
-| `DB` | Binding D1 | Contenu + messages | Contenu par défaut, formulaire en repli `mailto:` |
+| `DB` | Binding D1 | Contenu + messages | Contenu par défaut, formulaire hors service |
 | `MEDIA` | Binding KV | Images téléversées | Seules les images de `/img/` sont disponibles |
 
 ---
@@ -211,15 +213,16 @@ Rendez-vous sur `/admin/` et connectez-vous avec `ADMIN_PASSWORD`.
 | Onglet | Ce qu'on y fait |
 |---|---|
 | **Championnat** | Les **compétitions** (championnat, coupe, amicaux) avec leurs clubs et leur classement, le **catalogue des clubs** (nom, abréviation, écusson, pénalités), le barème de points, et **tous les matchs de la saison** : compétition, journée, coup d'envoi, équipes, score, et un récit facultatif (titre, buteurs, accroche, texte, photo) |
-| **Effectif** | Joueurs mis en avant (« en forme », « à surveiller »…), puis les fiches repliées en accordéon : photo, identité, numéro de maillot, âge, nationalité, poste (gardien, défenseur, milieu, attaquant, coach), année d'arrivée, étoiles mauvais pied et gestes techniques, 6 notes sur 99 (jeu de notes propre aux gardiens, aucune pour le staff), note générale, compagne, descriptif, valeur marchande |
+| **Paris** | Le pronostic de score ouvert d'office sur chaque match et son barème, puis **vos propres paris** : la question, sa nature (score, 1/N/2, question à choix), les réponses proposées, la date limite de mise, la clôture, la bonne réponse et les récompenses |
+| **Effectif** | Joueurs mis en avant (« en forme », « à surveiller »…), puis les fiches repliées en accordéon : photo, identité, **surnom**, numéro de maillot, âge, nationalité, poste (gardien, défenseur, milieu, attaquant, coach), année d'arrivée, étoiles mauvais pied et gestes techniques, 6 notes sur 99 (jeu de notes propre aux gardiens, aucune pour le staff), note générale, compagne, descriptif, valeur marchande |
 | **Stats saison** | Neuf classements (buteurs, passeurs, CSC, penaltys concédés, matchs joués, présence à l'entraînement, buts sur coup franc, buts sur penalty, arrêts) : un compteur par joueur de l'effectif, plus le titre, l'unité, la couleur, l'icône et le poste concerné de chaque colonne. Les 3 premiers forment le podium, le reste se déroule à la demande |
 | **Palmarès** | Titres et distinctions : année, intitulé, compétition, place obtenue, précisions, photo, et une case « mettre en avant » qui passe la médaille en trophée |
 | **Chant du club** | Titre, sous-titre et paroles. Sans paroles, la section n'apparaît nulle part |
 | **Galerie** | Photos du club : téléversement, légende, texte alternatif, réordonnancement. Jusqu'à 200 photos |
 | **Calendrier** | Images du calendrier officiel, légendes, textes alternatifs |
 | **Affiche de secours** | L'affiche de la page d'accueil, utilisée **seulement** si aucun match n'est programmé au championnat |
-| **Club & réseaux** | Nom, logo, e-mail public, adresse du stade, Facebook, Instagram, année du copyright, et la section « Notre stade » (titre, nom du stade, accroche, carte Google Maps) |
-| **Mentions légales** | Dénomination, statut, siège social, RNA/SIREN, directeur de la publication, e-mail légal, crédits de réalisation |
+| **Club & réseaux** | Nom, logo, adresse du stade, Facebook, Instagram, année du copyright, et la section « Notre stade » (titre, nom du stade, accroche, carte Google Maps) |
+| **Mentions légales** | Dénomination, statut, siège social, RNA/SIREN, directeur de la publication, crédits de réalisation |
 | **Médiathèque** | Téléverser des images (glisser-déposer), copier leur chemin, supprimer |
 | **Messages** | Lire, marquer lu/non lu, répondre et supprimer les messages du formulaire |
 
@@ -318,32 +321,77 @@ Points d'attention :
 - **Supprimer une compétition** qui compte des matchs est signalé de même : ces
   matchs seront rattachés à la première compétition restante, jamais perdus.
 
-### Pronostics (`/resultats#pronos`)
+### Les paris (`/pronostics`)
 
-Les supporters connectés devinent le score des matchs à venir et gagnent des
-packs. **Vous n'avez rien à déclencher** : les gains tombent tout seuls dès que
-vous saisissez le score du match.
+Les supporters connectés répondent, et gagnent des packs quand ils tombent
+juste. Trois natures de paris, et pas une de plus :
 
-| Résultat du pronostic | Gain |
+| Nature | Ce qu'on devine | Qui tranche |
+|---|---|---|
+| **Score exact d'un match** | Deux nombres | Le score que vous saisissez dans l'onglet Championnat |
+| **Résultat 1 / N / 2** | Laquelle des deux équipes, ou le nul | Le même score |
+| **Question à choix** | Une réponse parmi celles que vous proposez | **Vous**, et personne d'autre |
+
+Les deux premières se règlent **toutes seules** : vous entrez le score, les
+packs tombent au passage suivant des parieurs. La troisième attend votre
+verdict — c'est le moule commun du buteur, du passeur, de l'homme du match et du
+pari pour rire.
+
+#### Le pronostic ouvert d'office
+
+Un pronostic de score s'ouvre de lui-même sur **chaque match daté** du
+calendrier, avec le barème réglé une fois pour toutes dans l'onglet Paris :
+
+| Résultat | Gain par défaut |
 |---|---|
 | Score exact | **15 packs** |
 | Bon résultat (bon vainqueur, ou nul annoncé) | **3 packs** |
 | Avoir joué | **1 pack** |
 
 Les trois paliers s'excluent : un score exact rapporte 15 packs, pas 15 + 3 + 1.
+La case « Ouvrir un pronostic de score sur chaque match » les coupe tous d'un
+coup ; créer un pari de score sur un match à la main remplace celui du match.
 
-- Le pronostic du prochain match se saisit **directement sur la page d'accueil**,
+#### Créer un pari
+
+Le bouton « Ajouter un pari » en crée un déjà réglé sur **oui / non** — c'est
+celui qu'on invente le plus souvent : *« Nathan perd 2 kilos ou plus d'ici la
+fin de la saison ? »*. Deux raccourcis remplacent la liste des réponses d'un
+clic : **Oui / Non**, et **les joueurs de l'effectif** (le staff en est écarté :
+un coach ne marque pas).
+
+| Réglage | Effet |
+|---|---|
+| **La question** | Le titre du pari sur le site |
+| **Nature** | Score, 1/N/2, ou question à choix |
+| **Match concerné** | Obligatoire pour les deux premières ; facultatif ailleurs, où il sert d'échéance |
+| **Date limite de mise** | Vide = le coup d'envoi s'il y a un match, sinon aucune limite |
+| **Clore les mises maintenant** | Ferme sur-le-champ, quelle que soit la date |
+| **Bonne réponse** | À cocher **une fois le pari terminé**. Plusieurs cases sont permises — un match a souvent deux buteurs |
+| **Récompenses** | Ce que rapportent la bonne réponse et la simple participation |
+
+**Cocher la bonne réponse clôt le pari du même geste.** C'est voulu : laisser
+miser après coup reviendrait à distribuer les packs à qui lit cette page. L'état
+affiché dans l'en-tête de la fiche — *mises ouvertes*, *mises closes*, *réglé* —
+le dit avant que vous n'enregistriez, pas après.
+
+#### Ce qui vaut pour tous les paris
+
+- Le pari du prochain match se saisit **directement sur la page d'accueil**,
   sous le compte à rebours. Les champs sont ouverts à tout le monde : le compte
-  n'est demandé qu'**au moment de valider**, et le score saisi est gardé sur
-  l'appareil puis envoyé tout seul dès la connexion.
-- Un match n'est ouvert aux pronostics que s'il a **une date** et que le coup
-  d'envoi n'est pas passé. Sans date, impossible de fermer les paris à temps :
-  on préfère ne pas les ouvrir.
-- Chacun n'a **qu'un pronostic par match**, modifiable jusqu'au coup d'envoi.
-- Un match **reporté ou supprimé** laisse le pronostic ouvert, sans rien
-  rapporter. Redonnez-lui une date, il repart.
-- Le versement est verrouillé en base (`settled_at`) : un pronostic ne peut pas
-  rapporter deux fois, même si deux onglets appellent l'API en même temps.
+  n'est demandé qu'**au moment de valider**, et la réponse est gardée sur
+  l'appareil puis envoyée toute seule dès la connexion.
+- Un pari sur un match n'ouvre que s'il a **une date** et que le coup d'envoi
+  n'est pas passé. Sans date, impossible de fermer les mises à temps : on
+  préfère ne pas les ouvrir.
+- Chacun n'a **qu'une réponse par pari**, modifiable jusqu'à la clôture.
+- Un match **reporté ou supprimé** laisse la mise en attente, sans rien
+  rapporter. Redonnez-lui une date, elle repart.
+- Le versement est verrouillé en base (`settled_at`) : une mise ne peut pas
+  rapporter deux fois, même si deux onglets appellent l'API en même temps. Et
+  changer la bonne réponse après coup ne reverse rien.
+- Les pronostics d'avant les paris ont été **repris automatiquement** : ils
+  portaient l'identifiant du match, que le pari ouvert d'office reprend tel quel.
 
 ### Packs & collection (`/packs`)
 
@@ -450,14 +498,16 @@ Rien à administrer : la page se sert de l'effectif tel qu'il est saisi.
   65 à 74, vert de 75 à 84, vert foncé à partir de 85.
 - Les images acceptées sont JPG, PNG, WebP, GIF et AVIF, jusqu'à 5 Mo.
   Le SVG est refusé pour des raisons de sécurité.
-- **La carte du stade ne se charge qu'au clic.** Tant que le visiteur n'a pas
-  appuyé sur « Afficher le plan », aucune requête ne part vers Google : le site
-  reste sans tiers ni cookie par défaut, et la page se charge plus vite. Le
-  bandeau explique ce qui se passe avant d'y consentir.
+- **Le plan du stade s'affiche directement.** Demander un clic avant de le
+  montrer faisait manquer l'essentiel — savoir où l'on joue — à qui ne cliquait
+  pas. L'iframe reste en `loading="lazy"` : elle n'appelle Google qu'au moment
+  où la section entre dans le champ de l'écran, et jamais pour un visiteur qui
+  ne descend pas jusque-là. C'est le seul tiers du site, et les mentions
+  légales le déclarent (section 6).
 - Le champ **Carte Google Maps** n'accepte que l'adresse `google.com/maps/embed`
   (pas le code de l'iframe entier), et la politique de sécurité du site
   n'autorise l'affichage d'aucun autre domaine dans un cadre.
-- Le document enregistré porte une **version de modèle** (`version`, actuellement 5).
+- Le document enregistré porte une **version de modèle** (`version`, actuellement 9).
   Un contenu plus ancien est migré à la volée au chargement, étape par étape :
   v1 → v2 remplace les anciens classements à noms libres par ceux liés à
   l'effectif (compteurs à zéro) ; v2 → v3 ajoute coup franc, penalty et arrêts
@@ -536,9 +586,12 @@ club tient très largement dans ses limites (1 Go, valeurs jusqu'à 25 Mo).
 change quelques fois par mois. Sans build, il n'y a ni dépendances à mettre à
 jour, ni pipeline à réparer dans deux ans : `git push` et c'est en ligne.
 
-**Aucune ressource externe.** Polices système, SVG en ligne, zéro CDN : le site
-ne dépose aucun cookie tiers, ne fuit aucune donnée vers un autre domaine et
-reste conforme au RGPD sans bandeau de consentement.
+**Une seule ressource externe.** Polices système, SVG en ligne, zéro CDN : le
+site ne charge rien d'un autre domaine, à une exception près — le plan Google
+Maps de la section « Notre stade », déclaré dans les mentions légales. Les
+cookies déposés par le site lui-même se comptent sur deux doigts
+(`osa_session` pour l'administration, `osa_player` pour les comptes
+supporters), tous deux strictement nécessaires au service demandé.
 
 **Le schéma D1 est auto-créé.** `lib/store.js` intercepte l'erreur
 « no such table », applique le schéma puis rejoue la requête. Aucune migration
@@ -578,11 +631,12 @@ si `SESSION_SECRET` n'est pas défini (il sert alors de clé de signature).
 | Le coup d'envoi de chaque match à venir : sans date, pas de pronostics | *Championnat* → champ **Coup d'envoi** |
 | Les dates des matchs déjà joués (vides à l'origine) | *Championnat* → champ **Coup d'envoi** |
 | Les numéros de maillot | *Effectif* → champ **Numéro** |
-| E-mail réel du club (`contact@osafoot7.fr` est un exemple) | *Club & réseaux* |
+| Les surnoms de vestiaire, s'il y en a | *Effectif* → champ **Surnom** |
 | Vraies URLs Facebook / Instagram (vide = lien masqué) | *Club & réseaux* |
 | Siège social, RNA/SIREN, directeur de la publication | *Mentions légales* |
 | Classements de la saison (buteurs, passeurs, CSC, penaltys, matchs joués, entraînement) | *Stats saison* |
 | Le palmarès et les paroles du chant, s'il y en a | *Palmarès*, *Chant du club* |
+| Le barème des pronostics de match, et vos premiers paris | *Paris* |
 
 Une pastille **!** reste affichée sur l'onglet *Mentions légales* tant que les
 informations obligatoires manquent, et un encadré d'avertissement s'affiche sur

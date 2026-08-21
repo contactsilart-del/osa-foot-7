@@ -1,21 +1,25 @@
 /**
- * OSA FOOT 7 — pronostics.
+ * OSA FOOT 7 — les paris, côté navigateur.
  *
- * On devine le score des matchs à venir ; dès que le résultat est saisi dans
- * l'administration, les packs tombent tout seuls au passage suivant du parieur.
- * Score exact, bon résultat, ou simple participation : trois paliers, jamais
- * cumulés.
+ * Trois natures, un seul geste : on répond, on valide, et les packs tombent
+ * quand la réponse est connue. Le score d'un match se règle tout seul dès qu'il
+ * est saisi dans l'administration ; les autres paris attendent que le bureau
+ * désigne la bonne réponse.
  *
- * Le navigateur n'arbitre rien. Il envoie une prévision, le serveur la compare
- * au score officiel — sans quoi il suffirait de modifier la page pour gagner.
+ * Le navigateur n'arbitre rien. Il envoie une réponse, le serveur la compare à
+ * la bonne — sans quoi il suffirait de modifier la page pour gagner. Ce que ce
+ * module calcule (qui est ouvert, ce que ça rapporte) n'est qu'un affichage :
+ * les mêmes règles tournent côté serveur, dans le même module `bets.js`.
  */
 
 import {
-  competitionName, isPredictable, predictableMatches, teamLogo, teamName, teamShort,
-  kickoffTime, nextMatchFor
-} from './league.js';
+  allBets, answerLabel, betById, betStatus, correctAnswers, deadlineOf, isOpen,
+  matchOf, openBets, optionsOf, outcomeLabel, parseScore, scaleOf, scoreAnswer
+} from './bets.js';
+import { teamLogo, teamName, teamShort, competitionName } from './league.js';
 
 const $ = (sel, root = document) => root.querySelector(sel);
+const $$ = (sel, root = document) => Array.from(root.querySelectorAll(sel));
 
 function esc(value) {
   return String(value ?? '')
@@ -27,32 +31,25 @@ const DATE_MATCH = new Intl.DateTimeFormat('fr-FR', {
   weekday: 'long', day: 'numeric', month: 'long', hour: '2-digit', minute: '2-digit'
 });
 
-const OUTCOME_LABELS = {
-  exact: 'Score exact',
-  result: 'Bon résultat',
-  played: 'Participation'
-};
-
 const state = {
   content: null,
   user: null,
-  /** matchId → { home, away, settled, outcome, awarded } */
-  predictions: new Map(),
+  /** betId → { answer, settled, outcome, awarded } */
+  wagers: new Map(),
   board: [],
-  rewards: { exact: 15, result: 3, played: 1 },
   busy: false,
   loaded: false,
-  /** Formulaire du héros où l'invitation à se connecter est affichée. */
+  /** Pari du héros où l'invitation à se connecter est affichée. */
   invite: ''
 };
 
-/* ══════════════════════════════ Pronostic en attente ══ */
+/* ══════════════════════════════ Pari en attente ══ */
 
 /**
- * Un visiteur sans compte peut saisir son pronostic : on le garde sur son
- * appareil, et il part tout seul dès qu'il se connecte. Sans cela, il faudrait
- * lui demander de créer un compte *avant* de savoir de quoi il s'agit — et
- * retaper son score après.
+ * Un visiteur sans compte peut répondre : on garde sa réponse sur son appareil,
+ * et elle part toute seule dès qu'il se connecte. Sans cela, il faudrait lui
+ * demander de créer un compte *avant* de savoir de quoi il s'agit — et retaper
+ * sa réponse après.
  */
 const EN_ATTENTE = 'osa.prono.attente';
 
@@ -60,7 +57,7 @@ function lireAttente() {
   try {
     const brut = window.localStorage?.getItem(EN_ATTENTE);
     const valeur = brut ? JSON.parse(brut) : null;
-    return valeur && typeof valeur.matchId === 'string' ? valeur : null;
+    return valeur && typeof valeur.betId === 'string' ? valeur : null;
   } catch {
     return null;
   }
@@ -71,18 +68,23 @@ function garderAttente(valeur) {
     if (valeur) window.localStorage?.setItem(EN_ATTENTE, JSON.stringify(valeur));
     else window.localStorage?.removeItem(EN_ATTENTE);
   } catch {
-    // Navigation privée, stockage plein : le pronostic ne survivra pas à la
+    // Navigation privée, stockage plein : la réponse ne survivra pas à la
     // connexion, mais la page continue de fonctionner.
   }
 }
 
-function attenteDe(matchId) {
+function attenteDe(betId) {
   const valeur = lireAttente();
-  return valeur && valeur.matchId === matchId ? valeur : null;
+  return valeur && valeur.betId === betId ? valeur : null;
 }
 
-function champ() {
-  return state.content?.championship || {};
+/** La réponse déjà posée sur un pari : enregistrée, ou en attente de connexion. */
+function miseDe(betId) {
+  return state.wagers.get(betId) || attenteDe(betId) || null;
+}
+
+function contenu() {
+  return state.content || {};
 }
 
 /* ═══════════════════════════════════════════ Réseau ══ */
@@ -119,20 +121,19 @@ function setError(message) {
 function absorb(payload) {
   state.user = payload.user || null;
   state.board = Array.isArray(payload.board) ? payload.board : [];
-  if (payload.rewards) state.rewards = payload.rewards;
-  state.predictions = new Map(
-    (Array.isArray(payload.predictions) ? payload.predictions : []).map((p) => [p.matchId, p])
+  state.wagers = new Map(
+    (Array.isArray(payload.wagers) ? payload.wagers : []).map((mise) => [mise.betId, mise])
   );
   state.loaded = true;
 }
 
-/** Envoie le pronostic mis de côté avant la connexion, s'il tient encore. */
+/** Envoie la réponse mise de côté avant la connexion, si le pari tient encore. */
 async function envoyerAttente() {
   const attente = lireAttente();
   if (!state.user || !attente) return false;
 
-  const match = (champ().matches || []).find((rencontre) => rencontre.id === attente.matchId);
-  if (!match || !isPredictable(match)) {
+  const pari = betById(contenu(), attente.betId);
+  if (!pari || !isOpen(contenu(), pari)) {
     garderAttente(null);
     return false;
   }
@@ -140,11 +141,11 @@ async function envoyerAttente() {
   try {
     const payload = await api('/api/club/predictions', {
       method: 'POST',
-      body: JSON.stringify({ matchId: attente.matchId, home: attente.home, away: attente.away })
+      body: JSON.stringify({ betId: attente.betId, answer: attente.answer })
     });
-    state.predictions.set(attente.matchId, payload.prediction);
+    state.wagers.set(attente.betId, payload.wager);
     garderAttente(null);
-    toast(`Pronostic enregistré : ${attente.home} – ${attente.away}. Bonne chance !`);
+    toast(`Pari enregistré : ${answerLabel(contenu(), pari, attente.answer)}. Bonne chance !`);
     return true;
   } catch {
     garderAttente(null);
@@ -159,7 +160,7 @@ async function charger() {
     // Les gains viennent d'être versés : autant le dire, la page ne se
     // rechargera pas toute seule.
     if (payload.settled?.packs) {
-      toast(`+${payload.settled.packs} pack${payload.settled.packs > 1 ? 's' : ''} : vos pronostics sont tombés !`);
+      toast(`+${payload.settled.packs} pack${payload.settled.packs > 1 ? 's' : ''} : vos paris sont tombés !`);
     }
     await envoyerAttente();
   } catch {
@@ -172,16 +173,301 @@ async function charger() {
 /* ═══════════════════════════════════════════ Rendu ══ */
 
 function crest(teamId) {
-  const logo = teamLogo(champ(), teamId);
-  const nom = teamShort(champ(), teamId);
+  const champ = contenu().championship || {};
+  const logo = teamLogo(champ, teamId);
+  const nom = teamShort(champ, teamId);
   return logo
     ? `<img src="${esc(logo)}" alt="" width="44" height="44" loading="lazy" decoding="async">`
     : `<span class="crest__initial" aria-hidden="true">${esc(nom.charAt(0) || '?')}</span>`;
 }
 
-function whenLabel(match) {
-  const heure = kickoffTime(match);
-  return heure === null ? 'Date à confirmer' : DATE_MATCH.format(new Date(heure));
+/** « ferme dimanche 13 septembre à 10:00 », ou rien si rien ne ferme. */
+function echeanceTexte(pari) {
+  const limite = deadlineOf(contenu(), pari);
+  if (limite === null) return 'Ouvert jusqu’à nouvel ordre';
+  const quand = DATE_MATCH.format(new Date(limite));
+  return betStatus(contenu(), pari) === 'open' ? `Ferme ${quand}` : `Fermé le ${quand}`;
+}
+
+/** Le barème, en pastilles : ce que chaque palier rapporte. */
+function baremeHTML(pari) {
+  const paliers = scaleOf(pari);
+  if (!paliers.length) return '';
+  return `
+    <span class="prono__scale">
+      ${paliers.map((palier) => `
+        <span class="prono__scale-item">
+          <b>${palier.packs}</b> ${esc(palier.label.toLowerCase())}
+        </span>`).join('')}
+    </span>`;
+}
+
+/* ─────────────────────────── Champs de réponse ── */
+
+/**
+ * Les deux scores d'un pari de match. Le libellé des équipes accompagne chaque
+ * champ : sans lui, on ne sait plus lequel des deux nombres est pour qui.
+ */
+function scoreControlsHTML(pari, prefixe) {
+  const champ = contenu().championship || {};
+  const match = matchOf(contenu(), pari);
+  const valeurs = parseScore(miseDe(pari.id)?.answer);
+  const domicile = match ? teamName(champ, match.homeId) : 'Domicile';
+  const exterieur = match ? teamName(champ, match.awayId) : 'Extérieur';
+  const id = (cote) => `${prefixe}-${cote}`;
+
+  return `
+    <span class="prono__inputs">
+      <label class="sr-only" for="${id('home')}">Buts de ${esc(domicile)}</label>
+      <input id="${id('home')}" name="home" type="number" min="0" max="30" step="1"
+             inputmode="numeric" placeholder="0" value="${valeurs ? valeurs.home : ''}">
+      <i aria-hidden="true">–</i>
+      <label class="sr-only" for="${id('away')}">Buts de ${esc(exterieur)}</label>
+      <input id="${id('away')}" name="away" type="number" min="0" max="30" step="1"
+             inputmode="numeric" placeholder="0" value="${valeurs ? valeurs.away : ''}">
+    </span>`;
+}
+
+/** Les réponses au choix : des pastilles à cocher, une seule à la fois. */
+function choiceControlsHTML(pari, prefixe) {
+  const posee = miseDe(pari.id)?.answer || '';
+  return `
+    <span class="prono__choices" role="radiogroup" aria-label="${esc(pari.question)}">
+      ${optionsOf(contenu(), pari).map((option, rang) => `
+        <label class="prono__choice">
+          <input type="radio" name="answer" value="${esc(option.id)}"
+                 id="${prefixe}-o${rang}"${posee === option.id ? ' checked' : ''}>
+          <span>${esc(option.label)}</span>
+        </label>`).join('')}
+    </span>`;
+}
+
+function controlsHTML(pari, prefixe) {
+  return pari.type === 'score'
+    ? scoreControlsHTML(pari, prefixe)
+    : choiceControlsHTML(pari, prefixe);
+}
+
+/** L'état d'un pari du point de vue du visiteur. */
+function etatHTML(pari) {
+  const mise = state.wagers.get(pari.id);
+  if (!mise) {
+    const attente = attenteDe(pari.id);
+    return attente
+      ? `<span class="prono__state prono__state--set">${esc(answerLabel(contenu(), pari, attente.answer))}, en attente de connexion</span>`
+      : '<span class="prono__state">Pas encore de réponse</span>';
+  }
+  if (!mise.settled) {
+    return `<span class="prono__state prono__state--set">Enregistré : ${esc(answerLabel(contenu(), pari, mise.answer))}</span>`;
+  }
+  return `<span class="prono__state prono__state--won">${esc(outcomeLabel(pari, mise.outcome) || 'Réglé')} · +${mise.awarded} pack${mise.awarded > 1 ? 's' : ''}</span>`;
+}
+
+/* ══════════════════════════════════ Héros ══ */
+
+/** Le pari mis en avant sur l'accueil : le prochain match, à défaut le premier. */
+function pariDuHeros() {
+  const ouverts = openBets(contenu());
+  if (!ouverts.length) return null;
+  const surUnMatch = ouverts.find((pari) => pari.matchId && pari.type === 'score');
+  return surUnMatch || ouverts[0];
+}
+
+/**
+ * Le pari du prochain match, directement dans le héros. Les champs sont ouverts
+ * à tous : c'est en validant, pas avant, qu'on demande un compte.
+ */
+function renderHero() {
+  const zone = $('#pronos-hero');
+  if (!zone) return;
+
+  const pari = pariDuHeros();
+  zone.hidden = !pari;
+  if (!pari) { zone.innerHTML = ''; return; }
+
+  const champ = contenu().championship || {};
+  const match = matchOf(contenu(), pari);
+  const mise = state.wagers.get(pari.id);
+  const invite = state.invite === pari.id && !state.user;
+  const paliers = scaleOf(pari);
+
+  const rappel = paliers.length
+    ? paliers.map((palier) => `${palier.label.toLowerCase()} : ${palier.packs}`).join(' · ')
+    : 'Réponse juste, packs à la clé';
+
+  zone.innerHTML = `
+    <form class="hero-prono__form" data-bet="${esc(pari.id)}">
+      <p class="hero-prono__title">
+        <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 2 4.5 6v6c0 4.4 3.2 8.5 7.5 9.5 4.3-1 7.5-5.1 7.5-9.5V6L12 2zm-1 5h2v6h-2V7zm0 8h2v2h-2v-2z"/></svg>
+        ${mise ? 'Ton pari' : 'Ton pari ?'}
+      </p>
+
+      ${pari.type === 'score' && match ? `
+        <div class="hero-prono__row">
+          <span class="hero-prono__team">${esc(teamShort(champ, match.homeId))}</span>
+          ${controlsHTML(pari, 'hero-prono')}
+          <span class="hero-prono__team">${esc(teamShort(champ, match.awayId))}</span>
+          <button class="btn btn--primary btn--sm" type="submit">${mise ? 'Modifier' : 'Valider'}</button>
+        </div>`
+      : `
+        <p class="hero-prono__question">${esc(pari.question)}</p>
+        <div class="hero-prono__row hero-prono__row--choice">
+          ${controlsHTML(pari, 'hero-prono')}
+          <button class="btn btn--primary btn--sm" type="submit">${mise ? 'Modifier' : 'Valider'}</button>
+        </div>`}
+
+      ${invite ? `
+        <p class="hero-prono__invite" role="status">
+          Créez votre compte pour enregistrer ce pari — c'est gratuit, et votre
+          réponse est déjà gardée de côté.
+          <a class="btn btn--primary btn--sm" href="/packs?retour=%2F">Créer mon compte</a>
+        </p>`
+      : `
+        <p class="hero-prono__note">
+          ${mise
+            ? `Enregistré : <b>${esc(answerLabel(contenu(), pari, mise.answer))}</b>. Modifiable jusqu'à la clôture.`
+            : esc(rappel)}
+          <a class="hero-prono__more" href="/pronostics">Tous les paris</a>
+        </p>`}
+    </form>`;
+}
+
+/* ══════════════════════════════════ Liste ══ */
+
+/** Le chapeau d'un pari : sa compétition, sa journée, son échéance. */
+function metaHTML(pari) {
+  const champ = contenu().championship || {};
+  const match = matchOf(contenu(), pari);
+  const competition = match ? competitionName(champ, match.competitionId) : '';
+  return `
+    <p class="prono__meta">
+      ${match?.day ? `<span class="chip">${match.day}${match.day === 1 ? 're' : 'e'} journée</span>` : ''}
+      ${competition ? `<span class="chip chip--soft">${esc(competition)}</span>` : ''}
+      <span class="prono__when">${esc(echeanceTexte(pari))}</span>
+    </p>`;
+}
+
+/*
+ * Pas de `data-reveal` sur ces formulaires : l'animation d'apparition est
+ * pilotée par app.js, qui observe les blocs présents dans SA page. Ce module
+ * dessine les siens après coup et n'a pas accès à l'observateur — un
+ * `data-reveal` resterait donc à opacité zéro, et le formulaire serait invisible
+ * dans un vrai navigateur (les tests, sans IntersectionObserver, ne le voyaient
+ * pas passer).
+ */
+function pariHTML(pari) {
+  const champ = contenu().championship || {};
+  const match = matchOf(contenu(), pari);
+  const mise = state.wagers.get(pari.id);
+  const prefixe = `prono-${pari.id.replace(/[^a-zA-Z0-9_-]/g, '-')}`;
+
+  const corps = pari.type === 'score' && match
+    ? `
+      <div class="prono__row">
+        <span class="prono__team">
+          <span class="prono__crest">${crest(match.homeId)}</span>
+          <span class="prono__name">${esc(teamName(champ, match.homeId))}</span>
+        </span>
+        ${controlsHTML(pari, prefixe)}
+        <span class="prono__team prono__team--away">
+          <span class="prono__crest">${crest(match.awayId)}</span>
+          <span class="prono__name">${esc(teamName(champ, match.awayId))}</span>
+        </span>
+      </div>`
+    : `<div class="prono__row prono__row--choice">${controlsHTML(pari, prefixe)}</div>`;
+
+  const titre = pari.type === 'score' && match ? '' : `<p class="prono__question">${esc(pari.question)}</p>`;
+
+  return `
+    <form class="prono prono--${esc(pari.type)}" data-bet="${esc(pari.id)}">
+      ${metaHTML(pari)}
+      ${titre}
+      ${pari.note ? `<p class="prono__note">${esc(pari.note)}</p>` : ''}
+      ${corps}
+      <div class="prono__foot">
+        <button class="btn btn--primary btn--sm" type="submit">${mise ? 'Modifier' : 'Valider'}</button>
+        ${etatHTML(pari)}
+        ${baremeHTML(pari)}
+      </div>
+    </form>`;
+}
+
+function renderOpen() {
+  const zone = $('#pronos-list');
+  if (!zone) return;
+
+  const ouverts = openBets(contenu());
+  zone.innerHTML = ouverts.length
+    ? ouverts.map(pariHTML).join('')
+    : `<p class="empty">Aucun pari ouvert pour l'instant. Revenez quand la prochaine rencontre
+       sera programmée, ou quand le bureau aura lancé un nouveau pari.</p>`;
+
+  const compte = $('#pronos-count');
+  if (compte) {
+    compte.hidden = !ouverts.length;
+    compte.textContent = `${ouverts.length} pari${ouverts.length > 1 ? 's' : ''} ouvert${ouverts.length > 1 ? 's' : ''}`;
+  }
+}
+
+/** Les paris dont les mises sont closes, mais dont on attend encore la réponse. */
+function renderLocked() {
+  const zone = $('#pronos-locked');
+  if (!zone) return;
+
+  const bloc = zone.closest('[data-pronos-locked]') || zone;
+  const attente = allBets(contenu())
+    .filter((pari) => betStatus(contenu(), pari) === 'locked')
+    // Un pari sans mise de notre part n'a rien à faire dans « en attente » : la
+    // page se remplirait de rencontres qui ne nous concernent pas.
+    .filter((pari) => miseDe(pari.id));
+
+  bloc.hidden = !attente.length;
+  if (!attente.length) { zone.innerHTML = ''; return; }
+
+  zone.innerHTML = `
+    <h2 class="pronos__subtitle">En attente du résultat</h2>
+    <ul class="pronos__log">
+      ${attente.map((pari) => `
+        <li class="pronos__log-item">
+          <span class="pronos__log-match">${esc(pari.question)}</span>
+          <span class="pronos__log-guess">votre réponse : ${esc(answerLabel(contenu(), pari, miseDe(pari.id).answer))}</span>
+          <span class="pronos__log-gain">à venir</span>
+        </li>`).join('')}
+    </ul>`;
+}
+
+function renderHistory() {
+  const zone = $('#pronos-history');
+  if (!zone) return;
+
+  const regles = [...state.wagers.values()].filter((mise) => mise.settled);
+  const bloc = zone.closest('[data-pronos-history]') || zone;
+  bloc.hidden = !regles.length;
+  if (!regles.length) { zone.innerHTML = ''; return; }
+
+  zone.innerHTML = `
+    <h2 class="pronos__subtitle">Vos paris réglés</h2>
+    <ul class="pronos__log">
+      ${regles.map((mise) => {
+        const pari = betById(contenu(), mise.betId);
+        if (!pari) {
+          return `
+            <li class="pronos__log-item">
+              <span class="pronos__log-match">Pari retiré du site</span>
+              <span class="pronos__log-guess">votre réponse : ${esc(mise.answer)}</span>
+              <span class="pronos__log-gain">+${mise.awarded}</span>
+            </li>`;
+        }
+        const bonnes = correctAnswers(contenu(), pari)
+          .map((reponse) => answerLabel(contenu(), pari, reponse)).join(' ou ');
+        return `
+          <li class="pronos__log-item pronos__log-item--${esc(mise.outcome || 'played')}">
+            <span class="pronos__log-match">${esc(pari.question)}${bonnes ? ` — ${esc(bonnes)}` : ''}</span>
+            <span class="pronos__log-guess">votre réponse : ${esc(answerLabel(contenu(), pari, mise.answer))}</span>
+            <span class="pronos__log-gain">${esc(outcomeLabel(pari, mise.outcome) || '—')} · +${mise.awarded}</span>
+          </li>`;
+      }).join('')}
+    </ul>`;
 }
 
 function renderAccount() {
@@ -191,186 +477,11 @@ function renderAccount() {
   if (!state.loaded) { zone.innerHTML = ''; return; }
 
   zone.innerHTML = state.user
-    ? `<span class="pronos__who">Vous pronostiquez en tant que <b>${esc(state.user.username)}</b></span>
+    ? `<span class="pronos__who">Vous pariez en tant que <b>${esc(state.user.username)}</b></span>
        <span class="pronos__stock">${state.user.packs} pack${state.user.packs > 1 ? 's' : ''} en réserve</span>`
-    : `<span class="pronos__who">Saisissez vos scores : le compte n'est demandé qu'au moment
-         d'enregistrer, et vos pronostics vous suivent.</span>
-       <a class="btn btn--primary btn--sm" href="/packs?retour=%2Fresultats%23pronos">Créer mon compte</a>`;
-}
-
-function predictionState(match) {
-  const mise = state.predictions.get(match.id);
-  if (!mise) {
-    const attente = attenteDe(match.id);
-    return attente
-      ? `<span class="prono__state prono__state--set">${attente.home} – ${attente.away}, en attente de connexion</span>`
-      : '<span class="prono__state">Pas encore de pronostic</span>';
-  }
-  if (!mise.settled) {
-    return `<span class="prono__state prono__state--set">Pronostic enregistré : ${mise.home} – ${mise.away}</span>`;
-  }
-  return `<span class="prono__state prono__state--won">${esc(OUTCOME_LABELS[mise.outcome] || 'Réglé')} · +${mise.awarded} pack${mise.awarded > 1 ? 's' : ''}</span>`;
-}
-
-/* ══════════════════════════════════ Héros ══ */
-
-/** Rappel du barème, affiché tant que rien n'est joué. */
-function baremeTexte() {
-  return `Score exact : ${state.rewards.exact} packs · bon résultat : ${state.rewards.result} · `
-    + `participation : ${state.rewards.played}`;
-}
-
-/**
- * Le pronostic du prochain match, directement dans le héros. Les champs sont
- * ouverts à tous : c'est en validant, pas avant, qu'on demande un compte.
- */
-function renderHero() {
-  const zone = $('#pronos-hero');
-  if (!zone) return;
-
-  const match = predictableMatches(champ())
-    .find((rencontre) => rencontre.id === nextMatchFor(champ())?.id)
-    || predictableMatches(champ())[0];
-
-  zone.hidden = !match;
-  if (!match) { zone.innerHTML = ''; return; }
-
-  const mise = state.predictions.get(match.id);
-  const attente = attenteDe(match.id);
-  const valeurs = mise || attente;
-  const invite = state.invite === match.id && !state.user;
-
-  zone.innerHTML = `
-    <form class="hero-prono__form" data-match="${esc(match.id)}">
-      <p class="hero-prono__title">
-        <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 2 4.5 6v6c0 4.4 3.2 8.5 7.5 9.5 4.3-1 7.5-5.1 7.5-9.5V6L12 2zm-1 5h2v6h-2V7zm0 8h2v2h-2v-2z"/></svg>
-        ${mise ? 'Ton pronostic' : 'Ton pronostic ?'}
-      </p>
-
-      <div class="hero-prono__row">
-        <span class="hero-prono__team">${esc(teamShort(champ(), match.homeId))}</span>
-        <span class="prono__inputs">
-          <label class="sr-only" for="hero-prono-home">Buts de ${esc(teamName(champ(), match.homeId))}</label>
-          <input id="hero-prono-home" name="home" type="number" min="0" max="30" step="1"
-                 inputmode="numeric" placeholder="0" value="${valeurs ? valeurs.home : ''}">
-          <i aria-hidden="true">–</i>
-          <label class="sr-only" for="hero-prono-away">Buts de ${esc(teamName(champ(), match.awayId))}</label>
-          <input id="hero-prono-away" name="away" type="number" min="0" max="30" step="1"
-                 inputmode="numeric" placeholder="0" value="${valeurs ? valeurs.away : ''}">
-        </span>
-        <span class="hero-prono__team">${esc(teamShort(champ(), match.awayId))}</span>
-        <button class="btn btn--primary btn--sm" type="submit">${mise ? 'Modifier' : 'Valider'}</button>
-      </div>
-
-      ${invite ? `
-        <p class="hero-prono__invite" role="status">
-          Créez votre compte pour enregistrer ce pronostic — c'est gratuit, et votre
-          score est déjà gardé de côté.
-          <a class="btn btn--primary btn--sm" href="/packs?retour=%2F">Créer mon compte</a>
-        </p>`
-      : `
-        <p class="hero-prono__note">
-          ${mise
-            ? `Enregistré : <b>${mise.home} – ${mise.away}</b>. Modifiable jusqu'au coup d'envoi.`
-            : esc(baremeTexte())}
-          <a class="hero-prono__more" href="/resultats#pronos">Tous les pronostics</a>
-        </p>`}
-    </form>`;
-}
-
-/* ══════════════════════════════════ Liste ══ */
-
-function pronoFormHTML(match, index) {
-  const mise = state.predictions.get(match.id);
-  // Un pronostic saisi sans compte reste affiche : il part des la connexion.
-  const valeurs = mise || attenteDe(match.id);
-  const champId = (cote) => `prono-${esc(match.id)}-${cote}`;
-
-  /*
-   * Pas de `data-reveal` ici : l'animation d'apparition est pilotee par app.js,
-   * qui observe les blocs presents dans SA page. Ce module dessine les siens
-   * apres coup et n'a pas acces a l'observateur — un `data-reveal` resterait
-   * donc a opacite zero, et le formulaire serait invisible dans un vrai
-   * navigateur (les tests, sans IntersectionObserver, ne le voyaient pas).
-   */
-  return `
-    <form class="prono" data-match="${esc(match.id)}">
-      <p class="prono__meta">
-        ${match.day ? `<span class="chip">${match.day}${match.day === 1 ? 're' : 'e'} journée</span>` : ''}
-        ${competitionName(champ(), match.competitionId)
-          ? `<span class="chip chip--soft">${esc(competitionName(champ(), match.competitionId))}</span>` : ''}
-        <span class="prono__when">${esc(whenLabel(match))}</span>
-      </p>
-
-      <div class="prono__row">
-        <span class="prono__team">
-          <span class="prono__crest">${crest(match.homeId)}</span>
-          <span class="prono__name">${esc(teamName(champ(), match.homeId))}</span>
-        </span>
-
-        <span class="prono__inputs">
-          <label class="sr-only" for="${champId('home')}">Buts de ${esc(teamName(champ(), match.homeId))}</label>
-          <input id="${champId('home')}" name="home" type="number" min="0" max="30" step="1"
-                 inputmode="numeric" placeholder="0" value="${valeurs ? valeurs.home : ''}">
-          <i aria-hidden="true">–</i>
-          <label class="sr-only" for="${champId('away')}">Buts de ${esc(teamName(champ(), match.awayId))}</label>
-          <input id="${champId('away')}" name="away" type="number" min="0" max="30" step="1"
-                 inputmode="numeric" placeholder="0" value="${valeurs ? valeurs.away : ''}">
-        </span>
-
-        <span class="prono__team prono__team--away">
-          <span class="prono__crest">${crest(match.awayId)}</span>
-          <span class="prono__name">${esc(teamName(champ(), match.awayId))}</span>
-        </span>
-      </div>
-
-      <div class="prono__foot">
-        <button class="btn btn--primary btn--sm" type="submit">
-          ${mise ? 'Modifier' : 'Valider'}
-        </button>
-        ${predictionState(match)}
-      </div>
-    </form>`;
-}
-
-function renderOpen() {
-  const zone = $('#pronos-list');
-  if (!zone) return;
-
-  const ouverts = predictableMatches(champ());
-  zone.innerHTML = ouverts.length
-    ? ouverts.map(pronoFormHTML).join('')
-    : `<p class="empty">Aucun match ouvert aux pronostics pour l'instant. Revenez quand la prochaine
-       rencontre sera programmée : les pronostics ferment au coup d'envoi.</p>`;
-}
-
-function renderHistory() {
-  const zone = $('#pronos-history');
-  if (!zone) return;
-
-  const regles = [...state.predictions.values()].filter((mise) => mise.settled);
-  const bloc = zone.closest('[data-pronos-history]') || zone;
-  bloc.hidden = !regles.length;
-  if (!regles.length) { zone.innerHTML = ''; return; }
-
-  const matchs = new Map((champ().matches || []).map((match) => [match.id, match]));
-
-  zone.innerHTML = `
-    <h3 class="pronos__subtitle">Vos pronostics réglés</h3>
-    <ul class="pronos__log">
-      ${regles.map((mise) => {
-        const match = matchs.get(mise.matchId);
-        const titre = match
-          ? `${teamShort(champ(), match.homeId)} ${match.homeScore} – ${match.awayScore} ${teamShort(champ(), match.awayId)}`
-          : 'Match retiré du calendrier';
-        return `
-          <li class="pronos__log-item pronos__log-item--${esc(mise.outcome || 'played')}">
-            <span class="pronos__log-match">${esc(titre)}</span>
-            <span class="pronos__log-guess">votre prono : ${mise.home} – ${mise.away}</span>
-            <span class="pronos__log-gain">${esc(OUTCOME_LABELS[mise.outcome] || '—')} · +${mise.awarded}</span>
-          </li>`;
-      }).join('')}
-    </ul>`;
+    : `<span class="pronos__who">Répondez d'abord : le compte n'est demandé qu'au moment
+         d'enregistrer, et vos réponses vous suivent.</span>
+       <a class="btn btn--primary btn--sm" href="/packs?retour=%2Fpronostics">Créer mon compte</a>`;
 }
 
 function renderBoard() {
@@ -382,7 +493,7 @@ function renderBoard() {
   if (!state.board.length) { zone.innerHTML = ''; return; }
 
   zone.innerHTML = `
-    <h3 class="pronos__subtitle">Les meilleurs pronostiqueurs</h3>
+    <h2 class="pronos__subtitle">Les meilleurs parieurs</h2>
     <ol class="pronos__board-list">
       ${state.board.map((ligne, rang) => `
         <li>
@@ -390,16 +501,27 @@ function renderBoard() {
           <span class="pronos__pseudo">${esc(ligne.username)}</span>
           <span class="pronos__score">
             <b>${Number(ligne.packs) || 0}</b> packs
-            <small>${Number(ligne.exacts) || 0} score${Number(ligne.exacts) > 1 ? 's' : ''} exact${Number(ligne.exacts) > 1 ? 's' : ''} sur ${Number(ligne.total) || 0}</small>
+            <small>${Number(ligne.exacts) || 0} bonne${Number(ligne.exacts) > 1 ? 's' : ''} réponse${Number(ligne.exacts) > 1 ? 's' : ''} sur ${Number(ligne.total) || 0}</small>
           </span>
         </li>`).join('')}
     </ol>`;
 }
 
+/** Le mot d'introduction saisi dans l'administration, s'il y en a un. */
+function renderIntro() {
+  const zone = $('#pronos-intro');
+  if (!zone) return;
+  const texte = String(contenu().bets?.intro || '').trim();
+  zone.hidden = !texte;
+  zone.textContent = texte;
+}
+
 function paint() {
+  renderIntro();
   renderHero();
   renderAccount();
   renderOpen();
+  renderLocked();
   renderHistory();
   renderBoard();
 }
@@ -416,37 +538,50 @@ function signaler(form, message) {
   setError(message);
 }
 
-async function submitProno(event) {
-  const form = event.target.closest('form[data-match]');
+/** Ce que le formulaire propose, sous la forme attendue par le serveur. */
+function reponseDe(form, pari) {
+  if (pari.type === 'score') {
+    const home = $('[name="home"]', form)?.value.trim();
+    const away = $('[name="away"]', form)?.value.trim();
+    if (home === '' || away === '') return null;
+    return scoreAnswer(Number(home), Number(away));
+  }
+  return $$('[name="answer"]', form).find((champ) => champ.checked)?.value || null;
+}
+
+async function submitPari(event) {
+  const form = event.target.closest('form[data-bet]');
   if (!form) return;
   event.preventDefault();
   if (state.busy) return;
 
-  const matchId = form.dataset.match;
-  const home = $('[name="home"]', form)?.value.trim();
-  const away = $('[name="away"]', form)?.value.trim();
+  const betId = form.dataset.bet;
+  const pari = betById(contenu(), betId);
+  if (!pari) { signaler(form, "Ce pari n'existe plus."); return; }
 
-  if (home === '' || away === '') {
-    signaler(form, 'Indiquez les deux scores avant de valider.');
-    return;
-  }
-
-  const match = (champ().matches || []).find((rencontre) => rencontre.id === matchId);
-  // Le coup d'envoi a pu passer pendant que la page était ouverte.
-  if (match && !isPredictable(match)) {
-    signaler(form, 'Trop tard : les pronostics sont fermés pour ce match.');
+  // La clôture a pu tomber pendant que la page était ouverte.
+  if (!isOpen(contenu(), pari)) {
+    signaler(form, 'Trop tard : les mises sont fermées sur ce pari.');
     paint();
     return;
   }
 
-  // Sans compte, on garde le pronostic sous le coude et on invite à s'inscrire.
-  // Demander le compte d'abord, c'est demander avant d'avoir explique pourquoi.
+  const answer = reponseDe(form, pari);
+  if (!answer) {
+    signaler(form, pari.type === 'score'
+      ? 'Indiquez les deux scores avant de valider.'
+      : 'Choisissez une réponse avant de valider.');
+    return;
+  }
+
+  // Sans compte, on garde la réponse sous le coude et on invite à s'inscrire.
+  // Demander le compte d'abord, c'est demander avant d'avoir expliqué pourquoi.
   if (!state.user) {
-    garderAttente({ matchId, home: Number(home), away: Number(away) });
-    state.invite = matchId;
+    garderAttente({ betId, answer });
+    state.invite = betId;
     paint();
     if (!$('#pronos-hero')) {
-      setError('Connectez-vous pour enregistrer votre pronostic — il est gardé de côté.');
+      setError('Connectez-vous pour enregistrer votre pari — il est gardé de côté.');
     }
     return;
   }
@@ -459,12 +594,12 @@ async function submitProno(event) {
   try {
     const payload = await api('/api/club/predictions', {
       method: 'POST',
-      body: JSON.stringify({ matchId, home: Number(home), away: Number(away) })
+      body: JSON.stringify({ betId, answer })
     });
-    state.predictions.set(matchId, payload.prediction);
+    state.wagers.set(betId, payload.wager);
     state.invite = '';
     garderAttente(null);
-    toast('Pronostic enregistré. Bonne chance !');
+    toast('Pari enregistré. Bonne chance !');
     paint();
   } catch (error) {
     signaler(form, error.message);
@@ -481,7 +616,7 @@ export function initPronos() {
   const zones = ['#pronos-list', '#pronos-hero'].map((sel) => $(sel)).filter(Boolean);
   if (!zones.length) return;
 
-  zones.forEach((zone) => zone.addEventListener('submit', submitProno));
+  zones.forEach((zone) => zone.addEventListener('submit', submitPari));
   charger();
 }
 
