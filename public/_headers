@@ -9,8 +9,13 @@
 # Le CSS et le JS ne portent pas d'empreinte dans leur nom : une durée de vie
 # longue retarderait d'autant l'arrivée d'un correctif chez les visiteurs déjà
 # venus. 10 minutes de fraîcheur, puis revalidation en arrière-plan.
+# Les modules ES doivent rester coherents entre eux et avec les Functions.
+# Sans empreinte dans les noms de fichiers, `stale-while-revalidate` servait
+# pendant 24 h un melange de versions : un panel d'administration pouvait
+# tourner sur l'ancien code apres une mise a jour, meme apres Ctrl+F5.
+# On revalide donc a chaque chargement — un 304 coute presque rien.
 /assets/*
-  Cache-Control: public, max-age=600, stale-while-revalidate=86400
+  Cache-Control: public, max-age=0, must-revalidate
 
 /img/*
   Cache-Control: public, max-age=2592000, stale-while-revalidate=604800

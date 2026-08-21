@@ -10,7 +10,8 @@
 import { json, fail, methodNotAllowed, readJson } from '../../lib/http.js';
 import { requireAuth, checkOrigin } from '../../lib/auth.js';
 import { readContent, writeContent, resetContent } from '../../lib/store.js';
-import { sanitizeContent, SCHEMA_VERSION } from '../../lib/validate.js';
+import { sanitizeContent } from '../../lib/validate.js';
+import { deepMerge } from '../../public/assets/js/content.js';
 
 const ALLOWED = ['GET', 'PUT', 'DELETE'];
 
@@ -60,30 +61,37 @@ export async function onRequest(context) {
     const body = await readJson(request, 512 * 1024);
     if (!body.ok) return body.response;
 
-    let content;
+    /**
+     * Une page d'administration restée ouverte pendant une mise à jour du site
+     * ignore les sections ajoutées depuis : normaliser son document seul les
+     * remplacerait par du vide.
+     *
+     * On refusait l'enregistrement ; c'était brutal et faillible — un module
+     * JavaScript encore en cache suffisait à bloquer un panel pourtant à jour.
+     * Le document reçu est désormais posé **par-dessus** celui en base : tout
+     * ce qu'il dit fait foi, tout ce qu'il ignore est conservé. Rien ne se perd,
+     * et rien ne se refuse.
+     *
+     * Les tableaux, eux, sont remplacés en entier : supprimer un joueur ou un
+     * match reste possible.
+     */
+    const recu = body.data?.content ?? body.data;
+    let base = null;
     try {
-      content = sanitizeContent(body.data?.content ?? body.data);
+      base = (await readContent(env.DB))?.content ?? null;
     } catch (error) {
-      return fail(error.message || 'Contenu invalide.', 422);
+      console.error('[content:lecture]', error);
     }
 
-    /**
-     * Garde-fou contre l'onglet resté ouvert sur une version antérieure du
-     * panel. Son document ne connaît pas les sections ajoutées depuis : la
-     * normalisation les remplacerait par du vide, et la migration ne pourrait
-     * plus rien reconstruire — les données seraient perdues pour de bon.
-     *
-     * On compare au modèle courant, pas au document stocké : le client migre
-     * toujours avant d'enregistrer, donc un numéro inférieur ne peut venir que
-     * d'un code périmé. Le refus est franc, et le message dit quoi faire.
-     */
-    if (Number(content.version) < SCHEMA_VERSION) {
-      return fail(
-        "Cette page d'administration date d'avant la dernière mise à jour du site. "
-        + "Rechargez-la (Ctrl+F5) avant d’enregistrer : en l'état, elle effacerait "
-        + 'des sections du site.',
-        409
-      );
+    const complet = base && recu && typeof recu === 'object' && !Array.isArray(recu)
+      ? deepMerge(base, recu)
+      : recu;
+
+    let content;
+    try {
+      content = sanitizeContent(complet);
+    } catch (error) {
+      return fail(error.message || 'Contenu invalide.', 422);
     }
 
     try {

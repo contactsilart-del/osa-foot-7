@@ -285,8 +285,15 @@ function pronoFormHTML(match, index) {
   const valeurs = mise || attenteDe(match.id);
   const champId = (cote) => `prono-${esc(match.id)}-${cote}`;
 
+  /*
+   * Pas de `data-reveal` ici : l'animation d'apparition est pilotee par app.js,
+   * qui observe les blocs presents dans SA page. Ce module dessine les siens
+   * apres coup et n'a pas acces a l'observateur — un `data-reveal` resterait
+   * donc a opacite zero, et le formulaire serait invisible dans un vrai
+   * navigateur (les tests, sans IntersectionObserver, ne le voyaient pas).
+   */
   return `
-    <form class="prono" data-match="${esc(match.id)}" data-reveal style="--delay:${index * 70}ms">
+    <form class="prono" data-match="${esc(match.id)}">
       <p class="prono__meta">
         ${match.day ? `<span class="chip">${match.day}${match.day === 1 ? 're' : 'e'} journée</span>` : ''}
         ${match.competition ? `<span class="chip chip--soft">${esc(match.competition)}</span>` : ''}

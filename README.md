@@ -249,9 +249,11 @@ Rendez-vous sur `/admin/` et connectez-vous avec `ADMIN_PASSWORD`.
   poste y reçoivent un compteur et y apparaissent.
 - Une section d'images laissée vide (calendrier, galerie) affiche
   « Bientôt disponible » plutôt qu'un trou dans la page.
-- Une page d'administration restée ouverte pendant une mise à jour du site est
-  **refusée à l'enregistrement** (message invitant à recharger) : son document
-  ignorerait les sections ajoutées entre-temps et les effacerait.
+- Une page d'administration restée ouverte pendant une mise à jour du site
+  ignore les sections ajoutées entre-temps. Son enregistrement n'est **pas
+  refusé** : le serveur pose le document reçu **par-dessus** celui en base.
+  Ce qu'il dit fait foi, ce qu'il ignore est conservé. Supprimer un élément
+  d'une liste reste possible — les tableaux sont remplacés en entier.
 - La **galerie** a sa propre page (`/galerie`), et l'accueil en montre les
   **six premières photos** avec un lien vers la page complète. L'ordre est celui
   de l'onglet Galerie : mettez en tête ce que vous voulez voir sur l'accueil.
