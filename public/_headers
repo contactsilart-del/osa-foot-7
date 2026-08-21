@@ -15,7 +15,7 @@
 # tourner sur l'ancien code apres une mise a jour, meme apres Ctrl+F5.
 # On revalide donc a chaque chargement — un 304 coute presque rien.
 /assets/*
-  Cache-Control: public, max-age=0, must-revalidate
+  Cache-Control: public, no-cache
 
 /img/*
   Cache-Control: public, max-age=2592000, stale-while-revalidate=604800
